@@ -25,7 +25,7 @@ public class AppUserCustomerService : IAppUserCustomerService
             from link in _db.AppUserCustomers.AsNoTracking()
             join user in _db.AppUsers.AsNoTracking() on link.AppUserId equals user.Id
             join customer in _db.Customers.AsNoTracking() on link.CustomerId equals customer.Id
-            where user.Id == userId && user.Active && link.Active && customer.Active && !customer.Deleted
+            where user.Id == userId && user.Active && link.Active && customer.Active && !customer.Deleted && !customer.IsSystemAccount
             select customer.Id
         ).ToArrayAsync(cancelToken);
     }
@@ -41,7 +41,7 @@ public class AppUserCustomerService : IAppUserCustomerService
             join user in _db.AppUsers.AsNoTracking() on link.AppUserId equals user.Id
             join customer in _db.Customers.AsNoTracking() on link.CustomerId equals customer.Id
             where user.Id == userId && customer.Id == customerId &&
-                user.Active && link.Active && customer.Active && !customer.Deleted
+                user.Active && link.Active && customer.Active && !customer.Deleted && !customer.IsSystemAccount
             select link.Id
         ).AnyAsync(cancelToken);
     }
@@ -54,7 +54,7 @@ public class AppUserCustomerService : IAppUserCustomerService
 
         bool validUser = await _db.AppUsers.AnyAsync(x => x.Id == userId && x.Active, cancelToken);
         bool validCustomer = await _db.Customers.AnyAsync(
-            x => x.Id == customerId && x.Active && !x.Deleted, cancelToken);
+            x => x.Id == customerId && x.Active && !x.Deleted && !x.IsSystemAccount, cancelToken);
 
         if (!validUser || !validCustomer)
             throw new InvalidOperationException("Both the user and the customer must exist and be active.");

@@ -31,15 +31,23 @@ public partial class OrderProcessingService : IOrderProcessingService
         }
 
         AppUser appUser = null;
-        if (_appUserContext is not null)
+        int? selectedBuyerId = null;
+        if (_appUserContext?.IsAppUserIdentityPresent == true)
         {
             appUser = await _appUserContext.GetCurrentUserAsync(cancelToken);
-            if (_appUserContext.IsAppUserIdentityPresent &&
-                (appUser is null || _appUserCustomerService is null ||
-                 !await _appUserCustomerService.CanAccessCustomerAsync(appUser.Id, paymentRequest.CustomerId, cancelToken)))
+            selectedBuyerId = _appUserBuyerContext is null
+                ? null
+                : await _appUserBuyerContext.GetSelectedCustomerIdAsync(cancelToken);
+
+            // The payment request's CustomerId is the legacy checkout account.
+            // Its selected commercial buyer comes only from the verified membership.
+            if (appUser is null || !selectedBuyerId.HasValue ||
+                _appUserCustomerService is null ||
+                !await _appUserCustomerService.CanAccessCustomerAsync(
+                    appUser.Id, selectedBuyerId.Value, cancelToken))
             {
                 var denied = new OrderPlacementResult();
-                denied.Errors.Add("The authenticated user is not authorized for this customer.");
+                denied.Errors.Add("Select an authorized commercial customer before checkout.");
                 return denied;
             }
         }
@@ -90,6 +98,9 @@ public partial class OrderProcessingService : IOrderProcessingService
             await ProcessPayment(ctx);
 
             ctx.Order.PlacedByAppUserId = appUser?.Id;
+            if (selectedBuyerId.HasValue)
+                ctx.Order.CustomerId = selectedBuyerId.Value;
+
             _db.Orders.Add(ctx.Order);
 
             // Save, we need the primary key.

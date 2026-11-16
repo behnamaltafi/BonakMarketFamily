@@ -41,8 +41,9 @@ public partial class OrderProcessingService : IOrderProcessingService
 
             // The payment request's CustomerId is the legacy checkout account.
             // Its selected commercial buyer comes only from the verified membership.
-            if (appUser is null || !selectedBuyerId.HasValue ||
-                _appUserCustomerService is null ||
+            if (appUser is null ||
+                appUser.LegacyIdentityCustomerId != paymentRequest.CustomerId ||
+                !selectedBuyerId.HasValue || _appUserCustomerService is null ||
                 !await _appUserCustomerService.CanAccessCustomerAsync(
                     appUser.Id, selectedBuyerId.Value, cancelToken))
             {

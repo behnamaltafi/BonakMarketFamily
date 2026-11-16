@@ -140,3 +140,18 @@ Full checkout and payment migration/reconciliation is mandatory before
 releasing the independent-user flow.
 
 No migrations are included in this PR. Build and tests are not executed.
+
+
+## Continuation: security and ownership boundaries (2026-11-17)
+
+- The legacy sign-in bridge now requires a **signed, immutable legacy login-account ID** in the same cookie identity as the trusted `app_user_guid`. A revoked or reassigned `LegacyIdentityCustomerId` is checked against the active `AppUser` record on each identity lookup; ambiguous claims and duplicate mappings fail closed. This is still **not** an independent AppUser login.
+- New Nop sessions issue a stable `ClaimTypes.NameIdentifier` and resolve the legacy account by ID rather than mutable email/name. Existing Nop AppUser cookies issued without that claim require a new login.
+- The buyer selected by a previous login is cleared at new password login (and on sign-out). Buyer membership is still checked server-side for every request.
+- Return creation now validates access to the order's commercial buyer for AppUser sessions and records the actual requester in `ReturnRequest.AppUserId` / `ReturnCase.AppUserId`. Nop's return-history screen is restricted to the current AppUser for new AppUser sessions, rather than the legacy Customer's return history. Historical rows require verified user ownership backfill.
+- Nop recurring-payment listing/cancel/retry now use the selected authorized commercial buyer, including a second check of the recurring payment's initial order owner. The legacy customer-keyed reward balance screen fails closed for an AppUser session until an AppUser-owned loyalty implementation exists.
+- Smartstore's synchronous permission check was corrected to use the same trusted legacy-login binding as its asynchronous permission check. It must not authorize a stale AppUser claim after reassignment.
+- Regression tests for missing/invalid/ambiguous identity claims were added. CI covers compilation and focused tests only; **it does not validate an end-to-end schema cutover, checkout accounting, or real sign-in.**
+
+### Still blocking production
+
+The primary password, registration, recovery, OTP and external login flows still use Customer-based identity. Smartstore still configures `AddIdentity<Customer, CustomerRole>()`; nop's main authentication interface still returns `Customer`. The many old personal-data, admin and commerce workflows are not fully migrated. Payment/credit/loyalty/shipping/tax and schema backfill must be reviewed before this branch can be considered finished. **Do not merge or deploy as a completed user/customer cutover.** No migrations were generated.

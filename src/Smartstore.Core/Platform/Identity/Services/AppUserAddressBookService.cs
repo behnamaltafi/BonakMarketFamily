@@ -64,6 +64,17 @@ public class AppUserAddressBookService : IAppUserAddressBookService
         await _db.SaveChangesAsync(cancelToken);
 
         link.AddressId = fresh.Id;
+
+        // Retain personal default selections when the address is replaced.
+        var profile = await _db.AppUsers.FirstOrDefaultAsync(x => x.Id == actor.Id, cancelToken);
+        if (profile is not null)
+        {
+            if (profile.DefaultBillingAddressId == addressId)
+                profile.DefaultBillingAddressId = fresh.Id;
+            if (profile.DefaultShippingAddressId == addressId)
+                profile.DefaultShippingAddressId = fresh.Id;
+        }
+
         await _db.SaveChangesAsync(cancelToken);
         await tx.CommitAsync(cancelToken);
 
@@ -87,6 +98,49 @@ public class AppUserAddressBookService : IAppUserAddressBookService
 
         // Keep the referenced Address row intact for other users and orders.
         _db.AppUserAddressMappings.Remove(link);
+        var profile = await _db.AppUsers.FirstOrDefaultAsync(x => x.Id == actor.Id, cancelToken);
+        if (profile is not null)
+        {
+            if (profile.DefaultBillingAddressId == addressId)
+                profile.DefaultBillingAddressId = null;
+            if (profile.DefaultShippingAddressId == addressId)
+                profile.DefaultShippingAddressId = null;
+        }
+
+        await _db.SaveChangesAsync(cancelToken);
+        return true;
+    }
+
+    public virtual async Task<bool> SetDefaultAddressAsync(
+        int addressId, CancellationToken cancelToken = default)
+    {
+        if (addressId <= 0)
+            return false;
+
+        var actor = await _current.GetCurrentUserAsync(cancelToken);
+        if (actor is null)
+            return false;
+
+        var link = await _db.AppUserAddressMappings.AsNoTracking().AnyAsync(
+            x => x.AppUserId == actor.Id && x.AddressId == addressId, cancelToken);
+        if (!link)
+            return false;
+
+        var address = await _db.Addresses.AsNoTracking()
+            .Include(x => x.Country)
+            .FirstOrDefaultAsync(x => x.Id == addressId, cancelToken);
+        if (address is null ||
+            (address.Country is not null &&
+             (!address.Country.AllowsBilling || !address.Country.AllowsShipping)))
+            return false;
+
+        var profile = await _db.AppUsers.FirstOrDefaultAsync(
+            x => x.Id == actor.Id && x.Active, cancelToken);
+        if (profile is null)
+            return false;
+
+        profile.DefaultBillingAddressId = addressId;
+        profile.DefaultShippingAddressId = addressId;
         await _db.SaveChangesAsync(cancelToken);
         return true;
     }

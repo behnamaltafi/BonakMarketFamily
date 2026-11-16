@@ -381,9 +381,16 @@ public class CustomerController : PublicController
             if (_appUserProfile is null || await _appUserContext.GetCurrentUserAsync() is null)
                 return ChallengeOrForbid();
 
+            var actor = await _appUserContext.GetCurrentUserAsync();
             var addresses = (await _appUserProfile.GetCurrentUserAddressesAsync()).ToList();
             // Customer-specific default-address flags must never leak into AppUser views.
             var models = await addresses.MapAsync(customer, false);
+            foreach (var model in models)
+            {
+                model.DefaultAddressesEnabled = _shoppingCartSettings.QuickCheckoutEnabled;
+                model.IsDefaultBillingAddress = model.Id == actor.DefaultBillingAddressId;
+                model.IsDefaultShippingAddress = model.Id == actor.DefaultShippingAddressId;
+            }
             return View(models);
         }
 
@@ -569,10 +576,16 @@ public class CustomerController : PublicController
     [HttpPost]
     public async Task<IActionResult> SetDefaultAddress(int id)
     {
-        // Legacy default-address settings belong to the Customer account.
-        // Do not write them from an independent user session.
         if (_appUserContext?.IsAppUserIdentityPresent == true)
-            return ChallengeOrForbid();
+        {
+            if (_appUserAddressBook is null || await _appUserContext.GetCurrentUserAsync() is null)
+                return ChallengeOrForbid();
+
+            if (!await _appUserAddressBook.SetDefaultAddressAsync(id))
+                return NotFound();
+
+            return RedirectToAction(nameof(Addresses));
+        }
 
         var customer = Services.WorkContext.CurrentCustomer;
         if (!customer.IsRegistered())

@@ -40,6 +40,12 @@ public partial class AppUser : BaseEntity
 
     public bool PhoneVerified { get; set; }
 
+    /// <summary>Default billing address owned by this person, not a business Customer.</summary>
+    public int? DefaultBillingAddressId { get; set; }
+
+    /// <summary>Default shipping address owned by this person, not a business Customer.</summary>
+    public int? DefaultShippingAddressId { get; set; }
+
     public bool Active { get; set; } = true;
 
     public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;

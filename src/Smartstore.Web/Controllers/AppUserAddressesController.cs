@@ -63,6 +63,18 @@ public sealed class AppUserAddressesController : PublicController
             : NotFound();
     }
 
+    [HttpPost("{id:int}/default")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetDefault(int id, CancellationToken cancelToken)
+    {
+        if (await _current.GetCurrentUserAsync(cancelToken) is null)
+            return Unauthorized();
+
+        return await _addresses.SetDefaultAddressAsync(id, cancelToken)
+            ? NoContent()
+            : NotFound();
+    }
+
     public sealed class AddressRequest
     {
         [Required, StringLength(225)]

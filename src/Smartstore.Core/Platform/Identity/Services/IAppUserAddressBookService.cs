@@ -10,4 +10,5 @@ public interface IAppUserAddressBookService
     Task<int?> AddAddressAsync(Address address, CancellationToken cancelToken = default);
     Task<bool> ReplaceAddressAsync(int addressId, Address address, CancellationToken cancelToken = default);
     Task<bool> RemoveAddressAsync(int addressId, CancellationToken cancelToken = default);
+    Task<bool> SetDefaultAddressAsync(int addressId, CancellationToken cancelToken = default);
 }

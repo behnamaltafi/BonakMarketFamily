@@ -43,6 +43,8 @@ public sealed class AppUserProfileController : PublicController
             user.Email,
             user.PhoneNumber,
             user.PhoneVerified,
+            user.DefaultBillingAddressId,
+            user.DefaultShippingAddressId,
             customerIds = customers
         });
     }

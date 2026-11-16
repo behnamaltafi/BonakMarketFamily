@@ -58,6 +58,8 @@ public class CustomerController : PublicController
     private readonly OrderSettings _orderSettings;
     private readonly RewardPointsSettings _rewardPointsSettings;
     private readonly ShoppingCartSettings _shoppingCartSettings;
+    private readonly ICurrentAppUserContext _appUserContext;
+    private readonly IAppUserBuyerContext _appUserBuyerContext;
 
     public CustomerController(
         SmartDbContext db,
@@ -85,7 +87,9 @@ public class CustomerController : PublicController
         LocalizationSettings localizationSettings,
         OrderSettings orderSettings,
         RewardPointsSettings rewardPointsSettings,
-        ShoppingCartSettings shoppingCartSettings)
+        ShoppingCartSettings shoppingCartSettings,
+        ICurrentAppUserContext appUserContext = null,
+        IAppUserBuyerContext appUserBuyerContext = null)
     {
         _db = db;
         _newsletterSubscriptionService = newsletterSubscriptionService;
@@ -113,6 +117,8 @@ public class CustomerController : PublicController
         _orderSettings = orderSettings;
         _rewardPointsSettings = rewardPointsSettings;
         _shoppingCartSettings = shoppingCartSettings;
+        _appUserContext = appUserContext;
+        _appUserBuyerContext = appUserBuyerContext;
     }
 
     public async Task<IActionResult> Info()
@@ -541,7 +547,23 @@ public class CustomerController : PublicController
         }
 
         var customer = Services.WorkContext.CurrentCustomer;
-        if (!customer.IsRegistered())
+        if (_appUserContext?.IsAppUserIdentityPresent == true)
+        {
+            // Treat the logged-in user and the commercial buyer as separate actors.
+            if (await _appUserContext.GetCurrentUserAsync() is null)
+                return ChallengeOrForbid();
+
+            var buyerId = _appUserBuyerContext is null
+                ? null
+                : await _appUserBuyerContext.GetSelectedCustomerIdAsync();
+            if (!buyerId.HasValue)
+                return ChallengeOrForbid();
+
+            customer = await _db.Customers.FindByIdAsync(buyerId.Value);
+            if (customer is null || customer.Deleted || !customer.Active)
+                return ChallengeOrForbid();
+        }
+        else if (!customer.IsRegistered())
         {
             return ChallengeOrForbid();
         }

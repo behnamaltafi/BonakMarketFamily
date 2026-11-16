@@ -41,6 +41,7 @@ public class IdentityController : PublicController
     private readonly TaxSettings _taxSettings;
     private readonly LocalizationSettings _localizationSettings;
     private readonly RewardPointsSettings _rewardPointsSettings;
+    private readonly IAppUserBuyerContext _buyerContext;
 
     public IdentityController(
         SmartDbContext db,
@@ -59,7 +60,8 @@ public class IdentityController : PublicController
         DateTimeSettings dateTimeSettings,
         TaxSettings taxSettings,
         LocalizationSettings localizationSettings,
-        RewardPointsSettings rewardPointsSettings)
+        RewardPointsSettings rewardPointsSettings,
+        IAppUserBuyerContext buyerContext = null)
     {
         _db = db;
         _userManager = userManager;
@@ -78,6 +80,7 @@ public class IdentityController : PublicController
         _taxSettings = taxSettings;
         _localizationSettings = localizationSettings;
         _rewardPointsSettings = rewardPointsSettings;
+        _buyerContext = buyerContext;
     }
 
     #region Login / Logout / Register
@@ -200,6 +203,7 @@ public class IdentityController : PublicController
             Services.ActivityLogger.LogActivity(KnownActivityLogTypes.PublicStoreLogout, T("ActivityLog.PublicStore.Logout"));
 
             await _signInManager.SignOutAsync();
+            _buyerContext?.ClearSelection();
             await db.SaveChangesAsync();
 
             return RedirectToRoute("Homepage");

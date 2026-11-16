@@ -373,11 +373,12 @@ public partial class ShoppingCartService : IShoppingCartService
 
         _db.ShoppingCartItems.Remove(cartItem);
 
-        // Delete child cart items.
-        if (customer != null)
+        // Delete child cart items. An AppUser-owned item may no longer have
+        // a valid legacy Customer navigation after the final schema cutover.
+        if (customer != null || actor != null)
         {
             var childItems = await _db.ShoppingCartItems
-                .Where(x => (actor == null ? x.CustomerId == customer.Id : x.AppUserId == actor.Id) &&
+                .Where(x => (actor != null ? x.AppUserId == actor.Id : x.CustomerId == customer.Id) &&
                     x.ParentItemId != null && x.ParentItemId.Value == cartItem.Id && x.Id != cartItem.Id)
                 .ToListAsync();
 
@@ -407,6 +408,14 @@ public partial class ShoppingCartService : IShoppingCartService
             foreach (var item in cart.Items)
             {
                 itemsToDelete.AddRange(item.ChildItems.Select(x => x.Item));
+            }
+
+            // Never accept a caller-provided cart as proof of item ownership.
+            if (_appUserContext?.IsAppUserIdentityPresent == true)
+            {
+                var actor = await _appUserContext.GetCurrentUserAsync();
+                if (actor is null || itemsToDelete.Any(x => x.AppUserId != actor.Id))
+                    throw new UnauthorizedAccessException("Cart contains items owned by a different user.");
             }
 
             _db.ShoppingCartItems.RemoveRange(itemsToDelete);
@@ -665,6 +674,17 @@ public partial class ShoppingCartService : IShoppingCartService
         bool validateRequiredProducts = true)
     {
         cart ??= await GetCartAsync(storeId: _storeContext.CurrentStore.Id);
+
+        if (_appUserContext?.IsAppUserIdentityPresent == true)
+        {
+            var actor = await _appUserContext.GetCurrentUserAsync();
+            if (actor is null || cart.Items.Any(item =>
+                item.Item.AppUserId != actor.Id ||
+                item.ChildItems.Any(child => child.Item.AppUserId != actor.Id)))
+            {
+                throw new UnauthorizedAccessException("Cart contains items not owned by the authenticated user.");
+            }
+        }
 
         if (cart.Customer.IsBot())
         {

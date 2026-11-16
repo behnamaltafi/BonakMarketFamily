@@ -57,8 +57,6 @@ public class DefaultWorkContextSource : AsyncDbSaveHook<BaseEntity>, IWorkContex
     private readonly IWebHelper _webHelper;
     private readonly IOverloadProtector _overloadProtector;
     private readonly IApplicationContext _appContext;
-    private readonly ICurrentAppUserContext _appUserContext;
-    private readonly IAppUserBuyerContext _buyerContext;
 
     public DefaultWorkContextSource(
         SmartDbContext db,
@@ -73,9 +71,7 @@ public class DefaultWorkContextSource : AsyncDbSaveHook<BaseEntity>, IWorkContex
         IUserAgent userAgent,
         IWebHelper webHelper,
         IOverloadProtector overloadProtector,
-        IApplicationContext appContext,
-        ICurrentAppUserContext appUserContext = null,
-        IAppUserBuyerContext buyerContext = null)
+        IApplicationContext appContext)
     {
         _db = db;
         _httpContextAccessor = httpContextAccessor;
@@ -90,8 +86,6 @@ public class DefaultWorkContextSource : AsyncDbSaveHook<BaseEntity>, IWorkContex
         _webHelper = webHelper;
         _overloadProtector = overloadProtector;
         _appContext = appContext;
-        _appUserContext = appUserContext;
-        _buyerContext = buyerContext;
     }
 
     public ILogger Logger { get; set; } = NullLogger.Instance;

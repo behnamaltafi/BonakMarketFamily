@@ -7,6 +7,8 @@ public partial class SmartDbContext
     public DbSet<Customer> Customers { get; set; }
     public DbSet<AppUser> AppUsers { get; set; }
     public DbSet<AppUserCustomer> AppUserCustomers { get; set; }
+    public DbSet<AppUserAddressMapping> AppUserAddressMappings { get; set; }
+    public DbSet<AppUserRoleMapping> AppUserRoleMappings { get; set; }
     public DbSet<CustomerRole> CustomerRoles { get; set; }
     public DbSet<CustomerRoleMapping> CustomerRoleMappings { get; set; }
     public DbSet<CustomerContent> CustomerContent { get; set; }

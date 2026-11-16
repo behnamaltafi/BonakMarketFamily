@@ -169,19 +169,6 @@ public class DefaultWorkContextSource : AsyncDbSaveHook<BaseEntity>, IWorkContex
 
         if (customer != null && context.HttpContext?.User?.Identity?.IsAuthenticated == true)
         {
-            // Buyer selection is independent of the sign-in identity and is
-            // reauthorized on each request. Never automatically select by matching contact data.
-            if (_appUserContext?.IsAppUserIdentityPresent == true && _buyerContext is not null)
-            {
-                var buyerId = await _buyerContext.GetSelectedCustomerIdAsync();
-                if (buyerId.HasValue)
-                {
-                    var buyer = await _db.Customers.FindByIdAsync(buyerId.Value);
-                    if (buyer is { Active: true, Deleted: false })
-                        return (buyer, null);
-                }
-            }
-
             // Found authenticated customer.
             // Impersonate user if required (currently used for 'phone order' support).
             var impersonatedCustomer = await FindImpersonatedCustomerAsync(customer);

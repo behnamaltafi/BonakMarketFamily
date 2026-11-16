@@ -40,7 +40,7 @@ public class SmartSignInManager : SignInManager<Customer>
         if (appUser is not null)
         {
             var identity = principal.Identities.FirstOrDefault(x => x.IsAuthenticated);
-            identity?.AddClaim(new Claim(CurrentAppUserContext.UserGuidClaim, appUser.UserGuid.ToString("D")));
+            identity?.AddClaim(new Claim(CurrentAppUserContext.UserGuidClaim, appUser.UserGuid.ToString("D"), ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer));
         }
 
         return principal;

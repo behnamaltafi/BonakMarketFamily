@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Smartstore.Core.Data;
 
@@ -11,6 +13,7 @@ namespace Smartstore.Core.Identity;
 public class CurrentAppUserContext : ICurrentAppUserContext
 {
     public const string UserGuidClaim = "app_user_guid";
+    public const string TrustedClaimIssuer = "Smartstore";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly SmartDbContext _db;
@@ -21,23 +24,23 @@ public class CurrentAppUserContext : ICurrentAppUserContext
         _db = db;
     }
 
-    public bool IsAppUserIdentityPresent
+    private Claim GetTrustedAppUserClaim()
     {
-        get
-        {
-            var principal = _httpContextAccessor.HttpContext?.User;
-            return principal?.Identity?.IsAuthenticated == true &&
-                principal.HasClaim(x => x.Type == UserGuidClaim);
-        }
+        var principal = _httpContextAccessor.HttpContext?.User;
+        return principal?.Identities
+            .Where(identity => identity.IsAuthenticated &&
+                identity.AuthenticationType == IdentityConstants.ApplicationScheme)
+            .SelectMany(identity => identity.Claims)
+            .FirstOrDefault(claim => claim.Type == UserGuidClaim &&
+                claim.Issuer == TrustedClaimIssuer);
     }
+
+    public bool IsAppUserIdentityPresent => GetTrustedAppUserClaim() is not null;
 
     public virtual async Task<AppUser> GetCurrentUserAsync(CancellationToken cancelToken = default)
     {
-        var principal = _httpContextAccessor.HttpContext?.User;
-        if (principal?.Identity?.IsAuthenticated != true)
-            return null;
-
-        var value = principal.FindFirst(UserGuidClaim)?.Value;
+        // Claims from an external provider principal are not an AppUser sign-in.
+        var value = GetTrustedAppUserClaim()?.Value;
         if (!Guid.TryParse(value, out var userGuid) || userGuid == Guid.Empty)
             return null;
 

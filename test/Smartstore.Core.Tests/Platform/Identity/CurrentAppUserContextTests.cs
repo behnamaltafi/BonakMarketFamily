@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +42,7 @@ public class CurrentAppUserContextTests
         var context = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity(
-                new[] { new Claim(CurrentAppUserContext.UserGuidClaim, "malformed") }, "AppUserCookie"))
+                new[] { new Claim(CurrentAppUserContext.UserGuidClaim, "malformed", ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer) }, IdentityConstants.ApplicationScheme))
         };
         var sut = new CurrentAppUserContext(
             new HttpContextAccessor { HttpContext = context }, null);
@@ -71,7 +72,7 @@ public class CurrentAppUserContextTests
         var httpContext = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity(
-                new[] { new Claim(CurrentAppUserContext.UserGuidClaim, "malformed") }, "AppUserCookie"))
+                new[] { new Claim(CurrentAppUserContext.UserGuidClaim, "malformed", ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer) }, IdentityConstants.ApplicationScheme))
         };
 
         var sut = new CurrentAppUserContext(

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Smartstore.Core.Common;
+using Smartstore.Core.Checkout.Cart;
 using Smartstore.Core.Data;
 
 namespace Smartstore.Core.Identity;
@@ -16,6 +17,18 @@ public class AppUserProfileService : IAppUserProfileService
     {
         _currentUser = currentUser;
         _db = db;
+    }
+
+    public virtual async Task<IReadOnlyList<ShoppingCartItem>> GetCurrentUserCartItemsAsync(
+        CancellationToken cancelToken = default)
+    {
+        var user = await _currentUser.GetCurrentUserAsync(cancelToken);
+        if (user is null)
+            return Array.Empty<ShoppingCartItem>();
+
+        return await _db.ShoppingCartItems.AsNoTracking()
+            .Where(x => x.AppUserId == user.Id)
+            .ToArrayAsync(cancelToken);
     }
 
     public virtual async Task<IReadOnlyList<Address>> GetCurrentUserAddressesAsync(

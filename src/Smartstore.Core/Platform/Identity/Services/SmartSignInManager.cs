@@ -106,6 +106,11 @@ public class SmartSignInManager : SignInManager<Customer>
 
         if (result.Succeeded)
         {
+            // Do not carry the buyer selected by a previous logged-in person
+            // into this new authenticated browser session.
+            Context.Response.Cookies.Delete(AppUserBuyerContext.CookieName,
+                new CookieOptions { Path = "/" });
+
             user.LastLoginDateUtc = DateTime.UtcNow;
             _db.Value.TryUpdate(user);
             await _db.Value.SaveChangesAsync();

@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Microsoft.AspNetCore.Http;
 using Smartstore.Caching;
 using Smartstore.Collections;
 using Smartstore.Core.Data;
@@ -94,6 +95,8 @@ public partial class PermissionService : AsyncDbSaveHook<CustomerRole>, IPermiss
     private readonly Lazy<IWorkContext> _workContext;
     private readonly ILocalizationService _localizationService;
     private readonly ICacheManager _cache;
+    private readonly ICurrentAppUserContext _appUserContext;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     private string _hookErrorMessage;
 
@@ -101,12 +104,16 @@ public partial class PermissionService : AsyncDbSaveHook<CustomerRole>, IPermiss
         SmartDbContext db,
         Lazy<IWorkContext> workContext,
         ILocalizationService localizationService,
-        ICacheManager cache)
+        ICacheManager cache,
+        ICurrentAppUserContext appUserContext = null,
+        IHttpContextAccessor httpContextAccessor = null)
     {
         _db = db;
         _workContext = workContext;
         _localizationService = localizationService;
         _cache = cache;
+        _appUserContext = appUserContext;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     #region Hook
@@ -167,6 +174,35 @@ public partial class PermissionService : AsyncDbSaveHook<CustomerRole>, IPermiss
             return false;
         }
 
+        if (_appUserContext?.IsAppUserIdentityPresent == true)
+        {
+            var claimValue = _httpContextAccessor?.HttpContext?.User?.FindFirst(CurrentAppUserContext.UserGuidClaim)?.Value;
+            if (!Guid.TryParse(claimValue, out var userGuid) || userGuid == Guid.Empty)
+                return false;
+
+            var actor = _db.AppUsers.AsNoTracking().FirstOrDefault(x => x.UserGuid == userGuid && x.Active);
+            if (actor is null)
+                return false;
+
+            // A selected buyer can never confer roles on the authenticated person.
+            var key = $"permission:appuser:{actor.Id}.{allowByDescendantPermission}.{permissionSystemName}";
+            return _cache.Get(key, o =>
+            {
+                o.ExpiresIn(TimeSpan.FromSeconds(30));
+                var roleIds = _db.AppUserRoleMappings.AsNoTracking()
+                    .Where(x => x.AppUserId == actor.Id).Select(x => x.CustomerRoleId);
+                var roles = _db.CustomerRoles.AsNoTracking()
+                    .Where(x => roleIds.Contains(x.Id) && x.Active).ToArray();
+
+                foreach (var role in roles)
+                {
+                    if (AuthorizeInternal(GetPermissionTree(role), permissionSystemName, allowByDescendantPermission))
+                        return true;
+                }
+                return false;
+            });
+        }
+
         customer ??= _workContext.Value.CurrentCustomer;
 
         var cacheKey = $"permission:{customer.Id}.{allowByDescendantPermission}.{permissionSystemName}";
@@ -201,6 +237,31 @@ public partial class PermissionService : AsyncDbSaveHook<CustomerRole>, IPermiss
         if (string.IsNullOrEmpty(permissionSystemName))
         {
             return false;
+        }
+
+        if (_appUserContext?.IsAppUserIdentityPresent == true)
+        {
+            var actor = await _appUserContext.GetCurrentUserAsync();
+            if (actor is null)
+                return false;
+
+            var key = $"permission:appuser:{actor.Id}.{allowByDescendantPermission}.{permissionSystemName}";
+            return await _cache.GetAsync(key, async o =>
+            {
+                o.ExpiresIn(TimeSpan.FromSeconds(30));
+                var roleIds = _db.AppUserRoleMappings.AsNoTracking()
+                    .Where(x => x.AppUserId == actor.Id).Select(x => x.CustomerRoleId);
+                var roles = await _db.CustomerRoles.AsNoTracking()
+                    .Where(x => roleIds.Contains(x.Id) && x.Active).ToArrayAsync();
+
+                foreach (var role in roles)
+                {
+                    var tree = await GetPermissionTreeAsync(role);
+                    if (AuthorizeInternal(tree.Permissions, permissionSystemName, allowByDescendantPermission))
+                        return true;
+                }
+                return false;
+            }, independent: true, allowRecursion: true);
         }
 
         customer ??= _workContext.Value.CurrentCustomer;

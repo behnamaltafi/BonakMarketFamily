@@ -80,6 +80,7 @@ internal sealed class IdentityStarter : StarterBase
         builder.RegisterType<RoleStore>().As<IRoleStore>().As<IRoleStore<CustomerRole>>().InstancePerLifetimeScope();
         builder.RegisterType<CustomerService>().As<ICustomerService>().InstancePerLifetimeScope();
         builder.RegisterType<AppUserCustomerService>().As<IAppUserCustomerService>().InstancePerLifetimeScope();
+        builder.RegisterType<AppUserBuyerContext>().As<IAppUserBuyerContext>().InstancePerLifetimeScope();
         builder.RegisterType<CurrentAppUserContext>().As<ICurrentAppUserContext>().InstancePerLifetimeScope();
         builder.RegisterType<AppUserOrderAccessService>().As<IAppUserOrderAccessService>().InstancePerLifetimeScope();
         builder.RegisterType<AppUserProfileService>().As<IAppUserProfileService>().InstancePerLifetimeScope();

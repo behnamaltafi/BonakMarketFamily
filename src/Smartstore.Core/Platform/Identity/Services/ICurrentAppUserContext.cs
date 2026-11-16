@@ -8,4 +8,7 @@ namespace Smartstore.Core.Identity;
 public interface ICurrentAppUserContext
 {
     Task<AppUser?> GetCurrentUserAsync(CancellationToken cancelToken = default);
+
+    /// <summary>True when an authenticated principal carries an AppUser identity claim.</summary>
+    bool IsAppUserIdentityPresent { get; }
 }

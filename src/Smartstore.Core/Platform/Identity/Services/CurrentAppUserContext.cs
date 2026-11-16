@@ -21,6 +21,16 @@ public class CurrentAppUserContext : ICurrentAppUserContext
         _db = db;
     }
 
+    public bool IsAppUserIdentityPresent
+    {
+        get
+        {
+            var principal = _httpContextAccessor.HttpContext?.User;
+            return principal?.Identity?.IsAuthenticated == true &&
+                principal.HasClaim(x => x.Type == UserGuidClaim);
+        }
+    }
+
     public virtual async Task<AppUser> GetCurrentUserAsync(CancellationToken cancelToken = default)
     {
         var principal = _httpContextAccessor.HttpContext?.User;

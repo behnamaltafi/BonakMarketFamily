@@ -104,3 +104,39 @@ staged backfill is a prerequisite for functional integration tests and deploymen
    and pricing/payment/tax/credit/returns remain consistent.
 8. Register/login/logout/OTP/password-reset/external auth and full account
    CRUD must be verified after moving them to AppUser.
+
+
+## Latest integration: person-owned address book
+
+- New `IAppUserAddressBookService` and a dedicated authenticated
+  `api/app-user/addresses` CRUD API in both stores.
+- The legacy storefront address list/add/edit/delete UI is routed through
+  AppUser personal address mappings when a validated AppUser claim is present,
+  rather than through the selected commercial buyer.
+- Copy-on-write address editing allocates a new Address and updates only the
+  current AppUser link. Deleting an entry removes only the mapping; it never
+  deletes the address row referenced by old orders or another person.
+- `AppUser.DefaultBillingAddressId` and
+  `AppUser.DefaultShippingAddressId` store personal defaults. On replace,
+  the previous personal defaults follow the updated address; on unlink,
+  the defaults are cleared. Smartstore's existing SetDefaultAddress action
+  uses the AppUser settings for new sessions.
+- Smartstore's address mapping is prevented from updating the legacy
+  Customer default-address attributes for AppUser sessions. Its delete
+  action is now an anti-forgery-protected POST.
+- New isolated tests verify that anonymous requests cannot create/delete/
+  replace or set another person's defaults, and nop's tests assert that
+  creating an address copies data and links the authenticated AppUser.
+- User-accessible buyer-order listing is additionally constrained to the
+  active storefront to avoid accidental cross-store disclosure.
+
+### Important remaining checkout integration
+
+The personal default address fields are **not yet wired through every
+legacy checkout step**. Old checkout shipping/billing selections and price,
+tax, loyalty and payment assumptions may still use the legacy Customer
+record even when the final Order.CustomerId is the chosen commercial buyer.
+Full checkout and payment migration/reconciliation is mandatory before
+releasing the independent-user flow.
+
+No migrations are included in this PR. Build and tests are not executed.

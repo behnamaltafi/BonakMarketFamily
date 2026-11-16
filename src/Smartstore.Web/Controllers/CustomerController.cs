@@ -382,7 +382,8 @@ public class CustomerController : PublicController
                 return ChallengeOrForbid();
 
             var addresses = (await _appUserProfile.GetCurrentUserAddressesAsync()).ToList();
-            var models = await addresses.MapAsync(customer, _shoppingCartSettings.QuickCheckoutEnabled);
+            // Customer-specific default-address flags must never leak into AppUser views.
+            var models = await addresses.MapAsync(customer, false);
             return View(models);
         }
 
@@ -440,7 +441,8 @@ public class CustomerController : PublicController
             return ChallengeOrForbid();
         }
 
-        var model = await new Address().MapAsync(customer, _shoppingCartSettings.QuickCheckoutEnabled);
+        var model = await new Address().MapAsync(customer,
+            _appUserContext?.IsAppUserIdentityPresent == true ? false : _shoppingCartSettings.QuickCheckoutEnabled);
 
         return View(model);
     }
@@ -511,7 +513,8 @@ public class CustomerController : PublicController
             return RedirectToAction(nameof(Addresses));
         }
 
-        var model = await address.MapAsync(customer, _shoppingCartSettings.QuickCheckoutEnabled);
+        var model = await address.MapAsync(customer,
+            _appUserContext?.IsAppUserIdentityPresent == true ? false : _shoppingCartSettings.QuickCheckoutEnabled);
 
         return View(model);
     }
@@ -543,7 +546,8 @@ public class CustomerController : PublicController
 
         if (ModelState.IsValid)
         {
-            await model.MapAsync(address, customer, _shoppingCartSettings.QuickCheckoutEnabled);
+            // AddressMapper can otherwise change legacy Customer default-address settings.
+            await model.MapAsync(address, customer, appUserSession ? false : _shoppingCartSettings.QuickCheckoutEnabled);
             if (appUserSession)
             {
                 if (!await _appUserAddressBook.ReplaceAddressAsync(id, address))

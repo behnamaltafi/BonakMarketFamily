@@ -402,6 +402,8 @@ public class CustomerController : PublicController
         return View(models);
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddressDelete(int id)
     {
         if (id < 1)

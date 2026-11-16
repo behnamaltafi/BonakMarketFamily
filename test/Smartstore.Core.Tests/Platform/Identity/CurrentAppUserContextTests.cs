@@ -122,4 +122,60 @@ public class CurrentAppUserContextTests
     }
 
 
+    [Test]
+    public async Task AppUserWithoutSignedLegacyLoginIdIsRejected()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[] { new Claim(CurrentAppUserContext.UserGuidClaim,
+                    Guid.NewGuid().ToString("D"), ClaimValueTypes.String,
+                    CurrentAppUserContext.TrustedClaimIssuer) },
+                IdentityConstants.ApplicationScheme))
+        };
+        var sut = new CurrentAppUserContext(new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.True);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
+    [Test]
+    public async Task DuplicateTrustedAppUserClaimsFailClosed()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[]
+                {
+                    new Claim(CurrentAppUserContext.UserGuidClaim, Guid.NewGuid().ToString("D"),
+                        ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer),
+                    new Claim(CurrentAppUserContext.UserGuidClaim, Guid.NewGuid().ToString("D"),
+                        ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer),
+                    new Claim(ClaimTypes.NameIdentifier, "10")
+                }, IdentityConstants.ApplicationScheme))
+        };
+        var sut = new CurrentAppUserContext(new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.True);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
+    [Test]
+    public async Task InvalidLegacyLoginIdFailsBeforeDatabaseLookup()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[]
+                {
+                    new Claim(CurrentAppUserContext.UserGuidClaim, Guid.NewGuid().ToString("D"),
+                        ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer),
+                    new Claim(ClaimTypes.NameIdentifier, "not-an-id")
+                }, IdentityConstants.ApplicationScheme))
+        };
+        var sut = new CurrentAppUserContext(new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
 }

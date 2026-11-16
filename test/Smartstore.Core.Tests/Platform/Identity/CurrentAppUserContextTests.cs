@@ -33,6 +33,36 @@ public class CurrentAppUserContextTests
     }
 
     [Test]
+    public async Task MalformedClaimIsDetectedAsAppUserSessionAndRejected()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[] { new Claim(CurrentAppUserContext.UserGuidClaim, "malformed") }, "AppUserCookie"))
+        };
+        var sut = new CurrentAppUserContext(
+            new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.True);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
+    [Test]
+    public async Task LegacyCustomerSessionDoesNotDeclareAppUserIdentity()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[] { new Claim(ClaimTypes.NameIdentifier, "321") }, "LegacyCustomerCookie"))
+        };
+        var sut = new CurrentAppUserContext(
+            new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.False);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
+    [Test]
     public async Task MalformedAppUserClaimIsRejected()
     {
         var httpContext = new DefaultHttpContext

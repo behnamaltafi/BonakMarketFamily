@@ -7,9 +7,8 @@ using Smartstore.Core.Data;
 namespace Smartstore.Core.Identity;
 
 /// <summary>
-/// Resolves an AppUser from a trusted application cookie. During the
-/// legacy Identity&lt;Customer&gt; bridge, the cookie must belong to the
-/// explicitly associated login Customer, never the selected commercial buyer.
+/// Resolves an AppUser from a trusted application cookie. During the legacy
+/// Identity&lt;Customer&gt; bridge the login account must remain explicitly linked.
 /// </summary>
 public class CurrentAppUserContext : ICurrentAppUserContext
 {
@@ -25,37 +24,61 @@ public class CurrentAppUserContext : ICurrentAppUserContext
         _db = db;
     }
 
-    private ClaimsIdentity GetTrustedCookieIdentity()
+    private static ClaimsIdentity[] GetTrustedCookieIdentities(ClaimsPrincipal principal)
     {
-        return _httpContextAccessor.HttpContext?.User?.Identities
-            .FirstOrDefault(identity => identity.IsAuthenticated &&
+        return principal?.Identities
+            .Where(identity => identity.IsAuthenticated &&
                 identity.AuthenticationType == IdentityConstants.ApplicationScheme &&
-                identity.HasClaim(c => c.Type == UserGuidClaim && c.Issuer == TrustedClaimIssuer));
+                identity.HasClaim(c => c.Type == UserGuidClaim && c.Issuer == TrustedClaimIssuer))
+            .ToArray() ?? [];
     }
 
-    public bool IsAppUserIdentityPresent => GetTrustedCookieIdentity() is not null;
+    // Even an ambiguous claim means that this request MUST NOT fall back to
+    // legacy Customer permissions; GetCurrentUserAsync then fails closed.
+    public bool IsAppUserIdentityPresent =>
+        GetTrustedCookieIdentities(_httpContextAccessor.HttpContext?.User).Length > 0;
 
-    public virtual async Task<AppUser> GetCurrentUserAsync(CancellationToken cancelToken = default)
+    /// <summary>
+    /// Read an unambiguous cookie binding without querying the database.
+    /// Used by both synchronous and asynchronous permission checks.
+    /// </summary>
+    public static bool TryReadTrustedLegacyBinding(
+        ClaimsPrincipal principal, out Guid userGuid, out int legacyLoginId)
     {
-        var identity = GetTrustedCookieIdentity();
-        if (identity is null)
-            return null;
+        userGuid = Guid.Empty;
+        legacyLoginId = 0;
+        var identities = GetTrustedCookieIdentities(principal);
+        if (identities.Length != 1)
+            return false;
 
+        var identity = identities[0];
         var userClaims = identity.Claims
             .Where(c => c.Type == UserGuidClaim && c.Issuer == TrustedClaimIssuer)
             .ToArray();
-        // ASP.NET Identity owns the NameIdentifier claim inside its signed
-        // application cookie. Require exactly one matching legacy login ID.
         var loginClaims = identity.Claims
             .Where(c => c.Type == ClaimTypes.NameIdentifier)
             .ToArray();
+
         if (userClaims.Length != 1 || loginClaims.Length != 1 ||
-            !Guid.TryParse(userClaims[0].Value, out var userGuid) || userGuid == Guid.Empty ||
-            !int.TryParse(loginClaims[0].Value, out var legacyLoginId) || legacyLoginId <= 0)
+            !Guid.TryParse(userClaims[0].Value, out userGuid) || userGuid == Guid.Empty ||
+            !int.TryParse(loginClaims[0].Value, out legacyLoginId) || legacyLoginId <= 0)
+        {
+            userGuid = Guid.Empty;
+            legacyLoginId = 0;
+            return false;
+        }
+
+        return true;
+    }
+
+    public virtual async Task<AppUser> GetCurrentUserAsync(CancellationToken cancelToken = default)
+    {
+        if (!TryReadTrustedLegacyBinding(_httpContextAccessor.HttpContext?.User,
+            out var userGuid, out var legacyLoginId))
             return null;
 
-        // Revalidate the explicit bridge on each request so reassigned or
-        // revoked mappings cannot reuse a stale AppUser identity cookie.
+        // Revoked or reassigned legacy login mappings immediately invalidate
+        // an AppUser session, even if the old authentication cookie is valid.
         var matches = await _db.AppUsers.AsNoTracking()
             .Where(x => x.UserGuid == userGuid && x.Active &&
                 x.LegacyIdentityCustomerId == legacyLoginId)

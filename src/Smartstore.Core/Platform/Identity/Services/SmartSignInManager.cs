@@ -35,12 +35,24 @@ public class SmartSignInManager : SignInManager<Customer>
     {
         var principal = await base.CreateUserPrincipalAsync(user);
 
-        var appUser = await _db.Value.AppUsers.AsNoTracking()
-            .SingleOrDefaultAsync(x => x.LegacyIdentityCustomerId == user.Id && x.Active);
-        if (appUser is not null)
+        // ASP.NET Identity<Customer> must issue an immutable login ID in its
+        // signed application cookie. An AppUser is only attached to that exact
+        // legacy login account, never to a matching email or the selected buyer.
+        var identity = principal.Identities.FirstOrDefault(x => x.IsAuthenticated);
+        var loginIds = identity?.Claims.Where(c => c.Type == ClaimTypes.NameIdentifier).ToArray();
+        if (identity is not null && loginIds?.Length == 1 &&
+            loginIds[0].Value == user.Id.ToString())
         {
-            var identity = principal.Identities.FirstOrDefault(x => x.IsAuthenticated);
-            identity?.AddClaim(new Claim(CurrentAppUserContext.UserGuidClaim, appUser.UserGuid.ToString("D"), ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer));
+            // Ambiguous legacy mappings must fail closed rather than picking
+            // whichever AppUser happens to be returned first.
+            var matches = await _db.Value.AppUsers.AsNoTracking()
+                .Where(x => x.LegacyIdentityCustomerId == user.Id && x.Active)
+                .Take(2)
+                .ToArrayAsync();
+            if (matches.Length == 1)
+                identity.AddClaim(new Claim(CurrentAppUserContext.UserGuidClaim,
+                    matches[0].UserGuid.ToString("D"), ClaimValueTypes.String,
+                    CurrentAppUserContext.TrustedClaimIssuer));
         }
 
         return principal;

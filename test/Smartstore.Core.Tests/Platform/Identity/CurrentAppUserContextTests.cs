@@ -178,4 +178,41 @@ public class CurrentAppUserContextTests
         Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
     }
 
+    [Test]
+    public void SignedLegacyBindingCanBeReadWithoutDatabaseAccess()
+    {
+        var guid = Guid.NewGuid();
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(CurrentAppUserContext.UserGuidClaim, guid.ToString("D"),
+                ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer),
+            new Claim(ClaimTypes.NameIdentifier, "321")
+        }, IdentityConstants.ApplicationScheme));
+
+        Assert.That(CurrentAppUserContext.TryReadTrustedLegacyBinding(
+            principal, out var resolvedGuid, out var loginId), Is.True);
+        Assert.That(resolvedGuid, Is.EqualTo(guid));
+        Assert.That(loginId, Is.EqualTo(321));
+    }
+
+    [Test]
+    public async Task TwoTrustedAppUserIdentitiesAreRejected()
+    {
+        ClaimsIdentity CreateIdentity() => new(new[]
+        {
+            new Claim(CurrentAppUserContext.UserGuidClaim, Guid.NewGuid().ToString("D"),
+                ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer),
+            new Claim(ClaimTypes.NameIdentifier, "321")
+        }, IdentityConstants.ApplicationScheme);
+
+        var principal = new ClaimsPrincipal(new[] { CreateIdentity(), CreateIdentity() });
+        var http = new DefaultHttpContext { User = principal };
+        var sut = new CurrentAppUserContext(new HttpContextAccessor { HttpContext = http }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.True);
+        Assert.That(CurrentAppUserContext.TryReadTrustedLegacyBinding(
+            principal, out _, out _), Is.False);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
 }

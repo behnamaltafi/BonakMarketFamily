@@ -20,6 +20,12 @@ public partial class AppUser : BaseEntity
     [StringLength(450)]
     public string ExternalSubject { get; set; }
 
+    /// <summary>
+    /// Temporary explicit mapping to the legacy authenticated account, not the buyer.
+    /// This value must never be inferred from an email address or a phone number.
+    /// </summary>
+    public int? LegacyIdentityCustomerId { get; set; }
+
     /// <summary>Username of the person, not the commercial customer.</summary>
     [StringLength(500)]
     public string Username { get; set; }

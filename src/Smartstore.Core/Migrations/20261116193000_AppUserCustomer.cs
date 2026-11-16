@@ -1,3 +1,4 @@
+using System.Data;
 using FluentMigrator;
 using Smartstore.Core.Data.Migrations;
 

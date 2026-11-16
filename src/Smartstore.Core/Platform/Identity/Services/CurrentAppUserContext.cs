@@ -7,8 +7,9 @@ using Smartstore.Core.Data;
 namespace Smartstore.Core.Identity;
 
 /// <summary>
-/// Resolves the app_user_guid claim issued by trusted authentication infrastructure.
-/// Never substitutes Customer.Id or an unverified phone/email.
+/// Resolves an AppUser from a trusted application cookie. During the
+/// legacy Identity&lt;Customer&gt; bridge, the cookie must belong to the
+/// explicitly associated login Customer, never the selected commercial buyer.
 /// </summary>
 public class CurrentAppUserContext : ICurrentAppUserContext
 {
@@ -24,27 +25,42 @@ public class CurrentAppUserContext : ICurrentAppUserContext
         _db = db;
     }
 
-    private Claim GetTrustedAppUserClaim()
+    private ClaimsIdentity GetTrustedCookieIdentity()
     {
-        var principal = _httpContextAccessor.HttpContext?.User;
-        return principal?.Identities
-            .Where(identity => identity.IsAuthenticated &&
-                identity.AuthenticationType == IdentityConstants.ApplicationScheme)
-            .SelectMany(identity => identity.Claims)
-            .FirstOrDefault(claim => claim.Type == UserGuidClaim &&
-                claim.Issuer == TrustedClaimIssuer);
+        return _httpContextAccessor.HttpContext?.User?.Identities
+            .FirstOrDefault(identity => identity.IsAuthenticated &&
+                identity.AuthenticationType == IdentityConstants.ApplicationScheme &&
+                identity.HasClaim(c => c.Type == UserGuidClaim && c.Issuer == TrustedClaimIssuer));
     }
 
-    public bool IsAppUserIdentityPresent => GetTrustedAppUserClaim() is not null;
+    public bool IsAppUserIdentityPresent => GetTrustedCookieIdentity() is not null;
 
     public virtual async Task<AppUser> GetCurrentUserAsync(CancellationToken cancelToken = default)
     {
-        // Claims from an external provider principal are not an AppUser sign-in.
-        var value = GetTrustedAppUserClaim()?.Value;
-        if (!Guid.TryParse(value, out var userGuid) || userGuid == Guid.Empty)
+        var identity = GetTrustedCookieIdentity();
+        if (identity is null)
             return null;
 
-        return await _db.AppUsers.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.UserGuid == userGuid && x.Active, cancelToken);
+        var userClaims = identity.Claims
+            .Where(c => c.Type == UserGuidClaim && c.Issuer == TrustedClaimIssuer)
+            .ToArray();
+        // ASP.NET Identity owns the NameIdentifier claim inside its signed
+        // application cookie. Require exactly one matching legacy login ID.
+        var loginClaims = identity.Claims
+            .Where(c => c.Type == ClaimTypes.NameIdentifier)
+            .ToArray();
+        if (userClaims.Length != 1 || loginClaims.Length != 1 ||
+            !Guid.TryParse(userClaims[0].Value, out var userGuid) || userGuid == Guid.Empty ||
+            !int.TryParse(loginClaims[0].Value, out var legacyLoginId) || legacyLoginId <= 0)
+            return null;
+
+        // Revalidate the explicit bridge on each request so reassigned or
+        // revoked mappings cannot reuse a stale AppUser identity cookie.
+        var matches = await _db.AppUsers.AsNoTracking()
+            .Where(x => x.UserGuid == userGuid && x.Active &&
+                x.LegacyIdentityCustomerId == legacyLoginId)
+            .Take(2)
+            .ToArrayAsync(cancelToken);
+        return matches.Length == 1 ? matches[0] : null;
     }
 }

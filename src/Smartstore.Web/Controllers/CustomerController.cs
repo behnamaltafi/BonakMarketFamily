@@ -384,14 +384,14 @@ public class CustomerController : PublicController
             var actor = await _appUserContext.GetCurrentUserAsync();
             var addresses = (await _appUserProfile.GetCurrentUserAddressesAsync()).ToList();
             // Customer-specific default-address flags must never leak into AppUser views.
-            var models = await addresses.MapAsync(customer, false);
-            foreach (var model in models)
+            var personalModels = await addresses.MapAsync(customer, false);
+            foreach (var model in personalModels)
             {
                 model.DefaultAddressesEnabled = _shoppingCartSettings.QuickCheckoutEnabled;
                 model.IsDefaultBillingAddress = model.Id == actor.DefaultBillingAddressId;
                 model.IsDefaultShippingAddress = model.Id == actor.DefaultShippingAddressId;
             }
-            return View(models);
+            return View(personalModels);
         }
 
         if (!customer.IsRegistered())

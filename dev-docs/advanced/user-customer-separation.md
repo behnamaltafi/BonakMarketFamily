@@ -1,55 +1,73 @@
-# User / Customer separation — target model and phase 1
+# User / Customer separation — phase 1 design and progress
 
-## Agreed target ownership
+## Target ownership
 
-`AppUser` represents an authenticated person independently of any
-commercial Customer. Login identifiers, credentials, roles and permissions,
-shopping carts, address books, wishlists, profile details, reward points,
-reviews and other person-specific data will belong to AppUser.
+- **AppUser** represents an authenticated individual and owns credentials,
+  phone/email, roles, permissions, addresses, shopping cart, wishlists,
+  loyalty/reward/wallet transactions, reviews, activity, privacy and other
+  personal data.
+- **Customer** represents the buyer/commercial account on an order. Among
+  personal/business transactions, only **Order.CustomerId** identifies the
+  commercial Customer.
+- **AppUserCustomer** represents the explicit many-to-many authorization
+  relationship between users and customers.
+- **Order.PlacedByAppUserId** records the authenticated person who placed the
+  order; it does not replace the buyer in Order.CustomerId.
+- Catalogs, stores and other shared data are not personal AppUser records.
 
-`Customer` is the commercial buyer/account and is directly associated
-with **orders through `Order.CustomerId`**. An order may additionally
-capture the user who placed it for auditing; that user is not necessarily
-the buyer. Global catalog and store data are not "owned by" an AppUser.
+## Source changes in this branch
 
-`AppUserCustomer` is the many-to-many permission/membership relationship.
-A verified user may place or view an order for a selected Customer **only
-after** that relationship is validated. Changing selected Customer must
-not change the authenticated principal; if pricing is Customer-specific,
-recalculate and validate at checkout.
+- New AppUser fields: stable UserGuid plus Username, Email, PhoneNumber and
+  PhoneVerified.
+- Membership models: AppUserCustomer, AppUserRoleMapping and
+  AppUserAddressMapping with EF model configuration.
+- Auth/context seams: ICurrentAppUserContext (strict app_user_guid claim),
+  IAppUserCustomerService, IAppUserOrderAccessService and
+  IAppUserProfileService; registered in Autofac.
+- Nullable AppUserId transition fields on ShoppingCartItem,
+  BackInStockSubscription, CustomerContent (reviews/helpfulness),
+  ExternalAuthenticationRecord, RewardPointsHistory, WalletHistory,
+  ActivityLog and ReturnCase.
+- Order.PlacedByAppUserId remains separate from Order.CustomerId.
+- NUnit tests assert invalid, missing and legacy Customer claims cannot
+  authenticate an AppUser.
 
-## Gap in the existing Smartstore runtime
+## Compatibility limit: existing runtime is NOT separated
 
-The present core uses `AddIdentity<Customer, CustomerRole>()`,
-`SmartSignInManager` and `UserStore : IUserStore<Customer>`. It also
-maps `ShoppingCartItem.CustomerId`, Customer addresses, reward points
-and roles to the legacy Customer identity. Therefore Customer currently
-mixes user and commercial responsibilities; introducing new tables alone
-does not separate those behaviors.
+The core still registers `AddIdentity<Customer, CustomerRole>()`,
+`UserStore<Customer>` and `SmartSignInManager`. Legacy controllers, work
+context and services continue to read CustomerId for carts, address book,
+roles, reviews, reward points and checkout. The new nullable AppUserId
+properties are currently not consumed by those old workflows.
 
-The full refactor requires an explicit, backward-compatible migration:
-1. Provision independent AppUser identities for legacy people; reconcile
-   membership links without guessing from phone/email equality.
-2. Move login/session/claims to AppUser instead of Customer.
-3. Migrate non-order person-owned relationships to AppUser with new
-   foreign keys and staged data backfills; **do not simply rename IDs**.
-4. Introduce distinct current-User and selected-authorized-Customer
-   contexts; change cart and other person-owned services to use AppUser.
-5. Preserve `Order.CustomerId` and historical orders; optionally capture
-   `PlacedByUserId` for attribution and explicitly validate membership.
-6. Drop legacy Customer-as-user behavior only after tests and safe cutover.
+**Do not merge/deploy this branch as a completed user/customer split.**
+Required remaining cutover:
 
-## Delivered in this PR (additive phase 1 only)
+1. Provision verified AppUser identities and migrate existing personal records
+   without confusing a CustomerId and AppUserId.
+2. Change ASP.NET Core Identity, sign-in manager, user store, user claims and
+   work context so authentication resolves AppUser, not Customer.
+3. Refactor carts, addresses, role/permissions, external logins, wallet,
+   rewards, reviews, customer content, return cases and all non-order user
+   services/controllers to AppUser ownership.
+4. Introduce authenticated AppUser plus independently selected Customer
+   throughout order creation and access. Membership must be checked for every
+   customer-scoped order operation; recalculate commercial totals if buyer
+   changes.
+5. Preserve historical Order.CustomerId. Store PlacedByAppUserId for audit.
+6. Remove legacy Customer-as-user dependencies only after data migration and
+   behavior/security tests.
 
-- New `AppUser` with a stable `UserGuid`.
-- Explicit `AppUserCustomer` many-to-many link with unique-pair constraint.
-- FluentMigrator schema migration and SmartDbContext registration.
-- `IAppUserCustomerService` with membership management and access checks.
+## No migration scripts in this phase
 
-Existing Smartstore Customer authentication and all legacy foreign-key
-ownership remain unchanged **for now**, to avoid silently breaking
-checkout or historical data. This PR does **not** complete the behavioral
-split. OTP and SMS provider changes are not part of phase 1.
+The repository owner will write the FluentMigrator migration(s) **at the
+end**. No new migration class or install-schema modification belongs to this
+branch. Model and DbContext changes only describe the desired schema.
 
-Compile, run tests, and smoke-test the database migration on a disposable
-database before merge.
+Final migration must create identity/link tables, unique constraints for
+UserGuid and membership pairs, indexes/FKs, new user ownership columns,
+validated backfill, and safe retirement of legacy user ownership.
+
+Build, identity security tests, DB migration smoke tests and checkout
+regression tests must pass before deployment. No build or database test has
+been run here. SMS/OTP multi-provider work is a separate future phase.

@@ -80,4 +80,46 @@ public class CurrentAppUserContextTests
 
         Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
     }
+    [Test]
+    public async Task ExternalProviderClaimCannotImpersonateAppUser()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[]
+                {
+                    new Claim(CurrentAppUserContext.UserGuidClaim,
+                        Guid.NewGuid().ToString("D"),
+                        ClaimValueTypes.String,
+                        CurrentAppUserContext.TrustedClaimIssuer)
+                },
+                IdentityConstants.ExternalScheme))
+        };
+
+        var sut = new CurrentAppUserContext(
+            new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.False);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
+    [Test]
+    public async Task ClaimedAppUserFromUntrustedIssuerCannotImpersonate()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                new[] { new Claim(CurrentAppUserContext.UserGuidClaim,
+                    Guid.NewGuid().ToString("D"), ClaimValueTypes.String, "ExternalIssuer") },
+                IdentityConstants.ApplicationScheme))
+        };
+
+        var sut = new CurrentAppUserContext(
+            new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.False);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
+
 }

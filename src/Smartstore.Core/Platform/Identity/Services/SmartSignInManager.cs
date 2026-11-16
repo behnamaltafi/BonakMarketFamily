@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
@@ -24,6 +25,25 @@ public class SmartSignInManager : SignInManager<Customer>
     {
         _db = db;
         _customerSettings = customerSettings;
+    }
+
+    /// <summary>
+    /// During the migration window, legacy sign-in may be explicitly associated with
+    /// a separate application user. It is never inferred from matching contact details.
+    /// </summary>
+    public override async Task<ClaimsPrincipal> CreateUserPrincipalAsync(Customer user)
+    {
+        var principal = await base.CreateUserPrincipalAsync(user);
+
+        var appUser = await _db.Value.AppUsers.AsNoTracking()
+            .SingleOrDefaultAsync(x => x.LegacyIdentityCustomerId == user.Id && x.Active);
+        if (appUser is not null)
+        {
+            var identity = principal.Identities.FirstOrDefault(x => x.IsAuthenticated);
+            identity?.AddClaim(new Claim(CurrentAppUserContext.UserGuidClaim, appUser.UserGuid.ToString("D")));
+        }
+
+        return principal;
     }
 
     /// <inheritdoc />

@@ -176,11 +176,19 @@ public partial class PermissionService : AsyncDbSaveHook<CustomerRole>, IPermiss
 
         if (_appUserContext?.IsAppUserIdentityPresent == true)
         {
-            var claimValue = _httpContextAccessor?.HttpContext?.User?.FindFirst(CurrentAppUserContext.UserGuidClaim)?.Value;
-            if (!Guid.TryParse(claimValue, out var userGuid) || userGuid == Guid.Empty)
+            if (!CurrentAppUserContext.TryReadTrustedLegacyBinding(
+                _httpContextAccessor?.HttpContext?.User, out var userGuid, out var legacyLoginId))
                 return false;
 
-            var actor = _db.AppUsers.AsNoTracking().FirstOrDefault(x => x.UserGuid == userGuid && x.Active);
+            // The synchronous permission path must enforce the same verified
+            // legacy account binding as the async path. A stale or reassigned
+            // user claim must never keep the old AppUser's permissions.
+            var matches = _db.AppUsers.AsNoTracking()
+                .Where(x => x.UserGuid == userGuid && x.Active &&
+                    x.LegacyIdentityCustomerId == legacyLoginId)
+                .Take(2)
+                .ToArray();
+            var actor = matches.Length == 1 ? matches[0] : null;
             if (actor is null)
                 return false;
 

@@ -45,8 +45,9 @@ public sealed class AppUserOrdersController : PublicController
             return Ok(new { items = Array.Empty<object>(), page, pageSize });
 
         var ids = buyerIds.ToArray();
+        var storeId = Services.StoreContext.CurrentStore.Id;
         var items = await _db.Orders.AsNoTracking()
-            .Where(o => !o.Deleted && ids.Contains(o.CustomerId))
+            .Where(o => !o.Deleted && o.StoreId == storeId && ids.Contains(o.CustomerId))
             .OrderByDescending(o => o.CreatedOnUtc)
             .ThenByDescending(o => o.Id)
             .Skip((page - 1) * pageSize)

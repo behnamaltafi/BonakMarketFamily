@@ -1,73 +1,70 @@
-# User / Customer separation — phase 1 design and progress
+# User / Customer separation — integration progress
 
-## Target ownership
+## Target business model
 
-- **AppUser** represents an authenticated individual and owns credentials,
-  phone/email, roles, permissions, addresses, shopping cart, wishlists,
-  loyalty/reward/wallet transactions, reviews, activity, privacy and other
-  personal data.
-- **Customer** represents the buyer/commercial account on an order. Among
-  personal/business transactions, only **Order.CustomerId** identifies the
-  commercial Customer.
-- **AppUserCustomer** represents the explicit many-to-many authorization
-  relationship between users and customers.
-- **Order.PlacedByAppUserId** records the authenticated person who placed the
-  order; it does not replace the buyer in Order.CustomerId.
-- Catalogs, stores and other shared data are not personal AppUser records.
+- `AppUser` is the authenticated person; login, roles, permissions, address book,
+  cart, wishlist, loyalty/rewards, reviews and personal data belong to AppUser.
+- `Customer` is the commercial buyer. `Order.CustomerId` remains the buyer.
+- `AppUserCustomer` explicitly grants many-to-many user/buyer access.
+- `Order.PlacedByAppUserId` records the human actor separately from the buyer.
+- Shared catalog/store data is not user-owned.
 
-## Source changes in this branch
+## Implemented on this branch
 
-- New AppUser fields: stable UserGuid plus Username, Email, PhoneNumber and
-  PhoneVerified.
-- Membership models: AppUserCustomer, AppUserRoleMapping and
-  AppUserAddressMapping with EF model configuration.
-- Auth/context seams: ICurrentAppUserContext (strict app_user_guid claim),
-  IAppUserCustomerService, IAppUserOrderAccessService and
-  IAppUserProfileService; registered in Autofac.
-- Nullable AppUserId transition fields on ShoppingCartItem,
-  BackInStockSubscription, CustomerContent (reviews/helpfulness),
-  ExternalAuthenticationRecord, RewardPointsHistory, WalletHistory,
-  ActivityLog and ReturnCase.
-- Order.PlacedByAppUserId remains separate from Order.CustomerId.
-- NUnit tests assert invalid, missing and legacy Customer claims cannot
-  authenticate an AppUser.
+- Independent AppUser and AppUserCustomer plus user-address and user-role mappings.
+- New nullable AppUser ownership fields in multiple legacy domain records.
+- `ICurrentAppUserContext` rejects invalid claims and never substitutes CustomerId.
+- `LegacyIdentityCustomerId` is a **temporary explicit migration link** from
+  the current login account to the AppUser identity. It is never inferred
+  from phone number or email. When mapped, successful legacy sign-in supplies
+  a trusted `app_user_guid` claim; unmatched legacy logins remain unchanged.
+- User-scoped cart retrieval and mutation safeguards in the main shopping-cart service
+  when a validated AppUser claim is available. A buyer switch does not migrate
+  a signed-in AppUser's personal cart.
+- Order placement checks explicit membership **before payment** for an AppUser
+  session and stores `PlacedByAppUserId`; user-visible order routes check
+  the buyer association.
+- Permission checks switch to AppUser role mappings when the AppUser claim is present.
+- `IAppUserBuyerContext` and the `api/app-user/customers` selection endpoint
+  support an explicitly selected, authorized buyer independently of login.
+  The selected buyer is reauthorized on each request; selection is cleared
+  on logout. The buyer-selection cookie is **not** an authorization credential.
+- Additional tests for invalid user claims and unauthorized buyer selection.
 
-## Compatibility limit: existing runtime is NOT separated
+## IMPORTANT — not a complete runtime cutover
 
-The core still registers `AddIdentity<Customer, CustomerRole>()`,
-`UserStore<Customer>` and `SmartSignInManager`. Legacy controllers, work
-context and services continue to read CustomerId for carts, address book,
-roles, reviews, reward points and checkout. The new nullable AppUserId
-properties are currently not consumed by those old workflows.
+The code is deliberately a **compatibility bridge**. Legacy login still uses
+Customer as its credential record; many existing account/profile/address,
+reward, historical order-list, admin and checkout flows still query Customer
+directly. The new nullable AppUser fields are not fully populated or used by
+all old services. A signed-in AppUser can still encounter legacy flows that
+interpret the selected buyer as the person.
 
-**Do not merge/deploy this branch as a completed user/customer split.**
-Required remaining cutover:
+**Do not merge or deploy as full identity separation.** Remaining work:
+1. Migrate credentials to genuinely independent AppUser authentication and
+   update all Login/Register/ForgotPassword/OTP/external identity paths,
+   cookies, claims and account pages. Current bridge is transitional only.
+2. Convert ALL user-oriented read/write flows (address book, roles, reviews,
+   rewards/wallet, privacy, wishlists, admin/user management, recurring orders,
+   historical records) from Customer to AppUser, and remove legacy user fields
+   only when these paths no longer rely on them.
+3. Finish customer-specific price/credit/address/checkout behavior with
+   selected buyer and validate a full multi-buyer, multi-user test matrix.
+4. Enforce order access at all public, admin and API entry points; review
+   app-user authorization for background/recurring/system operations.
+5. Run build, tests, integration/security/checkout regression tests and
+   cross-provider database smoke tests after migrations exist.
 
-1. Provision verified AppUser identities and migrate existing personal records
-   without confusing a CustomerId and AppUserId.
-2. Change ASP.NET Core Identity, sign-in manager, user store, user claims and
-   work context so authentication resolves AppUser, not Customer.
-3. Refactor carts, addresses, role/permissions, external logins, wallet,
-   rewards, reviews, customer content, return cases and all non-order user
-   services/controllers to AppUser ownership.
-4. Introduce authenticated AppUser plus independently selected Customer
-   throughout order creation and access. Membership must be checked for every
-   customer-scoped order operation; recalculate commercial totals if buyer
-   changes.
-5. Preserve historical Order.CustomerId. Store PlacedByAppUserId for audit.
-6. Remove legacy Customer-as-user dependencies only after data migration and
-   behavior/security tests.
+## NO database migrations in this branch
 
-## No migration scripts in this phase
+As requested, there are **no migration scripts or installation migration changes**
+in the PR. The repository owner will generate the final FluentMigrator changes
+at the end. These must create the new AppUser/link tables, nullable user ownership
+columns, temporary LegacyIdentityCustomerId, unique and foreign-key constraints,
+and verified data backfills.
 
-The repository owner will write the FluentMigrator migration(s) **at the
-end**. No new migration class or install-schema modification belongs to this
-branch. Model and DbContext changes only describe the desired schema.
+**Do not deploy this branch before creating/applying the schema**:
+the updated sign-in bridge and new user-scoped services query AppUsers.
 
-Final migration must create identity/link tables, unique constraints for
-UserGuid and membership pairs, indexes/FKs, new user ownership columns,
-validated backfill, and safe retirement of legacy user ownership.
-
-Build, identity security tests, DB migration smoke tests and checkout
-regression tests must pass before deployment. No build or database test has
-been run here. SMS/OTP multi-provider work is a separate future phase.
+Tests were authored but NOT executed here: this environment has no .NET SDK.
+SMS/OTP multi-provider redesign remains out of scope for this phase.

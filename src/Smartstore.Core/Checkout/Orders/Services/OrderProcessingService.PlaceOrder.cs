@@ -30,6 +30,20 @@ public partial class OrderProcessingService : IOrderProcessingService
             paymentRequest.OrderGuid = Guid.NewGuid();
         }
 
+        AppUser appUser = null;
+        if (_appUserContext is not null)
+        {
+            appUser = await _appUserContext.GetCurrentUserAsync(cancelToken);
+            if (_appUserContext.IsAppUserIdentityPresent &&
+                (appUser is null || _appUserCustomerService is null ||
+                 !await _appUserCustomerService.CanAccessCustomerAsync(appUser.Id, paymentRequest.CustomerId, cancelToken)))
+            {
+                var denied = new OrderPlacementResult();
+                denied.Errors.Add("The authenticated user is not authorized for this customer.");
+                return denied;
+            }
+        }
+
         var customer = await _db.Customers
             .IncludeCustomerRoles()
             .FindByIdAsync(paymentRequest.CustomerId, true, cancelToken);
@@ -75,6 +89,7 @@ public partial class OrderProcessingService : IOrderProcessingService
 
             await ProcessPayment(ctx);
 
+            ctx.Order.PlacedByAppUserId = appUser?.Id;
             _db.Orders.Add(ctx.Order);
 
             // Save, we need the primary key.

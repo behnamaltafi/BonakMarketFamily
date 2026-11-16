@@ -20,6 +20,20 @@ public partial class AppUser : BaseEntity
     [StringLength(450)]
     public string ExternalSubject { get; set; }
 
+    /// <summary>Username of the person, not the commercial customer.</summary>
+    [StringLength(500)]
+    public string Username { get; set; }
+
+    /// <summary>User-owned email; not a valid signal for automatic customer membership.</summary>
+    [StringLength(500)]
+    public string Email { get; set; }
+
+    /// <summary>User-owned phone number for future OTP login.</summary>
+    [StringLength(40)]
+    public string PhoneNumber { get; set; }
+
+    public bool PhoneVerified { get; set; }
+
     public bool Active { get; set; } = true;
 
     public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;

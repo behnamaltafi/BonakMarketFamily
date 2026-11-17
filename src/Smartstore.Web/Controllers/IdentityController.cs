@@ -225,7 +225,7 @@ public class IdentityController : PublicController
         {
             var username = model.Username.HasValue() ? model.Username : model.Email;
             var user = await _appUserCredentials.RegisterAsync(
-                username, model.Email, model.Password);
+                username, model.Email, model.Password, model.Phone);
             if (user is not null)
             {
                 await AppUserAuthenticationController.SignInUserAsync(

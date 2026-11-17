@@ -382,12 +382,11 @@ public class IdentityController : PublicController
     #region Change password
 
     [DisallowRobot]
-    public IActionResult ChangePassword()
+    public async Task<IActionResult> ChangePassword()
     {
-        if (!Services.WorkContext.CurrentCustomer.IsRegistered())
-        {
+        // The account page authenticates the person, not their commercial buyer.
+        if (_appUserContext is null || await _appUserContext.GetCurrentUserAsync() is null)
             return ChallengeOrForbid();
-        }
 
         return View(new ChangePasswordModel());
     }

@@ -310,7 +310,7 @@ public sealed class AppUserAuthenticationController : PublicController
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString(),
+            new Claim(AppUserAuthenticationDefaults.IdClaim, user.Id.ToString(),
                 ClaimValueTypes.Integer32, AppUserAuthenticationDefaults.Issuer),
             new Claim(AppUserAuthenticationDefaults.GuidClaim, user.UserGuid.ToString("D"),
                 ClaimValueTypes.String, AppUserAuthenticationDefaults.Issuer),

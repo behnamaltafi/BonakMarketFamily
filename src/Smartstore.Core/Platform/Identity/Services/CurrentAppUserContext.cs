@@ -77,6 +77,13 @@ public class CurrentAppUserContext : ICurrentAppUserContext
             out var userGuid, out var legacyLoginId))
             return null;
 
+        // Deactivating the old login account also invalidates the transitional
+        // AppUser session; an old signed cookie must not bypass account status.
+        if (!await _db.Customers.AsNoTracking().AnyAsync(x =>
+            x.Id == legacyLoginId && x.Active && !x.Deleted && !x.IsSystemAccount,
+            cancelToken))
+            return null;
+
         // Revoked or reassigned legacy login mappings immediately invalidate
         // an AppUser session, even if the old authentication cookie is valid.
         var matches = await _db.AppUsers.AsNoTracking()

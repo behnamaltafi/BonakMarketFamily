@@ -180,6 +180,10 @@ public partial class PermissionService : AsyncDbSaveHook<CustomerRole>, IPermiss
                 _httpContextAccessor?.HttpContext?.User, out var userGuid, out var legacyLoginId))
                 return false;
 
+            if (!_db.Customers.AsNoTracking().Any(x =>
+                x.Id == legacyLoginId && x.Active && !x.Deleted && !x.IsSystemAccount))
+                return false;
+
             // The synchronous permission path must enforce the same verified
             // legacy account binding as the async path. A stale or reassigned
             // user claim must never keep the old AppUser's permissions.

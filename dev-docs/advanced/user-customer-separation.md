@@ -155,3 +155,22 @@ No migrations are included in this PR. Build and tests are not executed.
 ### Still blocking production
 
 The primary password, registration, recovery, OTP and external login flows still use Customer-based identity. Smartstore still configures `AddIdentity<Customer, CustomerRole>()`; nop's main authentication interface still returns `Customer`. The many old personal-data, admin and commerce workflows are not fully migrated. Payment/credit/loyalty/shipping/tax and schema backfill must be reviewed before this branch can be considered finished. **Do not merge or deploy as a completed user/customer cutover.** No migrations were generated.
+
+## Follow-up changes: product reviews, profile ownership and checkout safety (2026-11-17)
+
+- Product reviews and helpfulness votes created through a validated AppUser session record `AppUserId` as the real author/voter; same commercial CustomerId is not treated as the same person. Nop account review history and one-review-per-product checks now use AppUser ownership. Smartstore review rewards do **not** credit the old legacy customer account for new AppUser sessions, pending user-owned reward migration.
+- `PUT api/app-user/profile` permits changes to authenticated AppUser's username and phone (resetting `PhoneVerified` when it changes). It does **not** accept unverified email changes, roles, memberships or arbitrary user IDs. The old Customer Info POST rejects AppUser sessions to avoid rewriting a commercial Customer as a personal profile; the legacy account UI needs replacement with an AppUser form.
+- Identity lookup now checks that the linked legacy login account is active, not deleted or a system account. Smartstore's synchronous permission path checks the same condition.
+- **Checkout financial safety:** Until pricing, discount, tax, shipping, payment, refund and credit paths are calculated consistently for the selected *commercial buyer*, AppUser checkout for a buyer different from `ProcessPaymentRequest.CustomerId` returns a specific error **before charging**. This is a deliberate fail-closed temporary restriction; multi-buyer checkout is NOT complete. Never remove this guard before validating full buyer-level calculations.
+- The old Customer-based sign-in, registration, password recovery, MFA/OTP, external authentication and admin/back-office flows are still live. This PR is not an independent authentication implementation; `LegacyIdentityCustomerId` remains a temporary security bridge.
+
+### Required exit criteria for a completed cutover
+
+1. Replace the **primary authentication principal** with AppUser, preserving secure cookie/token validation and security-stamp/session revocation. No login path may use Customer credentials, including OTP, external providers and account recovery.
+2. Separate all user-owned data (profile, roles, address book, reviews, votes, wishlists, reward/wallet, private messages, subscriptions and user preferences) from commercial Customer. Provide usable storefront UI for the AppUser profile.
+3. Finish buyer-level checkout calculation and payment reconciliation (including recurring orders, refunds, taxes, shipping, discounts and account credits). Then remove the temporary cross-buyer checkout block.
+4. Ensure background jobs, admin API and export paths explicitly distinguish business buyer from actor and do not inherit shopper context.
+5. Owner-created schema migrations and reviewed historical backfill must establish unique indices, verified identity mappings, ownership attribution and foreign keys; never match identities to buyers just on email/phone.
+6. Run integration tests against the migrated database with 2 users sharing a buyer, 1 user with multiple buyers, revoke/disable tests and payment/provider regression tests. Focused compilation tests alone are not sufficient.
+
+**Status remains DRAFT. No migrations were generated.**

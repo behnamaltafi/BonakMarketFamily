@@ -40,6 +40,26 @@ public partial class AppUser : BaseEntity
 
     public bool PhoneVerified { get; set; }
 
+    /// <summary>Independent PBKDF2 password hash, not a Customer credential.</summary>
+    [StringLength(1024)]
+    public string PasswordHash { get; set; }
+
+    /// <summary>Cookie revocation stamp; rotated after credential changes.</summary>
+    [StringLength(64)]
+    public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
+
+    public bool EmailVerified { get; set; }
+    [StringLength(128)]
+    public string PasswordResetTokenHash { get; set; }
+    public DateTime? PasswordResetExpiresUtc { get; set; }
+    [StringLength(1024)]
+    public string OtpHash { get; set; }
+    public DateTime? OtpExpiresUtc { get; set; }
+    public DateTime? OtpLastSentUtc { get; set; }
+    public int OtpFailedAttempts { get; set; }
+    public int FailedLoginAttempts { get; set; }
+    public DateTime? LockoutEndUtc { get; set; }
+
     /// <summary>Default billing address owned by this person, not a business Customer.</summary>
     public int? DefaultBillingAddressId { get; set; }
 

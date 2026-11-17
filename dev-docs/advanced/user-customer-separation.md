@@ -286,3 +286,11 @@ the historical PR stages, not the current session policy.
   `AppUserAuth:Otp:Enabled=true`; Nop's public OTP path honors
   `OtpSettings.LoginByPhoneEnabled`. All sender credentials are
   deployment secrets, not repository config.
+
+### Native principal claim boundary
+Independent cookies use `app_user_id`, `app_user_guid` and
+`app_user_security_stamp` from the trusted AppUser issuer. They do **not**
+emit `ClaimTypes.NameIdentifier` with an AppUser ID, because old
+Customer-aware middleware can interpret that claim as a CustomerId and
+accidentally access another person's customer record. Identity managers
+must resolve native AppUser claims through `ICurrentAppUserContext`.

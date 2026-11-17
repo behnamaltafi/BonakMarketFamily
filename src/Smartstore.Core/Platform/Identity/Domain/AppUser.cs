@@ -49,6 +49,9 @@ public partial class AppUser : BaseEntity
     public string SecurityStamp { get; set; } = Guid.NewGuid().ToString("N");
 
     public bool EmailVerified { get; set; }
+    public string EmailVerificationTokenHash { get; set; }
+    public DateTime? EmailVerificationExpiresUtc { get; set; }
+    public DateTime? EmailVerificationLastSentUtc { get; set; }
     [StringLength(128)]
     public string PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetExpiresUtc { get; set; }

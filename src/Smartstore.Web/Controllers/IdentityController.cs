@@ -283,41 +283,16 @@ public class IdentityController : PublicController
     [LocalizedRoute("/customer/activation", Name = "AccountActivation")]
     public async Task<IActionResult> AccountActivation(string token, string email)
     {
-        var customer = await _userManager.FindByEmailAsync(email);
-
-        if (customer == null)
+        // Confirm ownership of an AppUser email, never a Customer login.
+        if (!await _appUserCredentials.CompleteEmailVerificationAsync(email, token))
         {
             NotifyError(T("Account.AccountActivation.InvalidEmailOrToken"));
             return RedirectToRoute("Homepage");
         }
 
-        if (await _userManager.IsEmailConfirmedAsync(customer))
-        {
-            ViewBag.ActivationResult = T("Account.AccountActivation.Activated");
-            return View();
-        }
-
-        // Validate token & set user to active.
-        var confirmed = await _userManager.ConfirmEmailAsync(customer, token);
-
-        if (!confirmed.Succeeded)
-        {
-            NotifyError(T("Account.AccountActivation.InvalidEmailOrToken"));
-            return RedirectToRoute("HomePage");
-        }
-
-        // If token wasn't proved invalid by ConfirmEmailAsync() a few lines above, Customer.Active was set to true & AccountActivationToken was resetted in UserStore.
-        // So we better save here.
-        await _db.SaveChangesAsync();
-
-        // Send welcome message.
-        await _messageFactory.SendCustomerWelcomeMessageAsync(customer, Services.WorkContext.WorkingLanguage.Id);
-
         ViewBag.ActivationResult = T("Account.AccountActivation.Activated");
-
         return View();
     }
-
     #endregion
 
     #region Profile

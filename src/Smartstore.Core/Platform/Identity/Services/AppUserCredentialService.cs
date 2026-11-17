@@ -127,6 +127,53 @@ public sealed class AppUserCredentialService
         return true;
     }
 
+    /// <summary>Issue an email confirmation secret only to the active authenticated AppUser.</summary>
+    public async Task<string> BeginEmailVerificationAsync(AppUser authenticated,
+        CancellationToken ct = default)
+    {
+        if (authenticated is null || !authenticated.Active)
+            return null;
+
+        var user = await _db.AppUsers.FirstOrDefaultAsync(x =>
+            x.Id == authenticated.Id && x.Active, ct);
+        if (user is null || user.UserGuid != authenticated.UserGuid ||
+            user.SecurityStamp != authenticated.SecurityStamp || user.EmailVerified ||
+            string.IsNullOrWhiteSpace(user.Email) ||
+            user.EmailVerificationLastSentUtc > DateTime.UtcNow.AddMinutes(-2))
+            return null;
+
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        user.EmailVerificationTokenHash = Hash(token);
+        user.EmailVerificationExpiresUtc = DateTime.UtcNow.AddMinutes(30);
+        user.EmailVerificationLastSentUtc = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+        return token;
+    }
+
+    public async Task<bool> CompleteEmailVerificationAsync(string email, string token,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token))
+            return false;
+
+        var normalized = Normalize(email);
+        var matches = await _db.AppUsers.Where(x => x.Active &&
+            x.Email.ToUpper() == normalized).Take(2).ToArrayAsync(ct);
+        if (matches.Length != 1)
+            return false;
+
+        var user = matches[0];
+        if (user.EmailVerificationExpiresUtc <= DateTime.UtcNow ||
+            !SecureHashEquals(user.EmailVerificationTokenHash, Hash(token)))
+            return false;
+
+        user.EmailVerified = true;
+        user.EmailVerificationTokenHash = null;
+        user.EmailVerificationExpiresUtc = null;
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
+
     /// <summary>Return secret to server-side email sender only; do not serialize it to the client.</summary>
     public async Task<string> BeginPasswordResetAsync(string email, CancellationToken ct = default)
     {

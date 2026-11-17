@@ -64,6 +64,9 @@ public sealed class AppUserAuthenticationController : PublicController
         // JSON and MVC registration must enforce the same store policy.
         if (_registrationPolicy.UserRegistrationType != UserRegistrationType.Standard)
             return StatusCode(403, "Independent AppUser registration requires an explicit activation/approval policy.");
+        // API registration does not run the public MVC CAPTCHA/consent filters.
+        if (!_otpPolicy.GetValue<bool>("AppUserAuth:AllowApiRegistration"))
+            return NotFound();
 
         var user = await _credentials.RegisterAsync(request.Username, request.Email, request.Password, request.Phone);
         if (user is null)
@@ -282,7 +285,8 @@ public sealed class AppUserAuthenticationController : PublicController
             : null;
         var user = await _credentials.AuthenticateExternalAsync(
             provider, subjects[0].Value, verifiedEmail,
-            allowProvisioning: _registrationPolicy.UserRegistrationType == UserRegistrationType.Standard);
+            allowProvisioning: _registrationPolicy.UserRegistrationType == UserRegistrationType.Standard &&
+                _otpPolicy.GetValue<bool>("AppUserAuth:AllowExternalAutoProvision"));
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         if (user is null)

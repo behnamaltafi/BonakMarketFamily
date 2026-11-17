@@ -24,6 +24,7 @@ internal sealed class IdentityStarter : StarterBase
 {
     public override void ConfigureServices(IServiceCollection services, IApplicationContext appContext)
     {
+        services.AddHttpClient();
         services.AddIdentity<Customer, CustomerRole>()
             .AddDefaultTokenProviders()
             .AddErrorDescriber<LocalizedIdentityErrorDescriber>()
@@ -142,6 +143,7 @@ internal sealed class IdentityStarter : StarterBase
         builder.RegisterType<AppUserBuyerContext>().As<IAppUserBuyerContext>().InstancePerLifetimeScope();
         builder.RegisterType<CurrentAppUserContext>().As<ICurrentAppUserContext>().InstancePerLifetimeScope();
         builder.RegisterType<AppUserCredentialService>().AsSelf().InstancePerLifetimeScope();
+        builder.RegisterType<ConfiguredAppUserChallengeSender>().As<IAppUserChallengeSender>().InstancePerLifetimeScope();
         builder.RegisterType<AppUserOrderAccessService>().As<IAppUserOrderAccessService>().InstancePerLifetimeScope();
         builder.RegisterType<AppUserProfileService>().As<IAppUserProfileService>().InstancePerLifetimeScope();
         builder.RegisterType<AppUserAddressBookService>().As<IAppUserAddressBookService>().InstancePerLifetimeScope();

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Smartstore.Core.Data;
 using Smartstore.Core.Identity;
 
 namespace Smartstore.Web.Controllers;
@@ -16,15 +18,18 @@ public sealed class AppUserProfileController : PublicController
     private readonly ICurrentAppUserContext _currentUser;
     private readonly IAppUserProfileService _profile;
     private readonly IAppUserCustomerService _memberships;
+    private readonly SmartDbContext _db;
 
     public AppUserProfileController(
         ICurrentAppUserContext currentUser,
         IAppUserProfileService profile,
-        IAppUserCustomerService memberships)
+        IAppUserCustomerService memberships,
+        SmartDbContext db)
     {
         _currentUser = currentUser;
         _profile = profile;
         _memberships = memberships;
+        _db = db;
     }
 
     [HttpGet]
@@ -47,6 +52,60 @@ public sealed class AppUserProfileController : PublicController
             user.DefaultShippingAddressId,
             customerIds = customers
         });
+    }
+
+    /// <summary>
+    /// Update only current person-owned profile fields. Email is intentionally
+    /// read-only pending a verified email-change workflow.
+    /// </summary>
+    [HttpPut]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateProfile(
+        [FromBody] UpdateProfileRequest request, CancellationToken cancelToken)
+    {
+        var actor = await _currentUser.GetCurrentUserAsync(cancelToken);
+        if (actor is null)
+            return Unauthorized();
+
+        if (request is null || string.IsNullOrWhiteSpace(request.Username) ||
+            request.Username.Length > 500 || request.PhoneNumber?.Length > 40)
+            return BadRequest("Invalid profile data.");
+
+        var newUsername = request.Username.Trim();
+        var normalizedUsername = newUsername.ToUpperInvariant();
+        var duplicate = await _db.AppUsers.AsNoTracking().AnyAsync(x =>
+            x.Id != actor.Id && x.Active && x.Username != null &&
+            x.Username.ToUpper() == normalizedUsername, cancelToken);
+        if (duplicate)
+            return Conflict("Username is already taken.");
+
+        var owned = await _db.AppUsers.FirstOrDefaultAsync(x =>
+            x.Id == actor.Id && x.Active, cancelToken);
+        if (owned is null)
+            return Unauthorized();
+
+        owned.Username = newUsername;
+        var newPhone = request.PhoneNumber?.Trim();
+        if (!string.Equals(owned.PhoneNumber, newPhone, StringComparison.Ordinal))
+        {
+            owned.PhoneNumber = newPhone;
+            owned.PhoneVerified = false;
+        }
+        await _db.SaveChangesAsync(cancelToken);
+        return Ok(new
+        {
+            owned.Id,
+            owned.Username,
+            owned.Email,
+            owned.PhoneNumber,
+            owned.PhoneVerified
+        });
+    }
+
+    public sealed class UpdateProfileRequest
+    {
+        public string Username { get; set; }
+        public string PhoneNumber { get; set; }
     }
 
     [HttpGet("addresses")]

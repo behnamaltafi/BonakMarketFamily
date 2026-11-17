@@ -272,4 +272,20 @@ public class CurrentAppUserContextTests
         Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
     }
 
+    [Test]
+    public async Task ValidLegacyBindingDoesNotAuthenticateAnAppUserAfterCutover()
+    {
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(CurrentAppUserContext.UserGuidClaim, Guid.NewGuid().ToString("D"),
+                ClaimValueTypes.String, CurrentAppUserContext.TrustedClaimIssuer),
+            new Claim(ClaimTypes.NameIdentifier, "123")
+        }, IdentityConstants.ApplicationScheme));
+        var context = new DefaultHttpContext { User = principal };
+        var sut = new CurrentAppUserContext(new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.True);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
 }

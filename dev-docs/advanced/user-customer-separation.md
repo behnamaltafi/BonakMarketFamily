@@ -268,3 +268,21 @@ data and password reset plan are migrated. The old bridge-claim presence
 is still detected to **fail closed** rather than fall back to Customer
 permissions. Earlier sections discussing the temporary bridge describe
 the historical PR stages, not the current session policy.
+
+
+### Registration and provider feature gates (security-critical)
+- `AppUserAuth:AllowApiRegistration` defaults to **false**. Enable it
+  only after adding equivalent CAPTCHA, privacy-consent and abuse controls
+  to the JSON registration endpoint. The existing MVC registration route
+  performs its own security filters and is not gated by this flag.
+- `AppUserAuth:AllowExternalAutoProvision` defaults to **false**:
+  first-time external users are not auto-created without explicit
+  operator opt-in and the Standard registration policy. Verified,
+  pre-linked provider subject sign-in remains supported.
+- The AppUser JSON API cannot bypass the configured store registration
+  mode. EmailValidation/AdminApproval still need independent policy
+  handlers (the current branch refuses those modes).
+- Smartstore SMS OTP login additionally requires
+  `AppUserAuth:Otp:Enabled=true`; Nop's public OTP path honors
+  `OtpSettings.LoginByPhoneEnabled`. All sender credentials are
+  deployment secrets, not repository config.

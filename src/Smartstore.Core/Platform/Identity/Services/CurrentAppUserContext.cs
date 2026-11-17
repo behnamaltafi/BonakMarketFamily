@@ -85,47 +85,26 @@ public class CurrentAppUserContext : ICurrentAppUserContext
     public virtual async Task<AppUser> GetCurrentUserAsync(CancellationToken cancelToken = default)
     {
         var independent = GetIndependentCookieIdentities(_httpContextAccessor.HttpContext?.User);
-        if (independent.Length > 0)
-        {
-            if (independent.Length != 1)
-                return null;
-            var identity = independent[0];
-            var guids = identity.Claims.Where(c =>
-                c.Type == AppUserAuthenticationDefaults.GuidClaim &&
-                c.Issuer == AppUserAuthenticationDefaults.Issuer).ToArray();
-            var stamps = identity.Claims.Where(c =>
-                c.Type == AppUserAuthenticationDefaults.SecurityStampClaim &&
-                c.Issuer == AppUserAuthenticationDefaults.Issuer).ToArray();
-            if (guids.Length != 1 || stamps.Length != 1 ||
-                !Guid.TryParse(guids[0].Value, out var independentGuid) ||
-                independentGuid == Guid.Empty || string.IsNullOrWhiteSpace(stamps[0].Value))
-                return null;
-
-            var users = await _db.AppUsers.AsNoTracking().Where(x =>
-                x.Active && x.UserGuid == independentGuid &&
-                x.SecurityStamp == stamps[0].Value)
-                .Take(2).ToArrayAsync(cancelToken);
-            return users.Length == 1 ? users[0] : null;
-        }
-
-        if (!TryReadTrustedLegacyBinding(_httpContextAccessor.HttpContext?.User,
-            out var userGuid, out var legacyLoginId))
+        // A legacy Identity<Customer> cookie is never sufficient for AppUser
+        // authentication after this cutover. It must not revive a prior actor.
+        if (independent.Length != 1)
             return null;
 
-        // Deactivating the old login account also invalidates the transitional
-        // AppUser session; an old signed cookie must not bypass account status.
-        if (!await _db.Customers.AsNoTracking().AnyAsync(x =>
-            x.Id == legacyLoginId && x.Active && !x.Deleted && !x.IsSystemAccount,
-            cancelToken))
+        var identity = independent[0];
+        var guids = identity.Claims.Where(c =>
+            c.Type == AppUserAuthenticationDefaults.GuidClaim &&
+            c.Issuer == AppUserAuthenticationDefaults.Issuer).ToArray();
+        var stamps = identity.Claims.Where(c =>
+            c.Type == AppUserAuthenticationDefaults.SecurityStampClaim &&
+            c.Issuer == AppUserAuthenticationDefaults.Issuer).ToArray();
+        if (guids.Length != 1 || stamps.Length != 1 ||
+            !Guid.TryParse(guids[0].Value, out var independentGuid) ||
+            independentGuid == Guid.Empty || string.IsNullOrWhiteSpace(stamps[0].Value))
             return null;
 
-        // Revoked or reassigned legacy login mappings immediately invalidate
-        // an AppUser session, even if the old authentication cookie is valid.
-        var matches = await _db.AppUsers.AsNoTracking()
-            .Where(x => x.UserGuid == userGuid && x.Active &&
-                x.LegacyIdentityCustomerId == legacyLoginId)
-            .Take(2)
-            .ToArrayAsync(cancelToken);
-        return matches.Length == 1 ? matches[0] : null;
-    }
-}
+        var users = await _db.AppUsers.AsNoTracking().Where(x =>
+            x.Active && x.UserGuid == independentGuid &&
+            x.SecurityStamp == stamps[0].Value)
+            .Take(2).ToArrayAsync(cancelToken);
+        return users.Length == 1 ? users[0] : null;
+    }}

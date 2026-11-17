@@ -54,7 +54,7 @@ public sealed class AppUserAuthenticationController : PublicController
         if (request is null)
             return BadRequest();
 
-        var user = await _credentials.RegisterAsync(request.Username, request.Email, request.Password);
+        var user = await _credentials.RegisterAsync(request.Username, request.Email, request.Password, request.Phone);
         if (user is null)
             return BadRequest("Invalid registration data or account already exists.");
 
@@ -276,7 +276,7 @@ public sealed class AppUserAuthenticationController : PublicController
             });
     }
 
-    public sealed record RegisterRequest(string Username, string Email, string Password);
+    public sealed record RegisterRequest(string Username, string Email, string Password, string Phone = null);
     public sealed record LoginRequest(string UsernameOrEmail, string Password, bool RememberMe);
     public sealed record ChangePasswordRequest(string OldPassword, string NewPassword);
     public sealed record EmailRequest(string Email);

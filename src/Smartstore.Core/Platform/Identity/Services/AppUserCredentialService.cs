@@ -312,7 +312,8 @@ public sealed class AppUserCredentialService
 
     /// <summary>Only the verified external middleware ticket may supply provider and subject.</summary>
     public async Task<AppUser> AuthenticateExternalAsync(
-        string provider, string subject, string verifiedEmail, CancellationToken ct = default)
+        string provider, string subject, string verifiedEmail, bool allowProvisioning = false,
+        CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(provider) || string.IsNullOrWhiteSpace(subject) ||
             provider.Length > 100 || subject.Length > 2048)
@@ -325,6 +326,11 @@ public sealed class AppUserCredentialService
             return null;
         if (matches.Length == 1)
             return matches[0].Active ? matches[0] : null;
+
+        // A disabled or approval-based registration policy must not be
+        // bypassed by the external-login callback.
+        if (!allowProvisioning)
+            return null;
 
         // No automatic email/phone identity linkage.
         if (string.IsNullOrWhiteSpace(verifiedEmail) || verifiedEmail.Length > 500 ||

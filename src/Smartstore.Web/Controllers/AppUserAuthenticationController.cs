@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Smartstore.Core.Identity;
+using Microsoft.Extensions.Configuration;
 
 namespace Smartstore.Web.Controllers;
 
@@ -22,6 +23,8 @@ public sealed class AppUserAuthenticationController : PublicController
     private readonly IAppUserChallengeSender _delivery;
     private readonly IAntiforgery _antiforgery;
     private readonly IAuthenticationSchemeProvider _schemes;
+    private readonly CustomerSettings _registrationPolicy;
+    private readonly IConfiguration _otpPolicy;
 
     public AppUserAuthenticationController(
         AppUserCredentialService credentials,
@@ -29,7 +32,9 @@ public sealed class AppUserAuthenticationController : PublicController
         IAppUserBuyerContext buyers,
         IAppUserChallengeSender delivery,
         IAntiforgery antiforgery,
-        IAuthenticationSchemeProvider schemes)
+        IAuthenticationSchemeProvider schemes,
+        CustomerSettings registrationPolicy,
+        IConfiguration otpPolicy)
     {
         _credentials = credentials;
         _current = current;
@@ -37,6 +42,8 @@ public sealed class AppUserAuthenticationController : PublicController
         _delivery = delivery;
         _antiforgery = antiforgery;
         _schemes = schemes;
+        _registrationPolicy = registrationPolicy;
+        _otpPolicy = otpPolicy;
     }
 
     [AllowAnonymous]
@@ -53,6 +60,10 @@ public sealed class AppUserAuthenticationController : PublicController
     {
         if (request is null)
             return BadRequest();
+
+        // JSON and MVC registration must enforce the same store policy.
+        if (_registrationPolicy.UserRegistrationType != UserRegistrationType.Standard)
+            return StatusCode(403, "Independent AppUser registration requires an explicit activation/approval policy.");
 
         var user = await _credentials.RegisterAsync(request.Username, request.Email, request.Password, request.Phone);
         if (user is null)
@@ -170,6 +181,8 @@ public sealed class AppUserAuthenticationController : PublicController
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RequestLoginOtp([FromBody] PhoneRequest request)
     {
+        if (!_otpPolicy.GetValue<bool>("AppUserAuth:Otp:Enabled"))
+            return NotFound();
         if (request is null)
             return BadRequest();
 
@@ -185,6 +198,8 @@ public sealed class AppUserAuthenticationController : PublicController
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> VerifyLoginOtp([FromBody] VerifyOtpRequest request)
     {
+        if (!_otpPolicy.GetValue<bool>("AppUserAuth:Otp:Enabled"))
+            return NotFound();
         if (request is null)
             return BadRequest();
 
@@ -266,7 +281,8 @@ public sealed class AppUserAuthenticationController : PublicController
             ? ticket.Principal.FindFirstValue(ClaimTypes.Email)
             : null;
         var user = await _credentials.AuthenticateExternalAsync(
-            provider, subjects[0].Value, verifiedEmail);
+            provider, subjects[0].Value, verifiedEmail,
+            allowProvisioning: _registrationPolicy.UserRegistrationType == UserRegistrationType.Standard);
 
         await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         if (user is null)

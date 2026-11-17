@@ -43,7 +43,12 @@ public partial class OrderProcessingService : IOrderProcessingService
             // Its selected commercial buyer comes only from the verified membership.
             if (appUser is null ||
                 appUser.LegacyIdentityCustomerId != paymentRequest.CustomerId ||
-                !selectedBuyerId.HasValue || _appUserCustomerService is null ||
+                !selectedBuyerId.HasValue ||
+                // Independent buyer-level pricing, tax, shipping and payment
+                // calculation is not cut over yet. Never charge the legacy
+                // login account and then assign the order to a different buyer.
+                selectedBuyerId.Value != paymentRequest.CustomerId ||
+                _appUserCustomerService is null ||
                 !await _appUserCustomerService.CanAccessCustomerAsync(
                     appUser.Id, selectedBuyerId.Value, cancelToken))
             {

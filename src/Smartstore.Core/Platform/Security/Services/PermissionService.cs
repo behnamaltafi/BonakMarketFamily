@@ -176,23 +176,48 @@ public partial class PermissionService : AsyncDbSaveHook<CustomerRole>, IPermiss
 
         if (_appUserContext?.IsAppUserIdentityPresent == true)
         {
-            if (!CurrentAppUserContext.TryReadTrustedLegacyBinding(
-                _httpContextAccessor?.HttpContext?.User, out var userGuid, out var legacyLoginId))
-                return false;
+            // Both independent AppUser cookies and transitional legacy login
+            // bridges must use the same signed principal that middleware verified.
+            var principal = _httpContextAccessor?.HttpContext?.User;
+            var native = principal?.Identities.Where(x => x.IsAuthenticated &&
+                x.AuthenticationType == AppUserAuthenticationDefaults.Scheme).ToArray() ?? [];
+            AppUser actor;
+            if (native.Length > 0)
+            {
+                if (native.Length != 1)
+                    return false;
 
-            if (!_db.Customers.AsNoTracking().Any(x =>
-                x.Id == legacyLoginId && x.Active && !x.Deleted && !x.IsSystemAccount))
-                return false;
+                var guids = native[0].Claims.Where(x =>
+                    x.Type == AppUserAuthenticationDefaults.GuidClaim &&
+                    x.Issuer == AppUserAuthenticationDefaults.Issuer).ToArray();
+                var stamps = native[0].Claims.Where(x =>
+                    x.Type == AppUserAuthenticationDefaults.SecurityStampClaim &&
+                    x.Issuer == AppUserAuthenticationDefaults.Issuer).ToArray();
+                if (guids.Length != 1 || stamps.Length != 1 ||
+                    !Guid.TryParse(guids[0].Value, out var nativeGuid) ||
+                    nativeGuid == Guid.Empty || string.IsNullOrWhiteSpace(stamps[0].Value))
+                    return false;
 
-            // The synchronous permission path must enforce the same verified
-            // legacy account binding as the async path. A stale or reassigned
-            // user claim must never keep the old AppUser's permissions.
-            var matches = _db.AppUsers.AsNoTracking()
-                .Where(x => x.UserGuid == userGuid && x.Active &&
-                    x.LegacyIdentityCustomerId == legacyLoginId)
-                .Take(2)
-                .ToArray();
-            var actor = matches.Length == 1 ? matches[0] : null;
+                var nativeMatches = _db.AppUsers.AsNoTracking().Where(x =>
+                    x.UserGuid == nativeGuid && x.Active &&
+                    x.SecurityStamp == stamps[0].Value).Take(2).ToArray();
+                actor = nativeMatches.Length == 1 ? nativeMatches[0] : null;
+            }
+            else
+            {
+                if (!CurrentAppUserContext.TryReadTrustedLegacyBinding(
+                    principal, out var legacyGuid, out var legacyLoginId))
+                    return false;
+
+                if (!_db.Customers.AsNoTracking().Any(x =>
+                    x.Id == legacyLoginId && x.Active && !x.Deleted && !x.IsSystemAccount))
+                    return false;
+
+                var legacyMatches = _db.AppUsers.AsNoTracking().Where(x =>
+                    x.UserGuid == legacyGuid && x.Active &&
+                    x.LegacyIdentityCustomerId == legacyLoginId).Take(2).ToArray();
+                actor = legacyMatches.Length == 1 ? legacyMatches[0] : null;
+            }
             if (actor is null)
                 return false;
 

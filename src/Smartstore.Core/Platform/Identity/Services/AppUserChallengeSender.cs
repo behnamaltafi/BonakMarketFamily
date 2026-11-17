@@ -10,6 +10,7 @@ namespace Smartstore.Core.Identity;
 public interface IAppUserChallengeSender
 {
     Task<bool> SendPasswordResetAsync(string email, string token);
+    Task<bool> SendEmailVerificationAsync(string email, string token);
     Task<bool> SendOtpAsync(string phone, string code);
 }
 
@@ -56,7 +57,28 @@ public sealed class ConfiguredAppUserChallengeSender : IAppUserChallengeSender
         }
     }
 
-    public async Task<bool> SendPasswordResetAsync(string email, string token)
+    public Task<bool> SendPasswordResetAsync(string email, string token) =>
+        SendEmailAsync(email, "Smartstore AppUser password recovery",
+            "Use this one-time reset token (15 minutes). Do not share it.\\n\\n" +
+            BuildLinkOrToken("identity/passwordrecoveryconfirm", email, token));
+
+    public Task<bool> SendEmailVerificationAsync(string email, string token) =>
+        SendEmailAsync(email, "Smartstore AppUser email activation",
+            "Confirm this email address using this one-time link (30 minutes).\\n\\n" +
+            BuildLinkOrToken("customer/activation", email, token));
+
+    private string BuildLinkOrToken(string path, string email, string token)
+    {
+        var origin = _settings["AppUserAuth:PublicBaseUrl"];
+        if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri) ||
+            uri.Scheme != Uri.UriSchemeHttps || uri.UserInfo.Length != 0)
+            return token;
+
+        return new Uri(uri, path + "?token=" + Uri.EscapeDataString(token) +
+            "&email=" + Uri.EscapeDataString(email)).AbsoluteUri;
+    }
+
+    private async Task<bool> SendEmailAsync(string email, string subject, string body)
     {
         var section = _settings.GetSection("AppUserAuth:Smtp");
         var host = section["Host"];
@@ -76,9 +98,8 @@ public sealed class ConfiguredAppUserChallengeSender : IAppUserChallengeSender
         };
         using var message = new MailMessage(from, email)
         {
-            Subject = "Smartstore AppUser password recovery",
-            Body = "Enter this one-time reset token in the AppUser reset form. " +
-                "It expires after 15 minutes. Do not share it.\n\n" + token
+            Subject = subject,
+            Body = body
         };
         try
         {

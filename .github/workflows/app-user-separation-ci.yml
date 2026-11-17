@@ -39,5 +39,6 @@ jobs:
           DataConnectionString: Server=localhost;Database=SmartstoreDesignTime;Trusted_Connection=True;Encrypt=False
           EOF
           dotnet ef dbcontext info --context SmartDbContext --project src/Smartstore.Core/Smartstore.Core.csproj --startup-project src/Smartstore.Web/Smartstore.Web.csproj --configuration Release --no-build
+          dotnet ef migrations add DesignTimeScaffoldingSmoke --context SmartDbContext --project src/Smartstore.Core/Smartstore.Core.csproj --startup-project src/Smartstore.Web/Smartstore.Web.csproj --output-dir EfMigrationsSmoke --configuration Release --no-build
       - name: Test independent-user authorization components
         run: dotnet test test/Smartstore.Core.Tests/Smartstore.Core.Tests.csproj --configuration Release -p:SmartstoreBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~AppUser"

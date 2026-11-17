@@ -52,9 +52,11 @@ public partial class AppUser : BaseEntity
     [StringLength(128)]
     public string PasswordResetTokenHash { get; set; }
     public DateTime? PasswordResetExpiresUtc { get; set; }
+    public DateTime? PasswordResetLastSentUtc { get; set; }
     [StringLength(1024)]
     public string OtpHash { get; set; }
     public DateTime? OtpExpiresUtc { get; set; }
+    public string OtpPurpose { get; set; }
     public DateTime? OtpLastSentUtc { get; set; }
     public int OtpFailedAttempts { get; set; }
     public int FailedLoginAttempts { get; set; }

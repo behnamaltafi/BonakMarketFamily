@@ -85,7 +85,7 @@ public sealed class AppUserAuthenticationController : PublicController
     {
         _buyers.ClearSelection();
         await HttpContext.SignOutAsync(AppUserAuthenticationDefaults.Scheme);
-        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        await http.SignOutAsync(IdentityConstants.ApplicationScheme);
         return NoContent();
     }
 
@@ -246,11 +246,17 @@ public sealed class AppUserAuthenticationController : PublicController
         return Redirect("~/");
     }
 
-    private async Task SignInUserAsync(AppUser user, bool persistent)
+    private Task SignInUserAsync(AppUser user, bool persistent) =>
+        SignInUserAsync(HttpContext, _buyers, user, persistent);
+
+    /// <summary>Reusable independent user sign-in for HTML and JSON flows.</summary>
+    public static async Task SignInUserAsync(
+        Microsoft.AspNetCore.Http.HttpContext http,
+        IAppUserBuyerContext buyers, AppUser user, bool persistent)
     {
         // Do not keep the former person's Customer or buyer selection.
         await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
-        _buyers.ClearSelection();
+        buyers.ClearSelection();
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
@@ -262,7 +268,7 @@ public sealed class AppUserAuthenticationController : PublicController
                 ClaimValueTypes.String, AppUserAuthenticationDefaults.Issuer)
         }, AppUserAuthenticationDefaults.Scheme));
 
-        await HttpContext.SignInAsync(AppUserAuthenticationDefaults.Scheme,
+        await http.SignInAsync(AppUserAuthenticationDefaults.Scheme,
             principal, new AuthenticationProperties
             {
                 IsPersistent = persistent,

@@ -43,18 +43,23 @@ public partial class OrderProcessingService : IOrderProcessingService
             // Its selected commercial buyer comes only from the verified membership.
             if (appUser is null ||
                 appUser.LegacyIdentityCustomerId != paymentRequest.CustomerId ||
-                !selectedBuyerId.HasValue ||
-                // Independent buyer-level pricing, tax, shipping and payment
-                // calculation is not cut over yet. Never charge the legacy
-                // login account and then assign the order to a different buyer.
-                selectedBuyerId.Value != paymentRequest.CustomerId ||
-                _appUserCustomerService is null ||
+                !selectedBuyerId.HasValue || _appUserCustomerService is null ||
                 !await _appUserCustomerService.CanAccessCustomerAsync(
                     appUser.Id, selectedBuyerId.Value, cancelToken))
             {
                 var denied = new OrderPlacementResult();
                 denied.Errors.Add("Select an authorized commercial customer before checkout.");
                 return denied;
+            }
+
+            // Buyer-level pricing, tax, shipping and payment are still computed
+            // against the legacy account. Fail closed before payment processing
+            // rather than charge one buyer and persist the order under another.
+            if (selectedBuyerId.Value != paymentRequest.CustomerId)
+            {
+                var blocked = new OrderPlacementResult();
+                blocked.Errors.Add("Checkout for a different commercial buyer is unavailable until buyer-level financial calculations are migrated.");
+                return blocked;
             }
         }
 

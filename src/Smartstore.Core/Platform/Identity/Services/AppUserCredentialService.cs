@@ -22,7 +22,7 @@ public sealed class AppUserCredentialService
     private static string Normalize(string value) => value?.Trim().ToUpperInvariant();
 
     public async Task<AppUser> RegisterAsync(string username, string email, string password,
-        CancellationToken ct = default)
+        string phone = null, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(username) || username.Length > 500 ||
             string.IsNullOrWhiteSpace(email) || email.Length > 500 ||
@@ -31,14 +31,21 @@ public sealed class AppUserCredentialService
 
         var name = Normalize(username);
         var address = Normalize(email);
+        phone = phone?.Trim();
+        if (!string.IsNullOrEmpty(phone) &&
+            (phone.Length > 40 || phone[0] != '+' || !phone.Skip(1).All(char.IsDigit)))
+            return null;
         if (await _db.AppUsers.AsNoTracking().AnyAsync(x =>
-            x.Username.ToUpper() == name || x.Email.ToUpper() == address, ct))
+            x.Username.ToUpper() == name || x.Email.ToUpper() == address ||
+            (!string.IsNullOrEmpty(phone) && x.PhoneNumber == phone), ct))
             return null;
 
         var user = new AppUser
         {
             Username = username.Trim(),
             Email = email.Trim(),
+            PhoneNumber = phone,
+            PhoneVerified = false,
             UserGuid = Guid.NewGuid(),
             SecurityStamp = Guid.NewGuid().ToString("N"),
             EmailVerified = false,

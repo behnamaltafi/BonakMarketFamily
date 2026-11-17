@@ -33,9 +33,20 @@ public class CurrentAppUserContext : ICurrentAppUserContext
             .ToArray() ?? [];
     }
 
-    // Even an ambiguous claim means that this request MUST NOT fall back to
-    // legacy Customer permissions; GetCurrentUserAsync then fails closed.
+    private static ClaimsIdentity[] GetIndependentCookieIdentities(ClaimsPrincipal principal)
+    {
+        return principal?.Identities
+            .Where(identity => identity.IsAuthenticated &&
+                identity.AuthenticationType == AppUserAuthenticationDefaults.Scheme &&
+                identity.HasClaim(c => c.Type == AppUserAuthenticationDefaults.GuidClaim &&
+                    c.Issuer == AppUserAuthenticationDefaults.Issuer))
+            .ToArray() ?? [];
+    }
+
+    // Invalid or ambiguous AppUser claims must not fall back to legacy
+    // Customer permissions.
     public bool IsAppUserIdentityPresent =>
+        GetIndependentCookieIdentities(_httpContextAccessor.HttpContext?.User).Length > 0 ||
         GetTrustedCookieIdentities(_httpContextAccessor.HttpContext?.User).Length > 0;
 
     /// <summary>
@@ -73,6 +84,30 @@ public class CurrentAppUserContext : ICurrentAppUserContext
 
     public virtual async Task<AppUser> GetCurrentUserAsync(CancellationToken cancelToken = default)
     {
+        var independent = GetIndependentCookieIdentities(_httpContextAccessor.HttpContext?.User);
+        if (independent.Length > 0)
+        {
+            if (independent.Length != 1)
+                return null;
+            var identity = independent[0];
+            var guids = identity.Claims.Where(c =>
+                c.Type == AppUserAuthenticationDefaults.GuidClaim &&
+                c.Issuer == AppUserAuthenticationDefaults.Issuer).ToArray();
+            var stamps = identity.Claims.Where(c =>
+                c.Type == AppUserAuthenticationDefaults.SecurityStampClaim &&
+                c.Issuer == AppUserAuthenticationDefaults.Issuer).ToArray();
+            if (guids.Length != 1 || stamps.Length != 1 ||
+                !Guid.TryParse(guids[0].Value, out var independentGuid) ||
+                independentGuid == Guid.Empty || string.IsNullOrWhiteSpace(stamps[0].Value))
+                return null;
+
+            var users = await _db.AppUsers.AsNoTracking().Where(x =>
+                x.Active && x.UserGuid == independentGuid &&
+                x.SecurityStamp == stamps[0].Value)
+                .Take(2).ToArrayAsync(cancelToken);
+            return users.Length == 1 ? users[0] : null;
+        }
+
         if (!TryReadTrustedLegacyBinding(_httpContextAccessor.HttpContext?.User,
             out var userGuid, out var legacyLoginId))
             return null;

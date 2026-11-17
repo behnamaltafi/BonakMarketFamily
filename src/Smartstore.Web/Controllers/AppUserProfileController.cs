@@ -86,6 +86,11 @@ public sealed class AppUserProfileController : PublicController
 
         owned.Username = newUsername;
         var newPhone = request.PhoneNumber?.Trim();
+        if (!string.IsNullOrWhiteSpace(newPhone) &&
+            await _db.AppUsers.AsNoTracking().AnyAsync(x =>
+                x.Id != actor.Id && x.PhoneNumber == newPhone, cancelToken))
+            return Conflict("Phone number is already in use.");
+
         if (!string.Equals(owned.PhoneNumber, newPhone, StringComparison.Ordinal))
         {
             owned.PhoneNumber = newPhone;

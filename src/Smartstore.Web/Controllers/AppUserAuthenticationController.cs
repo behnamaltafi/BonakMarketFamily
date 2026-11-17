@@ -85,7 +85,7 @@ public sealed class AppUserAuthenticationController : PublicController
     {
         _buyers.ClearSelection();
         await HttpContext.SignOutAsync(AppUserAuthenticationDefaults.Scheme);
-        await http.SignOutAsync(IdentityConstants.ApplicationScheme);
+        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
         return NoContent();
     }
 
@@ -255,7 +255,7 @@ public sealed class AppUserAuthenticationController : PublicController
         IAppUserBuyerContext buyers, AppUser user, bool persistent)
     {
         // Do not keep the former person's Customer or buyer selection.
-        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        await http.SignOutAsync(IdentityConstants.ApplicationScheme);
         buyers.ClearSelection();
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(new[]

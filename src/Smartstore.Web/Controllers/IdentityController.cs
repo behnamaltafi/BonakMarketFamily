@@ -230,6 +230,9 @@ public class IdentityController : PublicController
             {
                 await AppUserAuthenticationController.SignInUserAsync(
                     HttpContext, _buyerContext, user, false);
+                var verification = await _appUserCredentials.BeginEmailVerificationAsync(user);
+                if (verification is not null)
+                    await _appUserDelivery.SendEmailVerificationAsync(user.Email, verification);
                 return returnUrl.HasValue()
                     ? RedirectToReferrer(returnUrl)
                     : RedirectToRoute("Homepage");

@@ -86,6 +86,13 @@ public sealed class AppUserProfileController : PublicController
 
         owned.Username = newUsername;
         var newPhone = request.PhoneNumber?.Trim();
+        // Keep a single canonical international form to avoid claiming the
+        // same SMS destination under multiple textual phone representations.
+        if (!string.IsNullOrWhiteSpace(newPhone) &&
+            (newPhone[0] != '+' || newPhone.Length < 9 || newPhone.Length > 16 ||
+             !newPhone.Skip(1).All(char.IsDigit)))
+            return BadRequest("Phone number must be in E.164 format.");
+
         if (!string.IsNullOrWhiteSpace(newPhone) &&
             await _db.AppUsers.AsNoTracking().AnyAsync(x =>
                 x.Id != actor.Id && x.PhoneNumber == newPhone, cancelToken))

@@ -215,4 +215,61 @@ public class CurrentAppUserContextTests
         Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
     }
 
+    [Test]
+    public async Task IndependentCookieWithoutSecurityStampCannotResolveAppUser()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(AppUserAuthenticationDefaults.GuidClaim, Guid.NewGuid().ToString("D"),
+                    ClaimValueTypes.String, AppUserAuthenticationDefaults.Issuer)
+            }, AppUserAuthenticationDefaults.Scheme))
+        };
+        var sut = new CurrentAppUserContext(new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.True);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
+    [Test]
+    public async Task IndependentCookieWithDuplicateGuidsFailsClosed()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(AppUserAuthenticationDefaults.GuidClaim, Guid.NewGuid().ToString("D"),
+                    ClaimValueTypes.String, AppUserAuthenticationDefaults.Issuer),
+                new Claim(AppUserAuthenticationDefaults.GuidClaim, Guid.NewGuid().ToString("D"),
+                    ClaimValueTypes.String, AppUserAuthenticationDefaults.Issuer),
+                new Claim(AppUserAuthenticationDefaults.SecurityStampClaim, Guid.NewGuid().ToString("N"),
+                    ClaimValueTypes.String, AppUserAuthenticationDefaults.Issuer)
+            }, AppUserAuthenticationDefaults.Scheme))
+        };
+        var sut = new CurrentAppUserContext(new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.True);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
+    [Test]
+    public async Task IndependentCookieWithWrongIssuerCannotBeUsed()
+    {
+        var context = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+            {
+                new Claim(AppUserAuthenticationDefaults.GuidClaim, Guid.NewGuid().ToString("D"),
+                    ClaimValueTypes.String, "untrusted"),
+                new Claim(AppUserAuthenticationDefaults.SecurityStampClaim, "fake",
+                    ClaimValueTypes.String, "untrusted")
+            }, AppUserAuthenticationDefaults.Scheme))
+        };
+        var sut = new CurrentAppUserContext(new HttpContextAccessor { HttpContext = context }, null);
+
+        Assert.That(sut.IsAppUserIdentityPresent, Is.False);
+        Assert.That(await sut.GetCurrentUserAsync(), Is.Null);
+    }
+
 }

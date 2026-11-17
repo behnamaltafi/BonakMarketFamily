@@ -174,3 +174,84 @@ The primary password, registration, recovery, OTP and external login flows still
 6. Run integration tests against the migrated database with 2 users sharing a buyer, 1 user with multiple buyers, revoke/disable tests and payment/provider regression tests. Focused compilation tests alone are not sufficient.
 
 **Status remains DRAFT. No migrations were generated.**
+
+
+## Independent AppUser authentication branch — November 17, 2026
+
+### What is wired
+The public password-login, registration, password-change, password-recovery,
+OTP sign-in and external provider entry points now use **AppUser** credential
+storage, not Customer password storage. Each app has a separate cookie scheme
+with a signed AppUser GUID and a security stamp verified against the active
+AppUser database row on each request. Password changes/resets rotate the stamp.
+
+Endpoints: `GET /api/app-user/auth/antiforgery`, `POST /api/app-user/auth/register`,
+`/login`, `/logout`, `/password/change`, `/password/reset/request`,
+`/password/reset/complete`, `/otp/request`, `/otp/verify`,
+`/phone/verify/request`, `/phone/verify/complete`,
+`/email/verify/request`, `/email/verify/complete`;
+`GET /api/app-user/auth/external/challenge?provider=...` and
+`/external/callback`. For cookie-authenticated JSON requests first retrieve
+the anti-forgery token and send it as the RequestVerificationToken header.
+State-mutating API methods cannot be called without the CSRF token.
+
+Password hashes use ASP.NET Identity PBKDF2, password reset secrets are
+SHA-256-hashed and expire after 15 min, email verification expires after
+30 min, and OTP is PBKDF2-hashed, expires after 5 min, allows at most 5
+failed attempts and enforces send throttling. Telephone verification
+is distinct from OTP login: only an authenticated AppUser can verify a
+new unverified phone. All passwords are independent; do **not** copy
+`CustomerPassword` or auto-link by matching email/phone.
+
+New external users can be created only from an ASP.NET middleware-validated
+external ticket with a verified email claim. Provider plus stable external
+subject must be unique. Existing identities can only be reused with an
+explicit reviewed matching `ExternalSubject` binding. External provider
+plugins may only sign in previously bound AppUsers; they cannot register
+or sign in Customers.
+
+### Configuration required before any real sign-in
+- Serve over HTTPS (independent auth cookies are Secure=Always).
+- Configure a TLS SMTP relay using
+  `AppUserAuth:Smtp:Host`, `Port`, `From`, `Username`, `Password`.
+- Configure `AppUserAuth:PublicBaseUrl` to an absolute HTTPS origin. Reset
+  and activation emails derive links solely from this trusted origin,
+  never from incoming HTTP Host.
+- Configure a real SMS sender: BonakMarketCommerce reuses `ISmsService`;
+  Smartstore's default replaceable adapter sends `POST {phone,message}`
+  to an HTTPS SMS gateway configured by `AppUserAuth:Sms:Endpoint`
+  and `AppUserAuth:Sms:ApiKey` (X-Api-Key). Replace that adapter for a
+  provider-specific protocol, retries, correlation IDs or failover.
+- Configure at least one external OAuth/OIDC handler that issues a validated
+  external-authentication ticket and includes stable subject / verified email.
+  Test state, correlation and callback redirect URIs against that provider.
+- No secrets or database credentials should be committed to this branch.
+
+### Blocking issues before release (PR remains DRAFT)
+1. **No migration was generated** per repository-owner instruction. Columns,
+   normalized unique indexes, existing AppUser identity backfill, and
+   external-subject ownership must be reviewed and migrated by the owner.
+   The new code cannot operate against an old schema.
+2. The old Customer identity infrastructure remains for compatibility with
+   admin/plugin/internal services. Smartstore still calls
+   `AddIdentity<Customer,CustomerRole>()`; migrating/removing that entire
+   legacy dependency is NOT in this iteration. Do not claim global removal.
+3. Registration is wired for `Standard` mode. Legacy
+   `EmailValidation` and `AdminApproval` registration policies currently
+   **fail closed** rather than silently bypassing activation/approval.
+   A first-class AppUser approval workflow is required for these modes.
+4. Legacy Customer-based 2FA/MFA plugin screens are not AppUser MFA. The
+   BonakMarketCommerce legacy MFA entry points are deliberately disabled;
+   the new passwordless AppUser SMS OTP is distinct from mandatory second
+   factor. Provider-specific MFA enrollment must be migrated explicitly.
+5. End-to-end tests on the migrated database, SMTP/SMS transport, browser
+   sign-in/sign-out, external callback, concurrent signup/unique constraints,
+   and account-lockout/rate-limiting tests have **not** been performed.
+   Build + filtered unit tests are insufficient for release.
+6. Commerce checkout, financial reconciliation and all historical
+   buyer/user records remain scoped to the separate financial cutover;
+   the temporary fail-closed cross-buyer checkout safeguard stays active.
+
+Status: implemented independent AppUser auth paths with a compatibility
+boundary, but **not a production-complete global Customer-to-AppUser
+migration**. Do not merge this Draft as production ready.

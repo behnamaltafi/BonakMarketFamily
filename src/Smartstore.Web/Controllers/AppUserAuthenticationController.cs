@@ -59,6 +59,9 @@ public sealed class AppUserAuthenticationController : PublicController
             return BadRequest("Invalid registration data or account already exists.");
 
         await SignInUserAsync(user, false);
+        var confirmationToken = await _credentials.BeginEmailVerificationAsync(user);
+        if (confirmationToken is not null)
+            await _delivery.SendEmailVerificationAsync(user.Email, confirmationToken);
         return Ok(new { user.Id, user.UserGuid, user.Username });
     }
 
@@ -108,6 +111,33 @@ public sealed class AppUserAuthenticationController : PublicController
     }
 
     [AllowAnonymous]
+    [Authorize(AuthenticationSchemes = AppUserAuthenticationDefaults.Scheme)]
+    [HttpPost("email/verify/request")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RequestEmailVerification()
+    {
+        var user = await _current.GetCurrentUserAsync();
+        if (user is null)
+            return Unauthorized();
+
+        var token = await _credentials.BeginEmailVerificationAsync(user);
+        if (token is not null)
+            await _delivery.SendEmailVerificationAsync(user.Email, token);
+        return Accepted();
+    }
+
+    [AllowAnonymous]
+    [HttpPost("email/verify/complete")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CompleteEmailVerification([FromBody] VerifyEmailRequest request)
+    {
+        if (request is null || !await _credentials.CompleteEmailVerificationAsync(
+            request.Email, request.Token))
+            return BadRequest("Invalid or expired email verification.");
+
+        return NoContent();
+    }
+
     [HttpPost("password/reset/request")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RequestPasswordReset([FromBody] EmailRequest request)
@@ -280,6 +310,7 @@ public sealed class AppUserAuthenticationController : PublicController
     public sealed record LoginRequest(string UsernameOrEmail, string Password, bool RememberMe);
     public sealed record ChangePasswordRequest(string OldPassword, string NewPassword);
     public sealed record EmailRequest(string Email);
+    public sealed record VerifyEmailRequest(string Email, string Token);
     public sealed record CompleteResetRequest(string Email, string Token, string NewPassword);
     public sealed record PhoneRequest(string Phone);
     public sealed record VerifyOtpRequest(string Phone, string Code);

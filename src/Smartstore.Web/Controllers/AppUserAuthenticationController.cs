@@ -110,7 +110,6 @@ public sealed class AppUserAuthenticationController : PublicController
         return NoContent();
     }
 
-    [AllowAnonymous]
     [Authorize(AuthenticationSchemes = AppUserAuthenticationDefaults.Scheme)]
     [HttpPost("email/verify/request")]
     [ValidateAntiForgeryToken]
@@ -138,6 +137,7 @@ public sealed class AppUserAuthenticationController : PublicController
         return NoContent();
     }
 
+    [AllowAnonymous]
     [HttpPost("password/reset/request")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RequestPasswordReset([FromBody] EmailRequest request)

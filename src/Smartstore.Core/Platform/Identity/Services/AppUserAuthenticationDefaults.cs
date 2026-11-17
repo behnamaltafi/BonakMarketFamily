@@ -7,4 +7,5 @@ public static class AppUserAuthenticationDefaults
     public const string Issuer = "Smartstore.AppUser";
     public const string GuidClaim = "app_user_guid";
     public const string SecurityStampClaim = "app_user_security_stamp";
+    public const string IdClaim = "app_user_id";
 }

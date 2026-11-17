@@ -145,6 +145,11 @@ public class CustomerController : PublicController
     [SaveChanges<SmartDbContext>(false)]
     public async Task<IActionResult> Info(CustomerInfoModel model)
     {
+        // The legacy customer profile form writes Customer fields and roles.
+        // AppUser-owned edits must use the dedicated user profile endpoint.
+        if (_appUserContext?.IsAppUserIdentityPresent == true)
+            return ChallengeOrForbid();
+
         var customer = Services.WorkContext.CurrentCustomer;
         if (!customer.IsRegistered())
         {

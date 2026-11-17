@@ -255,3 +255,16 @@ or sign in Customers.
 Status: implemented independent AppUser auth paths with a compatibility
 boundary, but **not a production-complete global Customer-to-AppUser
 migration**. Do not merge this Draft as production ready.
+
+
+### Authentication cutover update: legacy-cookie deauthorization
+Following the introduction of a native AppUser cookie, the
+`CurrentAppUserContext.GetCurrentUserAsync` resolver no longer authenticates
+users from the old `Identity<Customer>` / Customer cookie, even if that
+cookie contains an earlier `app_user_guid` bridge claim. Smartstore's
+synchronous permissions path also rejects the legacy fallback. Old
+sessions must sign out and reauthenticate as AppUser after the identity
+data and password reset plan are migrated. The old bridge-claim presence
+is still detected to **fail closed** rather than fall back to Customer
+permissions. Earlier sections discussing the temporary bridge describe
+the historical PR stages, not the current session policy.

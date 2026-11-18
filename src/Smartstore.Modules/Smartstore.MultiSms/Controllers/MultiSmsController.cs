@@ -85,6 +85,24 @@ public sealed class MultiSmsController : AdminController
             }
         }
 
+        if (model.Enabled && model.EnableFailover)
+        {
+            if (model.FallbackProvider == "Kavenegar" &&
+                (!model.KavenegarEnabled || string.IsNullOrWhiteSpace(model.KavenegarSender) ||
+                 string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey)))
+            {
+                ModelState.AddModelError(nameof(model.FallbackProvider), "Configure and enable the fallback Kavenegar provider.");
+            }
+
+            if (model.FallbackProvider == "Melipayamak" &&
+                (!model.MelipayamakEnabled || string.IsNullOrWhiteSpace(model.MelipayamakSender) ||
+                 string.IsNullOrWhiteSpace(model.MelipayamakUsername) ||
+                 string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakPassword)))
+            {
+                ModelState.AddModelError(nameof(model.FallbackProvider), "Configure and enable the fallback Melipayamak provider.");
+            }
+        }
+
         if (!ModelState.IsValid)
         {
             model.NewKavenegarApiKey = null;

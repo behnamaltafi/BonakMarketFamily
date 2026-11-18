@@ -42,4 +42,20 @@
     <LocaleResource Name="TestRejected"><Value>The SMS was not confirmed. Check your provider configuration and the application logs.</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled"><Value>Enable SMS one-time-code login</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>Allow native Smartstore Customer sign-in by SMS only after authenticated phone enrollment.</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginTitle"><Value>Sign in with an SMS code</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginHint"><Value>Use the mobile number you have verified in your Smartstore account.</Value></LocaleResource>
+    <LocaleResource Name="Otp.PhoneLabel"><Value>Mobile number</Value></LocaleResource>
+    <LocaleResource Name="Otp.SendCode"><Value>Send verification code</Value></LocaleResource>
+    <LocaleResource Name="Otp.CodeLabel"><Value>6-digit code</Value></LocaleResource>
+    <LocaleResource Name="Otp.SignIn"><Value>Sign in</Value></LocaleResource>
+    <LocaleResource Name="Otp.PasswordLogin"><Value>Password sign-in</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollLink"><Value>Verify a phone for SMS sign-in</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollTitle"><Value>Verify mobile for SMS sign-in</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollHint"><Value>Sign in with your existing account first. Verify that you control this phone before it can be used to sign in.</Value></LocaleResource>
+    <LocaleResource Name="Otp.CurrentVerified"><Value>Current verified number: {0}</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnableLogin"><Value>Verify and enable SMS sign-in</Value></LocaleResource>
+    <LocaleResource Name="Otp.BackToLogin"><Value>Go to SMS sign-in</Value></LocaleResource>
+    <LocaleResource Name="Otp.CodeSentGeneric"><Value>If this number has been verified, a code will be sent.</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollmentSentGeneric"><Value>If the number is eligible, a verification code will be sent.</Value></LocaleResource>
+    <LocaleResource Name="Otp.InvalidCode"><Value>Invalid or expired code.</Value></LocaleResource>
 </Language>

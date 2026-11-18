@@ -2,7 +2,7 @@ name: AppUser separation - build and tests
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feature/separate-user-customer]
     paths:
       - 'src/**'
       - 'test/**'

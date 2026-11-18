@@ -38,4 +38,6 @@
     <LocaleResource Name="Fields.TestPhone.Hint"><Value>Recipient mobile number</Value></LocaleResource>
     <LocaleResource Name="Fields.TestMessage"><Value>Test message</Value></LocaleResource>
     <LocaleResource Name="Fields.TestMessage.Hint"><Value>Test message</Value></LocaleResource>
+    <LocaleResource Name="TestAccepted"><Value>Provider {0} accepted the SMS (message ID {1}). Delivery to the handset is not yet confirmed.</Value></LocaleResource>
+    <LocaleResource Name="TestRejected"><Value>The SMS was not confirmed. Check your provider configuration and the application logs.</Value></LocaleResource>
 </Language>

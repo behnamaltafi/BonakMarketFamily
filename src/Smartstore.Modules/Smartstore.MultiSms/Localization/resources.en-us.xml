@@ -40,4 +40,6 @@
     <LocaleResource Name="Fields.TestMessage.Hint"><Value>Test message</Value></LocaleResource>
     <LocaleResource Name="TestAccepted"><Value>Provider {0} accepted the SMS (message ID {1}). Delivery to the handset is not yet confirmed.</Value></LocaleResource>
     <LocaleResource Name="TestRejected"><Value>The SMS was not confirmed. Check your provider configuration and the application logs.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpLoginEnabled"><Value>Enable SMS one-time-code login</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>Allow native Smartstore Customer sign-in by SMS only after authenticated phone enrollment.</Value></LocaleResource>
 </Language>

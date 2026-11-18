@@ -9,15 +9,25 @@ global using System.Threading;
 global using System.Threading.Tasks;
 global using Smartstore.Web.Modelling;
 using Smartstore.Engine.Modularity;
+using Smartstore.Core.Widgets;
+using Smartstore.MultiSms.Components;
 using Smartstore.Http;
 using Smartstore.MultiSms.Configuration;
 
 namespace Smartstore.MultiSms;
 
-internal class Module : ModuleBase, IConfigurable
+internal class Module : ModuleBase, IConfigurable, IActivatableWidget
 {
     public RouteInfo GetConfigurationRoute()
         => new("Configure", "MultiSms", new { area = "Admin" });
+
+    // Smartstore's existing login form exposes this extension zone.
+    // Activate the widget under Admin > CMS > Widgets.
+    public Widget GetDisplayWidget(string widgetZone, object model, int storeId)
+        => new ComponentWidget(typeof(SmsLoginLinkViewComponent));
+
+    public string[] GetWidgetZones() => ["after_login_buttons"];
+
 
     public override async Task InstallAsync(ModuleInstallationContext context)
     {

@@ -9,6 +9,7 @@ namespace Smartstore.MultiSms.Configuration;
 public sealed class SmsGatewaySettings : ISettings
 {
     public bool Enabled { get; set; }
+    public bool OtpLoginEnabled { get; set; }
     public string PrimaryProvider { get; set; } = "Kavenegar";
     public bool EnableFailover { get; set; }
     public string FallbackProvider { get; set; } = "Melipayamak";

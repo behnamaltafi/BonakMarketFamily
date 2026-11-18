@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Smartstore.Core.Identity;
+using Smartstore.Core.Data;
 using Smartstore.MultiSms.Models;
 using Smartstore.MultiSms.Services;
 using Smartstore.Web.Controllers;
@@ -17,14 +18,17 @@ public sealed class SmsLoginController : PublicController
     private readonly SmsOtpLoginService _otp;
     private readonly SignInManager<Customer> _signInManager;
     private readonly UserManager<Customer> _userManager;
+    private readonly SmartDbContext _db;
 
     public SmsLoginController(SmsOtpLoginService otp,
         SignInManager<Customer> signInManager,
-        UserManager<Customer> userManager)
+        UserManager<Customer> userManager,
+        SmartDbContext db)
     {
         _otp = otp;
         _signInManager = signInManager;
         _userManager = userManager;
+        _db = db;
     }
 
     [HttpGet("")]
@@ -87,7 +91,7 @@ public sealed class SmsLoginController : PublicController
         customer.LastLoginDateUtc = DateTime.UtcNow;
         // The OTP service returns a tracked Customer entity, so the standard
         // SmartDbContext unit of work saves the last-login update here.
-        await Services.DbContext.SaveChangesAsync(ct);
+        await _db.SaveChangesAsync(ct);
 
         return model.ReturnUrl is not null
             ? LocalRedirect(model.ReturnUrl)

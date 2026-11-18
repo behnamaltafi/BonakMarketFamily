@@ -33,8 +33,10 @@
             </div>
             <div class="adminData">
                 <select asp-for="PrimaryProvider" class="form-control">
-                    <option value="Kavenegar">Kavenegar</option>
-                    <option value="Melipayamak">Melipayamak</option>
+                    @foreach (var provider in Model.AvailableProviders)
+                    {
+                        <option value="@provider">@provider</option>
+                    }
                 </select>
                 <span asp-validation-for="PrimaryProvider"></span>
             </div>
@@ -54,8 +56,10 @@
             </div>
             <div class="adminData">
                 <select asp-for="FallbackProvider" class="form-control">
-                    <option value="Kavenegar">Kavenegar</option>
-                    <option value="Melipayamak">Melipayamak</option>
+                    @foreach (var provider in Model.AvailableProviders)
+                    {
+                        <option value="@provider">@provider</option>
+                    }
                 </select>
                 <span asp-validation-for="FallbackProvider"></span>
             </div>

@@ -62,6 +62,11 @@ public sealed class SmsOtpLoginService
             return false;
         }
 
+        if (!await ConsumeEnrollmentQuotaAsync(customer.Id, ct))
+        {
+            return false;
+        }
+
         return await IssueCodeAsync(canonical, "enroll:" + customer.Id, ct);
     }
 
@@ -184,6 +189,59 @@ public sealed class SmsOtpLoginService
         {
             _db.ChangeTracker.Clear();
             return null;
+        }
+    }
+
+    private async Task<bool> ConsumeEnrollmentQuotaAsync(int customerId, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        string key = "enroll-account:" + customerId;
+        var quotas = _db.Set<SmsOtpQuota>();
+        var row = await quotas.FirstOrDefaultAsync(x => x.QuotaKey == key, ct);
+
+        if (row is not null)
+        {
+            if (row.LastSendUtc > now.AddMinutes(-1))
+            {
+                return false;
+            }
+
+            if (row.WindowStartUtc <= now.AddDays(-1))
+            {
+                row.WindowStartUtc = now;
+                row.SentCount = 0;
+            }
+
+            if (row.SentCount >= 10)
+            {
+                return false;
+            }
+        }
+
+        var quota = row ?? new SmsOtpQuota
+        {
+            QuotaKey = key,
+            WindowStartUtc = now
+        };
+
+        quota.LastSendUtc = now;
+        quota.SentCount++;
+        quota.Version++;
+
+        if (row is null)
+        {
+            quotas.Add(quota);
+        }
+
+        try
+        {
+            await _db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            _db.ChangeTracker.Clear();
+            return false;
         }
     }
 

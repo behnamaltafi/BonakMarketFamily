@@ -52,6 +52,8 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*TestMessage")]
     public string TestMessage { get; set; }
 
+    public string[] AvailableProviders { get; set; } = [];
+
     public bool? TestSucceeded { get; set; }
     public string TestResult { get; set; }
 }

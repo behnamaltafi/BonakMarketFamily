@@ -26,7 +26,7 @@ public sealed class SmsGatewaySender : ISmsSender
     {
         ArgumentNullException.ThrowIfNull(request);
         if (string.IsNullOrWhiteSpace(request.PhoneNumber) || request.PhoneNumber.Length > 20 ||
-            !request.PhoneNumber.All(x => char.IsDigit(x) || x == '+') ||
+            !request.PhoneNumber.Select((ch, i) => (ch >= '0' && ch <= '9') || (i == 0 && ch == '+')).All(valid => valid) ||
             string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 1500)
         {
             throw new ArgumentException("Invalid SMS destination or message.");

@@ -17944,7 +17944,7 @@
 		<Value>ناشناس</Value>
 	</LocaleResource>
 	<LocaleResource Name="Gdpr.Consent.DetailText">
-		<Value>Yes I've read the &lt;a href="{0}"&gt;privacy terms&lt;/a&gt; and agree that my data given by me can be stored electronically. My data will thereby only be used to process my inquiry.</Value>
+		<Value>شرایط &lt;a href="{0}"&gt;حریم خصوصی&lt;/a&gt; را خوانده‌ام و موافقم اطلاعات ارائه‌شده‌ام به‌صورت الکترونیکی ذخیره و فقط برای رسیدگی به درخواست من استفاده شود.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Gdpr.Consent.DetailText.Small">
 		<Value>با &lt;a href="{0}"&gt;سیاست حریم خصوصی&lt;/a&gt; موافقم.</Value>
@@ -18358,7 +18358,7 @@
 		<Value>تکمیل پرداخت</Value>
 	</LocaleResource>
 	<LocaleResource Name="Order.CompletePayment.AdminNote">
-		<Value>The payment is pending. The buyer can make the payment by clicking on the &lt;b&gt;Complete payment&lt;/b&gt; button on the &lt;a href='{0}'&gt;order details page&lt;/a&gt;.</Value>
+		<Value>پرداخت در انتظار است. خریدار می‌تواند در &lt;a href='{0}'&gt;صفحه جزئیات سفارش&lt;/a&gt; روی دکمه &lt;b&gt;تکمیل پرداخت&lt;/b&gt; کلیک کند.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Order.CompletePayment.Hint">
 		<Value>اگر هنوز پرداخت نکرده‌اید و می‌خواهید فرآیند پرداخت را دوباره شروع کنید، روی 'تکمیل پرداخت' کلیک کنید.</Value>
@@ -20008,7 +20008,7 @@
 		<Value>جستجوی خودکار در زیرمجموعه‌ها</Value>
 	</LocaleResource>
 	<LocaleResource Name="Search.IndexingRequiredNotification">
-		<Value>This is the default search. For advanced search, indexing is required. &lt;a href='{0}'&gt;Now start&lt;/a&gt; indexing or &lt;a href='{1}'&gt;open configuration&lt;/a&gt;.</Value>
+		<Value>در حال استفاده از جستجوی پیش‌فرض هستید. برای جستجوی پیشرفته باید نمایه‌سازی فعال شود. &lt;a href='{0}'&gt;شروع نمایه‌سازی&lt;/a&gt; یا &lt;a href='{1}'&gt;بازکردن تنظیمات&lt;/a&gt;.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Search.InstantSearch">
 		<Value>جستجوی فوری</Value>
@@ -20416,10 +20416,10 @@
 		<Value>SKU</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.SyncedRequiredProductQuantityInfo">
-		<Value>The quantity is automatically calculated based on the main product.</Value>
+		<Value>تعداد به‌صورت خودکار بر اساس محصول اصلی محاسبه می‌شود.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.SyncedRequiredProductQuantityWarning">
-		<Value>The quantity {0} is not allowed. The required quantity is {1}.</Value>
+		<Value>تعداد {0} مجاز نیست. تعداد موردنیاز {1} است.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.Totals.CalculatedDuringCheckout">
 		<Value>در زمان پرداخت محاسبه می‌شود</Value>
@@ -20800,25 +20800,25 @@
 		<Value>شامل مالیات بر ارزش افزوده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Tax.LegalInfoFooter">
-		<Value>* All prices {0}, plus &lt;a href="{1}"&gt;shipping&lt;/a&gt;</Value>
+		<Value>* همه قیمت‌ها {0} هستند، به‌علاوه &lt;a href="{1}"&gt;هزینه ارسال&lt;/a&gt;</Value>
 	</LocaleResource>
 	<LocaleResource Name="Tax.LegalInfoFooter2">
 		<Value>* همه قیمت‌ها {0}، به علاوه هزینه ارسال</Value>
 	</LocaleResource>
 	<LocaleResource Name="Tax.LegalInfoProductDetail">
-		<Value>{0} {1} {2}plus &lt;a href="{3}"&gt;shipping&lt;/a&gt;</Value>
+		<Value>{0} {1} {2} به‌علاوه &lt;a href="{3}"&gt;هزینه ارسال&lt;/a&gt;</Value>
 	</LocaleResource>
 	<LocaleResource Name="Tax.LegalInfoProductDetail2">
 		<Value>{0} {1} {2} به علاوه هزینه ارسال</Value>
 	</LocaleResource>
 	<LocaleResource Name="Tax.LegalInfoProductGrid">
-		<Value>{0} {1} {2}plus &lt;a href="{3}"&gt;shipping&lt;/a&gt;</Value>
+		<Value>{0} {1} {2} به‌علاوه &lt;a href="{3}"&gt;هزینه ارسال&lt;/a&gt;</Value>
 	</LocaleResource>
 	<LocaleResource Name="Tax.LegalInfoProductList">
-		<Value>{0} {1} {2}plus &lt;a href="{3}"&gt;shipping&lt;/a&gt;</Value>
+		<Value>{0} {1} {2} به‌علاوه &lt;a href="{3}"&gt;هزینه ارسال&lt;/a&gt;</Value>
 	</LocaleResource>
 	<LocaleResource Name="Tax.LegalInfoShort">
-		<Value>Prices {0}, plus &lt;a href='{1}'&gt;shipping&lt;/a&gt;</Value>
+		<Value>قیمت‌ها {0} هستند، به‌علاوه &lt;a href='{1}'&gt;هزینه ارسال&lt;/a&gt;</Value>
 	</LocaleResource>
 	<LocaleResource Name="Tax.LegalInfoShort2">
 		<Value>قیمت‌ها {0}، به علاوه هزینه ارسال</Value>

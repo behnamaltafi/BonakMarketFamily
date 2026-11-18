@@ -1,8 +1,7 @@
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Json;
 using System.Net.Mail;
 using Microsoft.Extensions.Configuration;
+using Smartstore.Core.Messaging;
 
 namespace Smartstore.Core.Identity;
 
@@ -15,44 +14,41 @@ public interface IAppUserChallengeSender
 }
 
 /// <summary>
-/// TLS SMTP and an opt-in HTTPS SMS gateway. Configure provider credentials
-/// through secrets, never source control. An absent gateway fails closed.
+/// SMTP delivery and a pluggable SMS gateway for independent AppUser challenges.
+/// Missing or disabled SMS providers fail closed. A successful send means provider
+/// acceptance, not confirmed handset delivery.
 /// </summary>
 public sealed class ConfiguredAppUserChallengeSender : IAppUserChallengeSender
 {
     private readonly IConfiguration _settings;
-    private readonly IHttpClientFactory _clients;
+    private readonly ISmsSender[] _smsSenders;
 
-    public ConfiguredAppUserChallengeSender(IConfiguration settings, IHttpClientFactory clients)
+    public ConfiguredAppUserChallengeSender(IConfiguration settings, IEnumerable<ISmsSender> smsSenders)
     {
         _settings = settings;
-        _clients = clients;
+        _smsSenders = smsSenders.ToArray();
     }
 
     public async Task<bool> SendOtpAsync(string phone, string code)
     {
-        var endpoint = _settings["AppUserAuth:Sms:Endpoint"];
-        var apiKey = _settings["AppUserAuth:Sms:ApiKey"];
-        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var url) ||
-            url.Scheme != Uri.UriSchemeHttps || string.IsNullOrWhiteSpace(apiKey))
-            return false;
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, url)
+        // An absent SMS module must not silently fall back to a separate,
+        // provider-specific endpoint or create an unaudited authentication path.
+        if (_smsSenders.Length != 1 || string.IsNullOrWhiteSpace(code))
         {
-            Content = JsonContent.Create(new
-            {
-                phone,
-                message = $"Your Smartstore verification code is {code}. Valid for 5 minutes."
-            })
-        };
-        request.Headers.TryAddWithoutValidation("X-Api-Key", apiKey);
+            return false;
+        }
+
         try
         {
-            using var response = await _clients.CreateClient().SendAsync(request);
-            return response.IsSuccessStatusCode;
+            await _smsSenders[0].SendAsync(new SmsSendRequest(
+                phone, $"Your Smartstore verification code is {code}. Valid for 5 minutes."));
+            return true;
         }
-        catch (HttpRequestException)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // The provider may have accepted a request whose outcome was ambiguous.
+            // Do not retry or fail over here; the provider gateway enforces its own
+            // safe-failover policy and OTP responses remain non-enumerating.
             return false;
         }
     }

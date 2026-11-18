@@ -7,6 +7,10 @@ namespace Smartstore.Core.Identity;
 /// Represents an application user independently of any commerce customer.
 /// </summary>
 [Index(nameof(UserGuid), IsUnique = true, Name = "UX_AppUser_UserGuid")]
+[Index(nameof(Username), IsUnique = true, Name = "UX_AppUser_Username")]
+[Index(nameof(Email), IsUnique = true, Name = "UX_AppUser_Email")]
+[Index(nameof(PhoneNumber), IsUnique = true, Name = "UX_AppUser_PhoneNumber")]
+[Index(nameof(LegacyIdentityCustomerId), IsUnique = true, Name = "UX_AppUser_LegacyIdentityCustomerId")]
 public partial class AppUser : BaseEntity
 {
     /// <summary>

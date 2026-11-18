@@ -1,0 +1,57 @@
+@model SmsOtpLoginModel
+
+@{
+    Assets.AppendTitleParts("SMS sign-in");
+    Assets.AddMetaRobots();
+}
+
+<div class="page login-page">
+    <div class="row mb-4">
+        <div class="col-12 col-md-8 offset-md-2 col-xl-6 offset-xl-3">
+            <h1 class="page-title">Sign in with an SMS code</h1>
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <p class="text-muted">Use the mobile number you have verified in your Smartstore account.</p>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+                    {
+                        <div class="alert alert-info" role="status">@Model.StatusMessage</div>
+                    }
+
+                    <form asp-controller="SmsLogin" asp-action="RequestCode" method="post" autocomplete="off">
+                        <input type="hidden" asp-for="ReturnUrl" />
+                        <div class="form-floating mb-3">
+                            <input asp-for="Phone" class="form-control" inputmode="tel"
+                                   autocomplete="tel" placeholder="+989121234567" maxlength="16" required />
+                            <label asp-for="Phone">Verified mobile number</label>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Send verification code</button>
+                    </form>
+
+                    <hr />
+
+                    <form asp-controller="SmsLogin" asp-action="VerifyCode" method="post" autocomplete="off">
+                        <input type="hidden" asp-for="ReturnUrl" />
+                        <div asp-validation-summary="All" class="text-danger"></div>
+                        <div class="form-floating mb-3">
+                            <input asp-for="Phone" class="form-control" inputmode="tel"
+                                   autocomplete="tel" placeholder="+989121234567" maxlength="16" required />
+                            <label asp-for="Phone">Verified mobile number</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input asp-for="Code" class="form-control" inputmode="numeric"
+                                   autocomplete="one-time-code" placeholder="123456"
+                                   pattern="[0-9]{6}" maxlength="6" required />
+                            <label asp-for="Code">6-digit code</label>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary w-100">Sign in</button>
+                    </form>
+                    <div class="mt-3 d-flex justify-content-between">
+                        <a asp-controller="Identity" asp-action="Login">Password sign-in</a>
+                        <a asp-controller="SmsLogin" asp-action="Enroll">Verify a phone for SMS sign-in</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

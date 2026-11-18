@@ -42,4 +42,20 @@
     <LocaleResource Name="TestRejected"><Value>Die SMS wurde nicht bestätigt. Prüfen Sie die Konfiguration und die Protokolle.</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled"><Value>SMS-Anmeldung mit Einmalcode aktivieren</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>Anmeldung für bestehende Smartstore-Kunden erst nach verifizierter Mobilnummer ermöglichen.</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginTitle"><Value>Mit SMS-Code anmelden</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginHint"><Value>Verwenden Sie die zuvor bestätigte Mobilnummer Ihres Smartstore-Kontos.</Value></LocaleResource>
+    <LocaleResource Name="Otp.PhoneLabel"><Value>Mobilnummer</Value></LocaleResource>
+    <LocaleResource Name="Otp.SendCode"><Value>Bestätigungscode senden</Value></LocaleResource>
+    <LocaleResource Name="Otp.CodeLabel"><Value>Sechsstelliger Code</Value></LocaleResource>
+    <LocaleResource Name="Otp.SignIn"><Value>Anmelden</Value></LocaleResource>
+    <LocaleResource Name="Otp.PasswordLogin"><Value>Mit Passwort anmelden</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollLink"><Value>Mobilnummer für SMS-Anmeldung bestätigen</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollTitle"><Value>Mobilnummer für SMS-Anmeldung bestätigen</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollHint"><Value>Melden Sie sich zunächst mit Ihrem bestehenden Konto an und bestätigen Sie anschließend die Mobilnummer.</Value></LocaleResource>
+    <LocaleResource Name="Otp.CurrentVerified"><Value>Aktuell bestätigte Nummer: {0}</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnableLogin"><Value>SMS-Anmeldung aktivieren</Value></LocaleResource>
+    <LocaleResource Name="Otp.BackToLogin"><Value>Zur SMS-Anmeldung</Value></LocaleResource>
+    <LocaleResource Name="Otp.CodeSentGeneric"><Value>Falls diese Nummer bestätigt ist, wird ein Code gesendet.</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollmentSentGeneric"><Value>Falls die Nummer zulässig ist, wird ein Bestätigungscode gesendet.</Value></LocaleResource>
+    <LocaleResource Name="Otp.InvalidCode"><Value>Ungültiger oder abgelaufener Code.</Value></LocaleResource>
 </Language>

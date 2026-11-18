@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Smartstore.Core.Messaging;
+using Smartstore.Core.Security;
 using Smartstore.MultiSms.Configuration;
 using Smartstore.MultiSms.Models;
 using Smartstore.MultiSms.Services;
@@ -12,6 +13,7 @@ namespace Smartstore.MultiSms.Controllers;
 /// Protected administration-only configuration and manual delivery smoke test.
 /// No anonymous send endpoint is exposed by this module.
 /// </summary>
+[Permission("configuration.setting")]
 public sealed class MultiSmsController : AdminController
 {
     private readonly SmsCredentialProtection _protection;

@@ -60,7 +60,7 @@ public sealed class SmsLoginController : PublicController
         // The response is independent of whether an account is registered.
         ModelState.Clear();
         model.CodeRequested = true;
-        model.StatusMessage = "If this number has been verified, a code will be sent.";
+        model.StatusMessage = T("Plugins.Sms.MultiSms.Otp.CodeSentGeneric").Value;
         return View("Index", model);
     }
 
@@ -82,7 +82,7 @@ public sealed class SmsLoginController : PublicController
             await _userManager.IsLockedOutAsync(customer) ||
             await _userManager.GetTwoFactorEnabledAsync(customer))
         {
-            ModelState.AddModelError(nameof(model.Code), "Invalid or expired code.");
+            ModelState.AddModelError(nameof(model.Code), T("Plugins.Sms.MultiSms.Otp.InvalidCode").Value);
             model.CodeRequested = true;
             return View("Index", model);
         }
@@ -141,7 +141,7 @@ public sealed class SmsLoginController : PublicController
         model.IsEnrolling = true;
         model.CodeRequested = true;
         model.VerifiedPhone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
-        model.StatusMessage = "If the number is eligible, a verification code will be sent.";
+        model.StatusMessage = T("Plugins.Sms.MultiSms.Otp.EnrollmentSentGeneric").Value;
         return View("Enroll", model);
     }
 
@@ -163,7 +163,7 @@ public sealed class SmsLoginController : PublicController
 
         if (!await _otp.ConfirmEnrollmentAsync(customer, model.Phone, model.Code, ct))
         {
-            ModelState.AddModelError(nameof(model.Code), "Invalid or expired code.");
+            ModelState.AddModelError(nameof(model.Code), T("Plugins.Sms.MultiSms.Otp.InvalidCode").Value);
             model.IsEnrolling = true;
             model.CodeRequested = true;
             model.VerifiedPhone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);

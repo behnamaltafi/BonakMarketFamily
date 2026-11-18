@@ -40,4 +40,6 @@
     <LocaleResource Name="Fields.TestMessage.Hint"><Value>متن پیامک آزمایشی</Value></LocaleResource>
     <LocaleResource Name="TestAccepted"><Value>تأمین‌کننده {0} پیامک را پذیرفت (شناسه پیام {1}). تحویل به موبایل هنوز تأیید نشده است.</Value></LocaleResource>
     <LocaleResource Name="TestRejected"><Value>ارسال پیامک تأیید نشد. تنظیمات تأمین‌کننده و گزارش‌های برنامه را بررسی کنید.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpLoginEnabled"><Value>فعال‌سازی ورود با کد پیامکی</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>ورود پیامکی برای حساب‌های اصلی Smartstore پس از تأیید اولیه شماره همراه فعال می‌شود.</Value></LocaleResource>
 </Language>

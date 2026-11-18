@@ -128,12 +128,12 @@ public sealed class MultiSmsController : AdminController
 
             var result = await _sender.SendAsync(new SmsSendRequest(input.TestPhone, input.TestMessage), cancelToken);
             model.TestSucceeded = true;
-            model.TestResult = $"Accepted by {result.Provider}. Message ID: {result.MessageId}";
+            model.TestResult = T("Plugins.Sms.MultiSms.TestAccepted", result.Provider, result.MessageId);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             model.TestSucceeded = false;
-            model.TestResult = "SMS was not confirmed. Check configuration and server logs.";
+            model.TestResult = T("Plugins.Sms.MultiSms.TestRejected");
         }
 
         return View(nameof(Configure), model);

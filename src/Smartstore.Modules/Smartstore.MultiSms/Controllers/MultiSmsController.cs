@@ -16,11 +16,17 @@ public sealed class MultiSmsController : AdminController
 {
     private readonly SmsCredentialProtection _protection;
     private readonly ISmsSender _sender;
+    private readonly string[] _providerNames;
 
-    public MultiSmsController(SmsCredentialProtection protection, ISmsSender sender)
+    public MultiSmsController(
+        SmsCredentialProtection protection,
+        ISmsSender sender,
+        IEnumerable<ISmsProvider> providers)
     {
         _protection = protection;
         _sender = sender;
+        _providerNames = providers.Select(x => x.Name)
+            .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToArray();
     }
 
     [LoadSetting(false)]
@@ -81,6 +87,7 @@ public sealed class MultiSmsController : AdminController
         {
             model.NewKavenegarApiKey = null;
             model.NewMelipayamakPassword = null;
+            model.AvailableProviders = _providerNames;
             model.HasKavenegarApiKey = !string.IsNullOrEmpty(settings.EncryptedKavenegarApiKey);
             model.HasMelipayamakPassword = !string.IsNullOrEmpty(settings.EncryptedMelipayamakPassword);
             return View(model);
@@ -127,9 +134,10 @@ public sealed class MultiSmsController : AdminController
         return View(nameof(Configure), model);
     }
 
-    private static ConfigurationModel CreateModel(SmsGatewaySettings settings)
+    private ConfigurationModel CreateModel(SmsGatewaySettings settings)
         => new()
         {
+            AvailableProviders = _providerNames,
             Enabled = settings.Enabled,
             PrimaryProvider = settings.PrimaryProvider,
             EnableFailover = settings.EnableFailover,
@@ -143,6 +151,6 @@ public sealed class MultiSmsController : AdminController
             HasMelipayamakPassword = !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakPassword)
         };
 
-    private static bool IsValidProvider(string provider)
-        => provider is "Kavenegar" or "Melipayamak";
+    private bool IsValidProvider(string provider)
+        => _providerNames.Contains(provider, StringComparer.OrdinalIgnoreCase);
 }

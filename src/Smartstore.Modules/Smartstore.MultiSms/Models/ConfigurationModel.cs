@@ -9,6 +9,10 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*OtpLoginEnabled")]
     public bool OtpLoginEnabled { get; set; }
 
+    /// <summary>Gets or sets whether SMS is the primary storefront sign-in method.</summary>
+    [LocalizedDisplay("*SmsAsPrimaryLogin")]
+    public bool SmsAsPrimaryLogin { get; set; }
+
     [LocalizedDisplay("*PrimaryProvider")]
     public string PrimaryProvider { get; set; } = "Kavenegar";
 

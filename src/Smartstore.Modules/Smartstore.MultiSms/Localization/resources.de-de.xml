@@ -58,4 +58,8 @@
     <LocaleResource Name="Otp.CodeSentGeneric"><Value>Falls diese Nummer bestätigt ist, wird ein Code gesendet.</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollmentSentGeneric"><Value>Falls die Nummer zulässig ist, wird ein Bestätigungscode gesendet.</Value></LocaleResource>
     <LocaleResource Name="Otp.InvalidCode"><Value>Ungültiger oder abgelaufener Code.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhone"><Value>Nummer ändern</Value></LocaleResource>
+    <LocaleResource Name="Otp.InvalidPhone"><Value>Geben Sie eine gültige iranische Mobilnummer ein.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsAsPrimaryLogin"><Value>SMS als primäre Anmeldemethode verwenden</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsAsPrimaryLogin.Hint"><Value>Öffnet die SMS-Anmeldung auf der normalen Anmeldeseite, wenn SMS-Gateway und SMS-Anmeldung aktiviert sind. Die Passwort-Anmeldung bleibt verfügbar.</Value></LocaleResource>
 </Language>

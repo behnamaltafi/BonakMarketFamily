@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Smartstore.Core.Identity;
 using Smartstore.Core.Data;
+using Smartstore.Core.Security;
+using Smartstore.Core.Stores;
 using Smartstore.MultiSms.Models;
 using Smartstore.MultiSms.Services;
 using Smartstore.Web.Controllers;
@@ -32,17 +35,23 @@ public sealed class SmsLoginController : PublicController
     }
 
     [HttpGet("")]
-    public async Task<IActionResult> Index(string returnUrl = null)
+    [AllowAnonymous, NeverAuthorize, CheckStoreClosed(false)]
+    public async Task<IActionResult> Index(string returnUrl = null, bool checkoutAsGuest = false)
     {
         if (!await _otp.IsEnabledAsync())
         {
             return NotFound();
         }
 
-        return View(new SmsOtpLoginModel { ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null });
+        return View(new SmsOtpLoginModel
+        {
+            ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null,
+            CheckoutAsGuest = checkoutAsGuest
+        });
     }
 
     [HttpPost("request")]
+    [AllowAnonymous, NeverAuthorize, CheckStoreClosed(false)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RequestCode(SmsOtpLoginModel model, CancellationToken ct)
     {
@@ -52,10 +61,13 @@ public sealed class SmsLoginController : PublicController
         }
 
         model.ReturnUrl = Url.IsLocalUrl(model.ReturnUrl) ? model.ReturnUrl : null;
-        if (SmsPhoneNormalizer.Normalize(model.Phone) is not null)
+        if (SmsPhoneNormalizer.Normalize(model.Phone) is null)
         {
-            await _otp.RequestLoginCodeAsync(model.Phone, ct);
+            ModelState.AddModelError(nameof(model.Phone), T("Plugins.Sms.MultiSms.Otp.InvalidPhone").Value);
+            return View("Index", model);
         }
+
+        await _otp.RequestLoginCodeAsync(model.Phone, ct);
 
         // The response is independent of whether an account is registered.
         ModelState.Clear();
@@ -65,6 +77,7 @@ public sealed class SmsLoginController : PublicController
     }
 
     [HttpPost("verify")]
+    [AllowAnonymous, NeverAuthorize, CheckStoreClosed(false)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> VerifyCode(SmsOtpLoginModel model, CancellationToken ct)
     {
@@ -110,7 +123,7 @@ public sealed class SmsLoginController : PublicController
         if (customer is null || !customer.Active || customer.Deleted ||
             !customer.IsRegistered() || !_signInManager.IsSignedIn(User))
         {
-            return RedirectToRoute("Login");
+            return RedirectToRoute("Login", new { method = "password", returnUrl = Url.Action(nameof(Enroll)) });
         }
 
         return View(new SmsOtpLoginModel
@@ -133,7 +146,14 @@ public sealed class SmsLoginController : PublicController
         if (customer is null || !customer.Active || customer.Deleted ||
             !customer.IsRegistered() || !_signInManager.IsSignedIn(User))
         {
-            return RedirectToRoute("Login");
+            return RedirectToRoute("Login", new { method = "password", returnUrl = Url.Action(nameof(Enroll)) });
+        }
+
+        if (SmsPhoneNormalizer.Normalize(model.Phone) is null)
+        {
+            ModelState.AddModelError(nameof(model.Phone), T("Plugins.Sms.MultiSms.Otp.InvalidPhone").Value);
+            model.VerifiedPhone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
+            return View("Enroll", model);
         }
 
         await _otp.RequestEnrollmentCodeAsync(customer, model.Phone, ct);
@@ -158,7 +178,7 @@ public sealed class SmsLoginController : PublicController
         if (customer is null || !customer.Active || customer.Deleted ||
             !customer.IsRegistered() || !_signInManager.IsSignedIn(User))
         {
-            return RedirectToRoute("Login");
+            return RedirectToRoute("Login", new { method = "password", returnUrl = Url.Action(nameof(Enroll)) });
         }
 
         if (!await _otp.ConfirmEnrollmentAsync(customer, model.Phone, model.Code, ct))

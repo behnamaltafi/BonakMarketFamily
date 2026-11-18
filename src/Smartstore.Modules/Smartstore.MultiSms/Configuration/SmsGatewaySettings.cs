@@ -10,6 +10,8 @@ public sealed class SmsGatewaySettings : ISettings
 {
     public bool Enabled { get; set; }
     public bool OtpLoginEnabled { get; set; }
+    /// <summary>Uses SMS as the default storefront login when SMS and OTP are enabled.</summary>
+    public bool SmsAsPrimaryLogin { get; set; } = true;
     public string PrimaryProvider { get; set; } = "Kavenegar";
     public bool EnableFailover { get; set; }
     public string FallbackProvider { get; set; } = "Melipayamak";

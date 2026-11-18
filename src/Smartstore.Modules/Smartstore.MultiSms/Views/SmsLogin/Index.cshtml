@@ -1,13 +1,14 @@
 @model SmsOtpLoginModel
 
 @{
+    Layout = "_Layout";
     Assets.AppendTitleParts(T("Plugins.Sms.MultiSms.Otp.LoginTitle").Value);
     Assets.AddMetaRobots();
 }
 
 <div class="page login-page">
-    <div class="row mb-4">
-        <div class="col-12 col-md-8 offset-md-2 col-xl-6 offset-xl-3">
+    <div class="row justify-content-center my-4">
+        <div class="col-12 col-md-8 col-xl-6">
             <h1 class="page-title">@T("Plugins.Sms.MultiSms.Otp.LoginTitle")</h1>
             <div class="card shadow-sm">
                 <div class="card-body p-4">
@@ -18,37 +19,58 @@
                         <div class="alert alert-info" role="status">@Model.StatusMessage</div>
                     }
 
-                    <form asp-controller="SmsLogin" asp-action="RequestCode" method="post" autocomplete="off">
-                        <input type="hidden" asp-for="ReturnUrl" />
-                        <div class="form-floating mb-3">
-                            <input asp-for="Phone" class="form-control" inputmode="tel"
-                                   autocomplete="tel" placeholder="+989121234567" maxlength="16" required />
-                            <label asp-for="Phone">@T("Plugins.Sms.MultiSms.Otp.PhoneLabel")</label>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">@T("Plugins.Sms.MultiSms.Otp.SendCode")</button>
-                    </form>
+                    <div asp-validation-summary="All" class="text-danger" role="alert"></div>
 
+                    @if (!Model.CodeRequested)
+                    {
+                        <form asp-controller="SmsLogin" asp-action="RequestCode" method="post">
+                            <input type="hidden" asp-for="ReturnUrl" />
+                            <input type="hidden" asp-for="CheckoutAsGuest" />
+                            <div class="form-floating mb-3">
+                                <input asp-for="Phone" class="form-control" inputmode="tel"
+                                       autocomplete="tel" placeholder="09123456789" maxlength="16" dir="ltr" autofocus required />
+                                <label asp-for="Phone">@T("Plugins.Sms.MultiSms.Otp.PhoneLabel")</label>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">@T("Plugins.Sms.MultiSms.Otp.SendCode")</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-controller="SmsLogin" asp-action="VerifyCode" method="post">
+                            <input type="hidden" asp-for="ReturnUrl" />
+                            <input type="hidden" asp-for="CheckoutAsGuest" />
+                            <div class="form-floating mb-3">
+                                <input asp-for="Phone" class="form-control" inputmode="tel"
+                                       autocomplete="tel" placeholder="09123456789" maxlength="16" dir="ltr" readonly />
+                                <label asp-for="Phone">@T("Plugins.Sms.MultiSms.Otp.PhoneLabel")</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input asp-for="Code" class="form-control" inputmode="numeric"
+                                       autocomplete="one-time-code" placeholder="123456"
+                                       pattern="[0-9]{6}" maxlength="6" dir="ltr" autofocus required />
+                                <label asp-for="Code">@T("Plugins.Sms.MultiSms.Otp.CodeLabel")</label>
+                            </div>
+                            <button type="submit" class="btn btn-outline-primary w-100">@T("Plugins.Sms.MultiSms.Otp.SignIn")</button>
+                        </form>
+                        <form asp-controller="SmsLogin" asp-action="RequestCode" method="post" class="mt-3">
+                            <input type="hidden" name="Phone" value="@Model.Phone" />
+                            <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+                            <input type="hidden" name="CheckoutAsGuest" value="@Model.CheckoutAsGuest" />
+                            <button type="submit" class="btn btn-link p-0">@T("Plugins.Sms.MultiSms.Otp.SendCode")</button>
+                            <a asp-controller="SmsLogin" asp-action="Index" asp-route-returnUrl="@Model.ReturnUrl" asp-route-checkoutAsGuest="@Model.CheckoutAsGuest" class="ml-3">@T("Plugins.Sms.MultiSms.Otp.ChangePhone")</a>
+                        </form>
+                    }
                     <hr />
-
-                    <form asp-controller="SmsLogin" asp-action="VerifyCode" method="post" autocomplete="off">
-                        <input type="hidden" asp-for="ReturnUrl" />
-                        <div asp-validation-summary="All" class="text-danger"></div>
-                        <div class="form-floating mb-3">
-                            <input asp-for="Phone" class="form-control" inputmode="tel"
-                                   autocomplete="tel" placeholder="+989121234567" maxlength="16" required />
-                            <label asp-for="Phone">@T("Plugins.Sms.MultiSms.Otp.PhoneLabel")</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                            <input asp-for="Code" class="form-control" inputmode="numeric"
-                                   autocomplete="one-time-code" placeholder="123456"
-                                   pattern="[0-9]{6}" maxlength="6" required />
-                            <label asp-for="Code">@T("Plugins.Sms.MultiSms.Otp.CodeLabel")</label>
-                        </div>
-                        <button type="submit" class="btn btn-outline-primary w-100">@T("Plugins.Sms.MultiSms.Otp.SignIn")</button>
-                    </form>
-                    <div class="mt-3 d-flex justify-content-between">
-                        <a asp-controller="Identity" asp-action="Login">@T("Plugins.Sms.MultiSms.Otp.PasswordLogin")</a>
+                    <div class="mt-3 d-flex flex-wrap justify-content-between">
+                        <a asp-route="Login" asp-route-method="password" asp-route-returnUrl="@Model.ReturnUrl" asp-route-checkoutAsGuest="@Model.CheckoutAsGuest">@T("Plugins.Sms.MultiSms.Otp.PasswordLogin")</a>
                         <a asp-controller="SmsLogin" asp-action="Enroll">@T("Plugins.Sms.MultiSms.Otp.EnrollLink")</a>
+                    </div>
+                    <div class="mt-3 d-flex flex-wrap justify-content-between">
+                        <a asp-route="Register" asp-route-returnUrl="@Model.ReturnUrl">@T("Account.Register.Button")</a>
+                        @if (Model.CheckoutAsGuest)
+                        {
+                            <a asp-route="Checkout">@T("Account.Login.CheckoutAsGuest")</a>
+                        }
                     </div>
                 </div>
             </div>

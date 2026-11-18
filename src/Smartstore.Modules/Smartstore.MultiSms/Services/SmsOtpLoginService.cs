@@ -16,7 +16,7 @@ namespace Smartstore.MultiSms.Services;
 /// single-use login codes. It never authenticates against an unverified
 /// Customer.GenericAttributes.Phone value.
 /// </summary>
-public sealed class SmsOtpLoginService
+public sealed class SmsOtpLoginService : ISmsOtpLoginService
 {
     private readonly SmartDbContext _db;
     private readonly ISmsSender _sms;

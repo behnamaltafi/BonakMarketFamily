@@ -1,4 +1,5 @@
 using FluentMigrator;
+using Smartstore.Core.Data.Migrations;
 using Smartstore.Data.Migrations;
 
 namespace Smartstore.MultiSms.Migrations;

@@ -58,4 +58,8 @@
     <LocaleResource Name="Otp.CodeSentGeneric"><Value>If this number has been verified, a code will be sent.</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollmentSentGeneric"><Value>If the number is eligible, a verification code will be sent.</Value></LocaleResource>
     <LocaleResource Name="Otp.InvalidCode"><Value>Invalid or expired code.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhone"><Value>Change number</Value></LocaleResource>
+    <LocaleResource Name="Otp.InvalidPhone"><Value>Enter a valid Iranian mobile number.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsAsPrimaryLogin"><Value>Use SMS as the primary sign-in method</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsAsPrimaryLogin.Hint"><Value>Open SMS sign-in from the standard login page when SMS Gateway and SMS login are enabled. Password sign-in remains available.</Value></LocaleResource>
 </Language>

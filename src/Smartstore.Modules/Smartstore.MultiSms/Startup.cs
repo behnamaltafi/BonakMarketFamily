@@ -1,12 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Mvc;
 using Smartstore.Core.Data;
 using Smartstore.Core.Messaging;
+using Smartstore.Core.Widgets;
 using Smartstore.Data;
+using Smartstore.Data.Providers;
 using Smartstore.Engine;
 using Smartstore.Engine.Builders;
 using Smartstore.MultiSms.Domain;
+using Smartstore.MultiSms.Filters;
 using Smartstore.MultiSms.Services;
+using Smartstore.Web.Controllers;
 
 namespace Smartstore.MultiSms;
 
@@ -22,6 +27,12 @@ internal sealed class Startup : StarterBase
         services.AddSingleton<ISmsProvider, MelipayamakSmsProvider>();
         services.AddScoped<ISmsSender, SmsGatewaySender>();
         services.AddScoped<SmsOtpLoginService>();
+        services.AddScoped<ISmsOtpLoginService>(services => services.GetRequiredService<SmsOtpLoginService>());
+        services.AddScoped<IWidgetSource, SmsLoginWidgetSource>();
+        services.Configure<MvcOptions>(options => options.Filters
+            .AddEndpointFilter<SmsPrimaryLoginFilter, PublicController>()
+            .ForController("Identity")
+            .ForAction("Login"));
         services.AddTransient<IDbContextConfigurationSource<SmartDbContext>, MultiSmsModelConfigurer>();
     }
 

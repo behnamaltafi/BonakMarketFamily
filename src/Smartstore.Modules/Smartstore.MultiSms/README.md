@@ -35,9 +35,10 @@ Customer authentication, or depend on earlier identity-separation branches.
    enable **SMS Gateway**, and use **Send test SMS** before enabling OTP.
 3. Enable **SMS one-time-code login**. Settings take effect for subsequent
    requests without a process restart.
-4. Under **Admin → CMS → Widgets**, activate the new MultiSms widget to
-   show **Sign in with SMS** on Smartstore's existing password login screen.
-   Alternatively, navigate to `/sms-login` directly.
+4. **Sign in with SMS** appears automatically on the existing password login
+   screen when both SMS Gateway and SMS one-time-code login are enabled.
+   Separate CMS widget activation is not required. Alternatively, navigate
+   to `/sms-login` directly.
 5. Sign in **with your existing password first**. Open
    `/sms-login/enroll` and verify a number you control. Only one verified
    mobile number can be assigned to one Customer.
@@ -69,11 +70,76 @@ Customer authentication, or depend on earlier identity-separation branches.
   checkout and Identity permissions in staging. Real provider sending cannot
   be tested without valid SMS provider credentials and account balance.
 
+## Primary login method
+
+In module configuration, **Use SMS as the primary sign-in method** controls
+whether the native `/login` page opens SMS sign-in. It defaults to enabled and
+only applies when both the SMS Gateway and SMS login are enabled. Turn it off
+to make the password form primary while keeping the SMS option available.
+Changes take effect on the next request without restarting the application.
+
+The password form remains reachable at `/login?method=password`, including for
+administrators and users who have not enrolled a phone yet. Native password
+POST handling is preserved. Enrollment sends unauthenticated users to this
+password form and returns them to phone verification after login. Local return
+URLs and guest checkout are preserved; external return URLs are discarded.
+
+## JSON API
+
+These endpoints are available independently of the optional OData WebApi module.
+They use native Customer cookies, not JWTs or administrative OData credentials.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/sms-login/session` | Availability, session, verified phone and CSRF token |
+| POST | `/api/sms-login/request` | Request login OTP: `{ "phone": "09123456789" }` |
+| POST | `/api/sms-login/verify` | Sign in: `{ "phone": "09123456789", "code": "123456" }` |
+| POST | `/api/sms-login/enroll/request` | Request phone verification for the signed-in account |
+| POST | `/api/sms-login/enroll/verify` | Confirm phone verification for the signed-in account |
+| POST | `/api/sms-gateway/test` | Admin test: `{ "phone": "09123456789", "text": "Test" }` |
+
+Keep cookies between requests. Read `requestToken` and `headerName` from Session,
+then include that header on every POST, including anonymous login requests.
+Fetch a fresh Session token after login or switching accounts. Missing/invalid
+CSRF tokens return HTTP 400. Enrollment without a native login returns 401.
+OTP-disabled endpoints return 404. Invalid codes return 400 with
+`{ "code": "invalid_code" }`. Code requests return the same
+`{ "code": "code_requested" }` for known and unknown numbers; they do not confirm
+delivery. Existing cooldowns, quotas and attempt limits apply.
+
+The delivery test additionally requires both `system.accessbackend` and
+`configuration.setting` permissions. Success returns `accepted`, provider and
+message ID; provider failures return HTTP 502 with `sms_not_confirmed`, without
+credentials, exception details or message contents.
+
+Example from a same-origin browser application (prepend the shop's path base
+when hosted in a subdirectory):
+
+```javascript
+const session = await fetch('/api/sms-login/session', {
+    credentials: 'same-origin'
+}).then(response => response.json());
+
+const response = await fetch('/api/sms-login/request', {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+        'Content-Type': 'application/json',
+        [session.headerName]: session.requestToken
+    },
+    body: JSON.stringify({ phone: '09123456789' })
+});
+```
+
+The OTP views explicitly use the host `_Layout` to load the active theme and
+generated assets. They display one step at a time and support resending a code
+or changing the phone number without JavaScript.
+
 ## Verify in development
 
 ```powershell
 dotnet build Smartstore.sln -c Release
-dotnet test test/Smartstore.Core.Tests/Smartstore.Core.Tests.csproj -c Release --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests"
+dotnet test test/Smartstore.Core.Tests/Smartstore.Core.Tests.csproj -c Release --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"
 ```
 
 Do not run EF Core `Add-Migration` for these module tables. Smartstore's

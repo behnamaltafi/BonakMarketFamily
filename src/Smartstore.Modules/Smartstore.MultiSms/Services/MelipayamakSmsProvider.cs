@@ -38,7 +38,7 @@ public sealed class MelipayamakSmsProvider : ISmsProvider
         {
             ["username"] = settings.MelipayamakUsername,
             ["password"] = password,
-            ["to"] = phone,
+            ["to"] = SmsPhoneNormalizer.ToProviderPhone(phone),
             ["from"] = settings.MelipayamakSender,
             ["text"] = text,
             ["isFlash"] = "false"

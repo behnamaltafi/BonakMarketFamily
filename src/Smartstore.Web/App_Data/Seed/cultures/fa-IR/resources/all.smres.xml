@@ -34,10 +34,10 @@
 		<Value>آواتار</Value>
 	</LocaleResource>
 	<LocaleResource Name="Account.Avatar.AvatarChanged">
-		<Value>The avatar has been changed.</Value>
+		<Value>تصویر پروفایل تغییر کرد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Account.Avatar.AvatarRemoved">
-		<Value>The avatar has been removed.</Value>
+		<Value>تصویر پروفایل حذف شد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Account.Avatar.MaximumUploadedFileSize">
 		<Value>حداکثر اندازه فایل بارگذاری‌شده برای آواتار {0} است</Value>
@@ -469,7 +469,7 @@
 		<Value>ثبت‌نام شما با موفقیت انجام شد. ایمیلی حاوی دستورالعمل‌های فعال‌سازی عضویت برای شما ارسال شده است.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Account.Register.Result.MeetPasswordRules">
-		<Value>Password must meet these rules: {0}</Value>
+		<Value>رمز عبور باید این شرایط را داشته باشد: {0}</Value>
 	</LocaleResource>
 	<LocaleResource Name="Account.Register.Result.Standard">
 		<Value>ثبت‌نام شما تکمیل شد</Value>
@@ -15114,130 +15114,130 @@
 		<Value>Edit withdrawal</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Description.AutoSearchBox">
-		<Value>Enter a search term. Results will appear automatically as you type.</Value>
+		<Value>عبارت موردنظر را وارد کنید. نتایج هنگام تایپ به‌صورت خودکار نمایش داده می‌شوند.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Description.InstantSearch">
-		<Value>Enter a search term. Results will appear automatically as you type. Press the Enter key to view all the results.</Value>
+		<Value>عبارت موردنظر را وارد کنید. نتایج هنگام تایپ ظاهر می‌شوند. برای دیدن همه نتایج کلید Enter را بزنید.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Description.SearchBox">
-		<Value>Enter a search term. Press the Enter key to view all the results.</Value>
+		<Value>عبارت موردنظر را وارد کنید و برای مشاهده همه نتایج کلید Enter را بزنید.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.ActiveFilters">
-		<Value>Active filters</Value>
+		<Value>فیلترهای فعال</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.AlphabeticallySortedLinks">
-		<Value>Alphabetically sorted links</Value>
+		<Value>پیوندهای مرتب‌شده بر اساس حروف الفبا</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.ApplyPriceRange">
-		<Value>Apply price range</Value>
+		<Value>اعمال بازه قیمت</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.Breadcrumb">
-		<Value>Breadcrumb</Value>
+		<Value>مسیر صفحه</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.BundleContains">
-		<Value>The product set contains {0}</Value>
+		<Value>این مجموعه شامل {0} است</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.BuyHint">
-		<Value>By clicking on "Buy," I accept the terms and conditions.</Value>
+		<Value>با کلیک روی «خرید»، شرایط و مقررات را می‌پذیرم.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CartItemSummary">
-		<Value>{0} at {1}.</Value>
+		<Value>{0} به قیمت {1}.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CartItemSummaryWithAttributes">
-		<Value>{0} at {1}, quantity {2}. {3}</Value>
+		<Value>{0} به قیمت {1}، تعداد {2}، {3}</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CartItemSummaryWithTotal">
-		<Value>{0} at {1} each, quantity {2}, total {3}.</Value>
+		<Value>{0}، قیمت هر واحد {1}، تعداد {2}، مجموع {3}.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CartTotalSummary">
-		<Value>Your order: {0} {1}, {2} products.</Value>
+		<Value>سفارش شما: {0} {1}، شامل {2} محصول.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CheckoutProcess">
-		<Value>Checkout process</Value>
+		<Value>فرایند ثبت سفارش</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CheckoutStep.Current">
-		<Value>Current step</Value>
+		<Value>مرحله جاری</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CheckoutStep.Pending">
-		<Value>Not visited</Value>
+		<Value>بازدیدنشده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CheckoutStep.Visited">
-		<Value>Completed</Value>
+		<Value>تکمیل‌شده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.Choice">
-		<Value>{0}, {1}</Value>
+		<Value>{0}، {1}</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CommentForm">
-		<Value>Comment form</Value>
+		<Value>فرم ثبت نظر</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.CurrencySelector">
-		<Value>Current currency {0} - Change currency</Value>
+		<Value>ارز فعلی {0}؛ تغییر ارز</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.ExpandItem">
-		<Value>Press ENTER for more options to {0}</Value>
+		<Value>برای مشاهده گزینه‌های بیشتر {0}، کلید Enter را بزنید</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.HidePassword">
-		<Value>Hide password</Value>
+		<Value>پنهان‌کردن رمز عبور</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.LanguageSelector">
-		<Value>Current language {0} - Change language</Value>
+		<Value>زبان فعلی {0}؛ تغییر زبان</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.MainNavigation">
-		<Value>Main navigation</Value>
+		<Value>منوی اصلی</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.MediaGallery">
-		<Value>Media gallery</Value>
+		<Value>گالری تصاویر</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.OffCanvasCartTab">
-		<Value>My articles</Value>
+		<Value>کالاهای من</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.OffCanvasMenuTab">
-		<Value>Shop sections</Value>
+		<Value>بخش‌های فروشگاه</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.PageNavigation">
-		<Value>Page navigation</Value>
+		<Value>پیمایش صفحه</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.PaginatorItemsPerPage">
-		<Value>Results per page</Value>
+		<Value>نتایج در هر صفحه</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.PriceRange">
-		<Value>Price range</Value>
+		<Value>بازه قیمت</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.ProductOfOrderPlacedOn">
-		<Value>Order {0} from {1}, {2}</Value>
+		<Value>سفارش {0} در تاریخ {1}، {2}</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.ProductVariants">
-		<Value>Product variants</Value>
+		<Value>گزینه‌های محصول</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.Rating">
-		<Value>Rating: {0} out of 5 stars. {1}</Value>
+		<Value>امتیاز: {0} از ۵ ستاره، {1}</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.SearchFilters">
-		<Value>Search filters</Value>
+		<Value>فیلترهای جستجو</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.SearchHitCount">
-		<Value>Search results</Value>
+		<Value>نتایج جستجو</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.SelectDeselectEntries">
-		<Value>Select or deselect all entries in the list</Value>
+		<Value>انتخاب یا لغو انتخاب همه موارد فهرست</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.SelectDeselectEntry">
-		<Value>Select or deselect entry</Value>
+		<Value>انتخاب یا لغو انتخاب مورد</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.ShowNextProducts">
-		<Value>Show next product group</Value>
+		<Value>نمایش گروه بعدی محصولات</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.ShowPassword">
-		<Value>Show password</Value>
+		<Value>نمایش رمز عبور</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.ShowPreviousProducts">
-		<Value>Show previous product group</Value>
+		<Value>نمایش گروه قبلی محصولات</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.SocialMediaLinks">
-		<Value>Our social media channels</Value>
+		<Value>شبکه‌های اجتماعی ما</Value>
 	</LocaleResource>
 	<LocaleResource Name="Aria.Label.UploaderProgressBar">
-		<Value>{0} fileupload</Value>
+		<Value>بارگذاری فایل {0}</Value>
 	</LocaleResource>
 	<LocaleResource Name="BackInStockSubscriptions.AlreadySubscribed">
 		<Value>شما قبلاً برای اعلان بازگشت به موجودی این محصول اشتراک کرده‌اید</Value>
@@ -15639,7 +15639,7 @@
 		<Value>نمایش "{0}" قابل نمایش نیست.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.CaptchaCheckFailed">
-		<Value>A CAPTCHA check failed with the error {0}.</Value>
+		<Value>اعتبارسنجی کپچا با خطای {0} مواجه شد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.CaptchaUnableToVerify">
 		<Value>تماس API برای تأیید کپچا ناموفق بود.</Value>
@@ -15681,7 +15681,7 @@
 		<Value>تأیید</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Consent">
-		<Value>Consent</Value>
+		<Value>رضایت</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Continue">
 		<Value>ادامه</Value>
@@ -15753,7 +15753,7 @@
 		<Value>حذف دائمی</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.DeleteSelected">
-		<Value>Delete selected</Value>
+		<Value>حذف موارد انتخاب‌شده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.DelKey">
 		<Value>Del</Value>
@@ -15792,7 +15792,7 @@
 		<Value>دوباره نشان نده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.DontShowDialogAgain">
-		<Value>Do not show this dialog again</Value>
+		<Value>این پنجره دوباره نمایش داده نشود</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Download">
 		<Value>دانلود</Value>
@@ -15846,7 +15846,7 @@
 		<Value>فعال‌شده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.EnlargeView">
-		<Value>Enlarge view</Value>
+		<Value>نمایش بزرگ‌تر</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.EnterKey">
 		<Value>Enter</Value>
@@ -15915,7 +15915,7 @@
 		<Value>انتخاب موضوعات</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Entity.SpecificationAttribute">
-		<Value>Specification attribute</Value>
+		<Value>ویژگی مشخصات</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Entity.SpecificationAttributeOption">
 		<Value>گزینه ویژگی مشخصات</Value>
@@ -15978,7 +15978,7 @@
 		<Value>خروج</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.ExpandCollapse">
-		<Value>Expand/collapse</Value>
+		<Value>باز کردن یا بستن</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.ExpandCollapseAll">
 		<Value>گسترش\جمع کردن همه</Value>
@@ -16056,7 +16056,7 @@
 		<Value>شبکه</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Helpful">
-		<Value>Helpful</Value>
+		<Value>مفید بود</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Hide">
 		<Value>مخفی کردن</Value>
@@ -16185,7 +16185,7 @@
 		<Value>یادداشت</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.NotHelpful">
-		<Value>Not helpful</Value>
+		<Value>مفید نبود</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Notification">
 		<Value>هشدار</Value>
@@ -16278,7 +16278,7 @@
 		<Value>لطفاً انتخاب کنید</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.PleaseWait">
-		<Value>Please wait…</Value>
+		<Value>لطفاً صبر کنید…</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Plugin">
 		<Value>افزونه</Value>
@@ -16287,10 +16287,10 @@
 		<Value>جمع</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Preset">
-		<Value>Preset</Value>
+		<Value>تنظیم آماده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Print">
-		<Value>Print</Value>
+		<Value>چاپ</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Product">
 		<Value>محصول</Value>
@@ -16374,7 +16374,7 @@
 		<Value>زمان‌بندی‌شده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.ScrollUp">
-		<Value>Scroll up</Value>
+		<Value>رفتن به بالا</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Search">
 		<Value>جستجو</Value>
@@ -16383,16 +16383,16 @@
 		<Value>جستجوی محصولات</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.SecurityPrompt">
-		<Value>Security prompt</Value>
+		<Value>درخواست تأیید امنیتی</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.SelectAction">
-		<Value>Select action</Value>
+		<Value>انتخاب عملیات</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.SelectAll">
 		<Value>انتخاب همه</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.SelectView">
-		<Value>Select view</Value>
+		<Value>انتخاب نما</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Send">
 		<Value>ارسال</Value>
@@ -16455,10 +16455,10 @@
 		<Value>اندازه</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.SkipList">
-		<Value>Skip list</Value>
+		<Value>رد کردن فهرست</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.SkipToMainContent">
-		<Value>Skip to main content</Value>
+		<Value>رفتن به محتوای اصلی</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Status">
 		<Value>وضعیت</Value>
@@ -16491,7 +16491,7 @@
 		<Value>زباله</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Type">
-		<Value>Type</Value>
+		<Value>نوع</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Unavailable">
 		<Value>در دسترس نیست</Value>
@@ -16503,7 +16503,7 @@
 		<Value>ناشناخته</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Unlimited">
-		<Value>Unlimited</Value>
+		<Value>نامحدود</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Unpublished">
 		<Value>منتشرنشده</Value>
@@ -16527,7 +16527,7 @@
 		<Value>بارگذاری</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.Url">
-		<Value>URL</Value>
+		<Value>نشانی اینترنتی</Value>
 	</LocaleResource>
 	<LocaleResource Name="Common.UserProfile">
 		<Value>پروفایل کاربر</Value>
@@ -16632,7 +16632,7 @@
 		<Value>مخفی کردن</Value>
 	</LocaleResource>
 	<LocaleResource Name="CookieManager.Dialog.Intro">
-		<Value>You decide which cookies you allow or reject. You can change your decision at any time in your &lt;a href='{0}'&gt;My Account area&lt;/a&gt;. Further information can also be found in our &lt;a href='{1}'&gt;privacy policy&lt;/a&gt;.</Value>
+		<Value>شما انتخاب می‌کنید کدام کوکی‌ها مجاز یا رد شوند. هر زمان می‌توانید این انتخاب را در &lt;a href='{0}'&gt;حساب کاربری خود&lt;/a&gt; تغییر دهید. اطلاعات بیشتر در &lt;a href='{1}'&gt;سیاست حریم خصوصی&lt;/a&gt;.</Value>
 	</LocaleResource>
 	<LocaleResource Name="CookieManager.Dialog.ReadMore">
 		<Value>بیشتر بخوانید</Value>
@@ -16725,7 +16725,7 @@
 		<Value>توافق‌نامه کاربری</Value>
 	</LocaleResource>
 	<LocaleResource Name="DownloadableProducts.UserAgreementConfirmation">
-		<Value>Yes, I agree to the &lt;a href='javascript:void(0)' data-id='{0}' class='download-user-agreement'&gt;user agreement&lt;/a&gt; for this product.</Value>
+		<Value>بله، با &lt;a href='javascript:void(0)' data-id='{0}' class='download-user-agreement'&gt;توافق‌نامه استفاده&lt;/a&gt; از این محصول موافقم.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.AttributeChoiceBehaviour.GrayOutUnavailable">
 		<Value>خاکستری کردن ویژگی‌های غیرقابل دسترس</Value>
@@ -17226,22 +17226,22 @@
 		<Value>ابطال‌شده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.PostIntroVisibility.FullText">
-		<Value>Show all</Value>
+		<Value>نمایش همه متن</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.PostIntroVisibility.Hidden">
-		<Value>Don't show</Value>
+		<Value>نمایش نده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.PostIntroVisibility.ThreeLines">
-		<Value>Three lines maximum</Value>
+		<Value>حداکثر سه خط</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.PostIntroVisibility.TwoLines">
-		<Value>Two lines maximum</Value>
+		<Value>حداکثر دو خط</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.PostListColumns.Three">
-		<Value>Three columns</Value>
+		<Value>سه ستون</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.PostListColumns.Two">
-		<Value>Two columns</Value>
+		<Value>دو ستون</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.PriceDisplayStyle.BadgeAll">
 		<Value>در نشان‌ها</Value>
@@ -17367,10 +17367,10 @@
 		<Value>قیمت ردیفی</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.ReturnCaseKind.Return">
-		<Value>Return</Value>
+		<Value>بازگشت کالا</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.ReturnCaseKind.Withdrawal">
-		<Value>Withdrawal</Value>
+		<Value>انصراف از خرید</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.ReturnRequestStatus.Cancelled">
 		<Value>لغوشده</Value>
@@ -17499,7 +17499,7 @@
 		<Value>نامعتبر</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.VatNumberStatus.ServiceUnavailable">
-		<Value>Online checks are currently unavailable</Value>
+		<Value>بررسی آنلاین در حال حاضر در دسترس نیست</Value>
 	</LocaleResource>
 	<LocaleResource Name="Enums.VatNumberStatus.Unknown">
 		<Value>ناشناخته</Value>
@@ -17605,7 +17605,7 @@
 		<Value>فایل مقصد</Value>
 	</LocaleResource>
 	<LocaleResource Name="FileUploader.DuplicateDialog.Intro">
-		<Value>A file with the name &lt;span class='current-file'&gt;&lt;/span&gt; already exists in the target.</Value>
+		<Value>فایلی با نام &lt;span class='current-file'&gt;&lt;/span&gt; از قبل در مقصد وجود دارد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="FileUploader.DuplicateDialog.Option.Rename">
 		<Value>تغییر نام فایل</Value>
@@ -17947,7 +17947,7 @@
 		<Value>Yes I've read the &lt;a href="{0}"&gt;privacy terms&lt;/a&gt; and agree that my data given by me can be stored electronically. My data will thereby only be used to process my inquiry.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Gdpr.Consent.DetailText.Small">
-		<Value>I agree to the &lt;a href="{0}"&gt;Privacy policy&lt;/a&gt;.</Value>
+		<Value>با &lt;a href="{0}"&gt;سیاست حریم خصوصی&lt;/a&gt; موافقم.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Gdpr.Consent.ValidationMessage">
 		<Value>لطفاً با پردازش داده‌های خود موافقت کنید.</Value>
@@ -17983,7 +17983,7 @@
 		<Value>برندهای برتر</Value>
 	</LocaleResource>
 	<LocaleResource Name="Homepage.TopCategories">
-		<Value>Top categories</Value>
+		<Value>دسته‌بندی‌های برتر</Value>
 	</LocaleResource>
 	<LocaleResource Name="HtmlEditor.ClickToEdit">
 		<Value>برای ویرایش HTML کلیک کنید...</Value>
@@ -18118,7 +18118,7 @@
 		<Value>زبان‌ها</Value>
 	</LocaleResource>
 	<LocaleResource Name="LinkBuilder.LinkTarget">
-		<Value>Define the target attribute for the link.</Value>
+		<Value>ویژگی مقصد پیوند را مشخص کنید.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Manufacturers">
 		<Value>تولیدکنندگان</Value>
@@ -18442,7 +18442,7 @@
 		<Value>نام</Value>
 	</LocaleResource>
 	<LocaleResource Name="Order.Product(s).OrderedQuantity">
-		<Value>Ordered</Value>
+		<Value>تعداد سفارش‌داده‌شده</Value>
 	</LocaleResource>
 	<LocaleResource Name="Order.Product(s).Price">
 		<Value>قیمت</Value>
@@ -18952,7 +18952,7 @@
 		<Value>دسترسی به لیست علاقه‌مندی‌ها</Value>
 	</LocaleResource>
 	<LocaleResource Name="Permissions.DisplayName.CollectionGroup">
-		<Value>Display groups</Value>
+		<Value>نمایش گروه‌ها</Value>
 	</LocaleResource>
 	<LocaleResource Name="Permissions.DisplayName.CreateAddress">
 		<Value>ایجاد آدرس‌ها</Value>
@@ -19054,7 +19054,7 @@
 		<Value>مبلغی که از آن به بعد ارسال رایگان است.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Plugins.Permissions.DisplayName.Display">
-		<Value>Display</Value>
+		<Value>نمایش</Value>
 	</LocaleResource>
 	<LocaleResource Name="Polls.AnswerNotFound">
 		<Value>پاسخ نظرسنجی {0} یافت نشد.</Value>
@@ -19339,7 +19339,7 @@
 		<Value>ایمیل دوست خود را وارد کنید</Value>
 	</LocaleResource>
 	<LocaleResource Name="Products.EmailAFriend.LoginNote">
-		<Value>Please log in to use this function. &lt;a href='{0}'&gt;Login now&lt;/a&gt;</Value>
+		<Value>برای استفاده از این قابلیت وارد شوید. &lt;a href='{0}'&gt;ورود به حساب&lt;/a&gt;</Value>
 	</LocaleResource>
 	<LocaleResource Name="Products.EmailAFriend.OnlyRegisteredUsers">
 		<Value>فقط مشتریان ثبت‌شده می‌توانند از قابلیت ارسال به دوست استفاده کنند</Value>
@@ -19474,7 +19474,7 @@
 		<Value>از {0}</Value>
 	</LocaleResource>
 	<LocaleResource Name="Products.ProductCodeNotFound">
-		<Value>The product with the code &lt;b&gt;{0}&lt;/b&gt; could not be found.</Value>
+		<Value>محصول با کد &lt;b&gt;{0}&lt;/b&gt; پیدا نشد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Products.ProductHasBeenAddedToTheCart">
 		<Value>محصول به سبد خرید شما اضافه شد</Value>
@@ -19519,7 +19519,7 @@
 		<Value>ویژگی‌ها</Value>
 	</LocaleResource>
 	<LocaleResource Name="Products.Specs.AdditionalFeatures">
-		<Value>Additional features</Value>
+		<Value>ویژگی‌های بیشتر</Value>
 	</LocaleResource>
 	<LocaleResource Name="Products.SwitchToGrid">
 		<Value>نمایش</Value>
@@ -19642,76 +19642,76 @@
 		<Value>مسیر</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.Case">
-		<Value>Case {0}</Value>
+		<Value>پرونده {0}</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.CaseNo">
-		<Value>Case no.</Value>
+		<Value>شماره پرونده</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.CertainItems">
-		<Value>Certain items</Value>
+		<Value>اقلام مشخص</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.Complete">
-		<Value>Completed</Value>
+		<Value>تکمیل‌شده</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.ConvertedWithdrawal">
-		<Value>The withdrawal has been converted to a return. Status: &lt;b&gt;{0}&lt;/b&gt;.</Value>
+		<Value>درخواست انصراف به مرجوعی تبدیل شد. وضعیت: &lt;b&gt;{0}&lt;/b&gt;.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.EntireOrder">
-		<Value>Entire order</Value>
+		<Value>کل سفارش</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.NextStep">
-		<Value>Next step</Value>
+		<Value>مرحله بعد</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.NextStep.Cancelled">
-		<Value>No further action is required.</Value>
+		<Value>نیازی به اقدام دیگری نیست.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.NextStep.ItemsRefunded">
-		<Value>The refund has been processed.</Value>
+		<Value>مبلغ بازپرداخت شد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.NextStep.ItemsRepaired">
-		<Value>We will send the repaired items back to you.</Value>
+		<Value>اقلام تعمیرشده برای شما ارسال می‌شوند.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.NextStep.Pending">
-		<Value>Please return the items.</Value>
+		<Value>لطفاً کالاها را بازگردانید.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.NextStep.Received">
-		<Value>We are processing your return.</Value>
+		<Value>در حال پردازش مرجوعی شما هستیم.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.NextStep.RequestRejected">
-		<Value>No further action is required.</Value>
+		<Value>نیازی به اقدام دیگری نیست.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.NextStep.ReturnAuthorized">
-		<Value>We will continue processing your request.</Value>
+		<Value>رسیدگی به درخواست شما ادامه می‌یابد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.Open">
-		<Value>Open</Value>
+		<Value>باز</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.OrderWithdrawn">
-		<Value>The order has been withdrawn.</Value>
+		<Value>سفارش لغو شد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.ReceivedWithdrawal">
-		<Value>Received withdrawal</Value>
+		<Value>درخواست انصراف دریافت شد</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.ReturnItemExists">
-		<Value>There are returns for this item.</Value>
+		<Value>برای این کالا درخواست مرجوعی وجود دارد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.StartProcessing">
-		<Value>Start processing</Value>
+		<Value>شروع پردازش</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.StartProcessing.Hint">
-		<Value>Converts the withdrawal into a return for further processing.</Value>
+		<Value>درخواست انصراف را برای ادامه رسیدگی به درخواست مرجوعی تبدیل می‌کند.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.WithdrawalItemExists">
-		<Value>A withdrawal request has been submitted for this item.</Value>
+		<Value>برای این کالا درخواست انصراف ثبت شده است.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.WithdrawalQuantity">
-		<Value>Withdrawal quantity</Value>
+		<Value>تعداد اقلام انصرافی</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.WithdrawEntireOrder">
-		<Value>I would like to withdraw the entire order:</Value>
+		<Value>می‌خواهم از کل سفارش انصراف دهم:</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnCase.WithdrawItems">
-		<Value>I would like to withdraw the following items:</Value>
+		<Value>می‌خواهم از خرید اقلام زیر انصراف دهم:</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnRequests.Comments">
 		<Value>نظرات</Value>
@@ -19735,7 +19735,7 @@
 		<Value>دلیل بازگشت</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnRequests.ReturnsNotPossible">
-		<Value>Returns are not possible for this order.</Value>
+		<Value>امکان مرجوعی این سفارش وجود ندارد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ReturnRequests.SelectProduct(s)">
 		<Value>کدام موارد را می‌خواهید بازگردانید؟</Value>
@@ -19804,7 +19804,7 @@
 		<Value>اولین نفری باشید که این مورد را بررسی می‌کند</Value>
 	</LocaleResource>
 	<LocaleResource Name="Reviews.Overview.NoReviews">
-		<Value>There are no reviews for this product yet.</Value>
+		<Value>هنوز نظری برای این محصول ثبت نشده است.</Value>
 	</LocaleResource>
 	<LocaleResource Name="Reviews.Overview.ReadAll">
 		<Value>خواندن همه نظرات</Value>
@@ -19852,7 +19852,7 @@
 		<Value>تاریخچه</Value>
 	</LocaleResource>
 	<LocaleResource Name="RewardPoints.Message.EarnedForNewsletterSubscription">
-		<Value>Earned reward points for signing up for the newsletter in the "{0}" store.</Value>
+		<Value>امتیاز وفاداری بابت عضویت در خبرنامه فروشگاه «{0}» دریافت شد.</Value>
 	</LocaleResource>
 	<LocaleResource Name="RewardPoints.Message.EarnedForOrder">
 		<Value>ترویج کسب‌شده برای سفارش #{0}</Value>
@@ -20047,7 +20047,7 @@
 		<Value>فیلتر کردن نتایج</Value>
 	</LocaleResource>
 	<LocaleResource Name="Search.SearchBox.Clear">
-		<Value>Clear search term</Value>
+		<Value>پاک‌کردن عبارت جستجو</Value>
 	</LocaleResource>
 	<LocaleResource Name="Search.SearchBox.Tooltip">
 		<Value>به دنبال چه هستید؟</Value>
@@ -20185,7 +20185,7 @@
 		<Value>تخفیف بیشتر ممکن نیست.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.DiscountCouponCode.Removed">
-		<Value>The discount code has been removed</Value>
+		<Value>کد تخفیف حذف شد</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.DiscountCouponCode.Tooltip">
 		<Value>کد تخفیف خود را اینجا وارد کنید</Value>
@@ -20233,7 +20233,7 @@
 		<Value>شما نمی‌توانید از کارت‌های هدیه با اقلام خودکار (دوره‌ای) استفاده کنید.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.GiftCardCouponCode.Removed">
-		<Value>The gift card code has been removed</Value>
+		<Value>کد کارت هدیه حذف شد</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.GiftCardCouponCode.Tooltip">
 		<Value>کد کارت هدیه را وارد کنید</Value>
@@ -20269,19 +20269,19 @@
 		<Value>محصول {0} به لیست علاقه‌مندی‌های شما اضافه شد</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.Mini.EmptyCart.Info">
-		<Value>You have not added any product to your cart yet. Use the &lt;i class='{0}'&gt;&lt;/i&gt; icon to add a product to your cart.</Value>
+		<Value>هنوز محصولی به سبد خرید اضافه نکرده‌اید. برای افزودن محصول از نماد &lt;i class='{0}'&gt;&lt;/i&gt; استفاده کنید.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.Mini.EmptyCart.Title">
 		<Value>سبد خرید خالی</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.Mini.EmptyCompare.Info">
-		<Value>You have not added any product to your compare list yet. Use the &lt;i class='{0}'&gt;&lt;/i&gt; icon to add a product to your compare list.</Value>
+		<Value>هنوز محصولی به فهرست مقایسه اضافه نکرده‌اید. برای افزودن از نماد &lt;i class='{0}'&gt;&lt;/i&gt; استفاده کنید.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.Mini.EmptyCompare.Title">
 		<Value>لیست مقایسه خالی</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.Mini.EmptyWishlist.Info">
-		<Value>You have not added any product to your wishlist yet. Use the &lt;i class='{0}'&gt;&lt;/i&gt; icon to add a product to your wishlist.</Value>
+		<Value>هنوز محصولی به علاقه‌مندی‌ها اضافه نکرده‌اید. برای افزودن از نماد &lt;i class='{0}'&gt;&lt;/i&gt; استفاده کنید.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.Mini.EmptyWishlist.Title">
 		<Value>لیست علاقه‌مندی‌ها خالی</Value>
@@ -20386,13 +20386,13 @@
 		<Value>امتیازهای پاداش</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.RewardPoints.Applied">
-		<Value>The reward points were applied.</Value>
+		<Value>امتیازهای وفاداری اعمال شدند.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.RewardPoints.Button">
 		<Value>اعمال</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.RewardPoints.Removed">
-		<Value>The reward points have been removed.</Value>
+		<Value>امتیازهای وفاداری حذف شدند.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.SelectAllProducts">
 		<Value>&lt;a href="{0}" class="select-cart-items" rel="nofollow"&gt;انتخاب همه محصولات&lt;/a&gt;.</Value>
@@ -20410,7 +20410,7 @@
 		<Value>نام فرستنده معتبر وارد کنید</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.ShippingInfoLink">
-		<Value>For a complete listing of all shipping costs please click &lt;a href="{0}"&gt;here&lt;/a&gt;.</Value>
+		<Value>برای مشاهده جزئیات هزینه‌های ارسال &lt;a href="{0}"&gt;اینجا&lt;/a&gt; کلیک کنید.</Value>
 	</LocaleResource>
 	<LocaleResource Name="ShoppingCart.SKU">
 		<Value>SKU</Value>

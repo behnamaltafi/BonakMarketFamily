@@ -6,6 +6,9 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*Enabled")]
     public bool Enabled { get; set; }
 
+    [LocalizedDisplay("*OtpLoginEnabled")]
+    public bool OtpLoginEnabled { get; set; }
+
     [LocalizedDisplay("*PrimaryProvider")]
     public string PrimaryProvider { get; set; } = "Kavenegar";
 

@@ -8,7 +8,10 @@ namespace Smartstore.MultiSms.Services;
 public sealed class MelipayamakSmsProvider : ISmsProvider
 {
     private const string Endpoint = "https://rest.payamak-panel.com/api/SendSMS/SendSMS";
-    private static readonly HttpClient Client = new()
+    private static readonly HttpClient Client = new(new SocketsHttpHandler
+    {
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+    })
     {
         Timeout = TimeSpan.FromSeconds(12)
     };

@@ -42,4 +42,20 @@
     <LocaleResource Name="TestRejected"><Value>ارسال پیامک تأیید نشد. تنظیمات تأمین‌کننده و گزارش‌های برنامه را بررسی کنید.</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled"><Value>فعال‌سازی ورود با کد پیامکی</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>ورود پیامکی برای حساب‌های اصلی Smartstore پس از تأیید اولیه شماره همراه فعال می‌شود.</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginTitle"><Value>ورود با کد پیامکی</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginHint"><Value>شماره موبایلی را وارد کنید که قبلاً در حساب خود تأیید کرده‌اید.</Value></LocaleResource>
+    <LocaleResource Name="Otp.PhoneLabel"><Value>شماره موبایل</Value></LocaleResource>
+    <LocaleResource Name="Otp.SendCode"><Value>ارسال کد تأیید</Value></LocaleResource>
+    <LocaleResource Name="Otp.CodeLabel"><Value>کد شش‌رقمی</Value></LocaleResource>
+    <LocaleResource Name="Otp.SignIn"><Value>ورود</Value></LocaleResource>
+    <LocaleResource Name="Otp.PasswordLogin"><Value>ورود با رمز عبور</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollLink"><Value>تأیید شماره برای ورود پیامکی</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollTitle"><Value>تأیید شماره موبایل برای ورود پیامکی</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollHint"><Value>ابتدا با حساب فعلی وارد شوید و مالکیت شماره موبایل خود را تأیید کنید.</Value></LocaleResource>
+    <LocaleResource Name="Otp.CurrentVerified"><Value>شماره تأییدشده فعلی: {0}</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnableLogin"><Value>تأیید شماره و فعال‌سازی ورود پیامکی</Value></LocaleResource>
+    <LocaleResource Name="Otp.BackToLogin"><Value>بازگشت به ورود پیامکی</Value></LocaleResource>
+    <LocaleResource Name="Otp.CodeSentGeneric"><Value>در صورت تأیید بودن این شماره، کد پیامکی ارسال خواهد شد.</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollmentSentGeneric"><Value>در صورت مجاز بودن شماره، کد تأیید ارسال خواهد شد.</Value></LocaleResource>
+    <LocaleResource Name="Otp.InvalidCode"><Value>کد نامعتبر یا منقضی شده است.</Value></LocaleResource>
 </Language>

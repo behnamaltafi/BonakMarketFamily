@@ -40,4 +40,6 @@
     <LocaleResource Name="Fields.TestMessage.Hint"><Value>Test message</Value></LocaleResource>
     <LocaleResource Name="TestAccepted"><Value>Anbieter {0} hat die SMS akzeptiert (Nachrichten-ID {1}). Die Zustellung ist noch nicht bestätigt.</Value></LocaleResource>
     <LocaleResource Name="TestRejected"><Value>Die SMS wurde nicht bestätigt. Prüfen Sie die Konfiguration und die Protokolle.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpLoginEnabled"><Value>SMS-Anmeldung mit Einmalcode aktivieren</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>Anmeldung für bestehende Smartstore-Kunden erst nach verifizierter Mobilnummer ermöglichen.</Value></LocaleResource>
 </Language>

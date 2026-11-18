@@ -13,7 +13,7 @@ public interface ISmsProvider
 /// Only explicit provider rejection is safe for automatic failover.
 /// Timeouts, connection resets and malformed responses are ambiguous: the SMS may already exist.
 /// </summary>
-internal sealed class SmsProviderException : Exception
+public sealed class SmsProviderException : Exception
 {
     public SmsProviderException(string message, bool safeToFailover = false)
         : base(message)

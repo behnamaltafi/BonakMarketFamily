@@ -20,10 +20,11 @@ Customer authentication, or depend on earlier identity-separation branches.
   are preserved.
 - Encrypted-at-rest one-time codes, 5 minute lifetime, at most five
   verification attempts per challenge, 2 minute resend cooldown and
-  10 sends in the challenge's rolling 24-hour window.
-- Migration: `Migrations/20261118140000_Initial.cs` creates two
+  10 sends in the challenge's rolling 24-hour window. Authenticated
+  enrollment additionally has a cross-phone per-account limit.
+- Migration: `Migrations/20261118140000_Initial.cs` creates three
   **module-owned** tables through Smartstore FluentMigrator:
-  `MultiSmsLoginPhone` and `MultiSmsOtpChallenge`.
+  `MultiSmsLoginPhone`, `MultiSmsOtpChallenge` and `MultiSmsOtpQuota`.
   It does not modify `Customer`, `Order`, or default Identity tables.
 
 ## Install and configure
@@ -54,7 +55,7 @@ Customer authentication, or depend on earlier identity-separation branches.
   a separate two-factor-authentication requirement must continue using their
   existing sign-in method; this OTP route refuses to bypass that requirement.
 - Challenge state is stored in the shop database (shared across nodes).
-  Concurrent updates use optimistic concurrency. The two table indexes stop
+  Concurrent updates use optimistic concurrency. Unique indexes stop
   phone and challenge duplicates.
 - Codes and provider secrets use ASP.NET Core Data Protection. Persist and
   share the Data Protection key ring across all application nodes; protect and
@@ -75,6 +76,6 @@ dotnet build Smartstore.sln -c Release
 dotnet test test/Smartstore.Core.Tests/Smartstore.Core.Tests.csproj -c Release --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests"
 ```
 
-Do not run EF Core `Add-Migration` for the two module tables. Smartstore's
+Do not run EF Core `Add-Migration` for these module tables. Smartstore's
 native FluentMigrator migration is the schema owner for these objects, and
 migration history is recorded in `__MigrationVersionInfo`.

@@ -8,7 +8,10 @@ namespace Smartstore.MultiSms.Services;
 /// </summary>
 public sealed class KavenegarSmsProvider : ISmsProvider
 {
-    private static readonly HttpClient Client = new()
+    private static readonly HttpClient Client = new(new SocketsHttpHandler
+    {
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+    })
     {
         Timeout = TimeSpan.FromSeconds(12)
     };

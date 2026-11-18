@@ -37,7 +37,7 @@ public sealed class KavenegarSmsProvider : ISmsProvider
         using var body = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["sender"] = settings.KavenegarSender,
-            ["receptor"] = phone,
+            ["receptor"] = IranianSmsRecipientFormatter.Normalize(phone),
             ["message"] = text
         });
 

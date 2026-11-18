@@ -16,7 +16,7 @@ public sealed class SmsCredentialProtection
     }
 
     public string Protect(string plaintext)
-        => string.IsNullOrWhiteSpace(plaintext) ? null : Prefix + _protector.Protect(plaintext.Trim());
+        => string.IsNullOrWhiteSpace(plaintext) ? null : Prefix + _protector.Protect(plaintext);
 
     public string Unprotect(string ciphertext)
     {

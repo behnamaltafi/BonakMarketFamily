@@ -58,6 +58,23 @@ internal sealed class Initial : Migration
                 .OnColumn("Purpose").Ascending()
                 .WithOptions().Unique();
         }
+        if (!Schema.Table("MultiSmsOtpQuota").Exists())
+        {
+            Create.Table("MultiSmsOtpQuota")
+                .WithIdColumn()
+                .WithColumn("QuotaKey").AsString(64).NotNullable()
+                .WithColumn("WindowStartUtc").AsDateTime2().NotNullable()
+                .WithColumn("LastSendUtc").AsDateTime2().NotNullable()
+                .WithColumn("SentCount").AsInt32().NotNullable().WithDefaultValue(0)
+                .WithColumn("Version").AsInt32().NotNullable().WithDefaultValue(0);
+        }
+
+        if (!Schema.Table("MultiSmsOtpQuota").Index("UX_MultiSmsOtpQuota_QuotaKey").Exists())
+        {
+            Create.Index("UX_MultiSmsOtpQuota_QuotaKey")
+                .OnTable("MultiSmsOtpQuota").OnColumn("QuotaKey").Ascending()
+                .WithOptions().Unique();
+        }
     }
 
     public override void Down()

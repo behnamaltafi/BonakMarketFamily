@@ -89,6 +89,8 @@ public sealed class MultiSmsController : AdminController
         {
             model.NewKavenegarApiKey = null;
             model.NewMelipayamakPassword = null;
+            ModelState.Remove(nameof(model.NewKavenegarApiKey));
+            ModelState.Remove(nameof(model.NewMelipayamakPassword));
             model.AvailableProviders = _providerNames;
             model.HasKavenegarApiKey = !string.IsNullOrEmpty(settings.EncryptedKavenegarApiKey);
             model.HasMelipayamakPassword = !string.IsNullOrEmpty(settings.EncryptedMelipayamakPassword);
@@ -115,6 +117,7 @@ public sealed class MultiSmsController : AdminController
         var model = CreateModel(settings);
         model.TestPhone = input.TestPhone;
         model.TestMessage = null; // Do not echo OTP-like text or the submitted body in a response.
+        ModelState.Remove(nameof(model.TestMessage));
 
         try
         {

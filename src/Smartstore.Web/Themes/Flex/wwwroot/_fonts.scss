@@ -45,3 +45,19 @@ html[lang="fa"] {
 	}
 }
 */
+html[lang="fa"],
+html[lang^="fa-"] {
+    body,
+    input,
+    select,
+    textarea,
+    button {
+        font-family: "Vazirmatn", "Noto Sans Arabic", Tahoma, "Segoe UI", sans-serif;
+    }
+
+    input[type="tel"],
+    input[autocomplete="one-time-code"] {
+        direction: ltr;
+        text-align: left;
+    }
+}

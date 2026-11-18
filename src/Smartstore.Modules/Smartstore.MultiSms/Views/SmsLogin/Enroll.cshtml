@@ -1,20 +1,19 @@
 @model SmsOtpLoginModel
 
 @{
-    Assets.AppendTitleParts("Verify mobile for SMS sign-in");
+    Assets.AppendTitleParts(T("Plugins.Sms.MultiSms.Otp.EnrollTitle").Value);
     Assets.AddMetaRobots();
 }
 
 <div class="page">
     <div class="row mb-4">
         <div class="col-12 col-md-8 offset-md-2 col-xl-6 offset-xl-3">
-            <h1>Verify mobile for SMS sign-in</h1>
-            <p class="text-muted">First sign in with your existing Smartstore account.
-                You must verify that you control this phone before it can be used to sign in.</p>
+            <h1>@T("Plugins.Sms.MultiSms.Otp.EnrollTitle")</h1>
+            <p class="text-muted">@T("Plugins.Sms.MultiSms.Otp.EnrollHint")</p>
 
             @if (!string.IsNullOrWhiteSpace(Model.VerifiedPhone))
             {
-                <div class="alert alert-success">Current verified number: @Model.VerifiedPhone</div>
+                <div class="alert alert-success">@T("Plugins.Sms.MultiSms.Otp.CurrentVerified", Model.VerifiedPhone)</div>
             }
 
             @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
@@ -28,9 +27,9 @@
                         <div class="form-floating mb-3">
                             <input asp-for="Phone" class="form-control" inputmode="tel"
                                    autocomplete="tel" placeholder="+989121234567" maxlength="16" required />
-                            <label asp-for="Phone">Mobile number</label>
+                            <label asp-for="Phone">@T("Plugins.Sms.MultiSms.Otp.PhoneLabel")</label>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Send verification code</button>
+                        <button type="submit" class="btn btn-primary w-100">@T("Plugins.Sms.MultiSms.Otp.SendCode")</button>
                     </form>
 
                     <hr />
@@ -40,20 +39,20 @@
                         <div class="form-floating mb-3">
                             <input asp-for="Phone" class="form-control" inputmode="tel"
                                    autocomplete="tel" placeholder="+989121234567" maxlength="16" required />
-                            <label asp-for="Phone">Mobile number</label>
+                            <label asp-for="Phone">@T("Plugins.Sms.MultiSms.Otp.PhoneLabel")</label>
                         </div>
                         <div class="form-floating mb-3">
                             <input asp-for="Code" class="form-control" inputmode="numeric"
                                    autocomplete="one-time-code" placeholder="123456"
                                    pattern="[0-9]{6}" maxlength="6" required />
-                            <label asp-for="Code">6-digit verification code</label>
+                            <label asp-for="Code">@T("Plugins.Sms.MultiSms.Otp.CodeLabel")</label>
                         </div>
-                        <button type="submit" class="btn btn-outline-primary w-100">Verify and enable SMS sign-in</button>
+                        <button type="submit" class="btn btn-outline-primary w-100">@T("Plugins.Sms.MultiSms.Otp.EnableLogin")</button>
                     </form>
                 </div>
             </div>
 
-            <a class="d-block mt-3" asp-controller="SmsLogin" asp-action="Index">Go to SMS sign-in</a>
+            <a class="d-block mt-3" asp-controller="SmsLogin" asp-action="Index">@T("Plugins.Sms.MultiSms.Otp.BackToLogin")</a>
         </div>
     </div>
 </div>

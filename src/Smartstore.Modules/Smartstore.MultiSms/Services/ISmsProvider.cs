@@ -2,7 +2,7 @@ using Smartstore.MultiSms.Configuration;
 
 namespace Smartstore.MultiSms.Services;
 
-internal interface ISmsProvider
+public interface ISmsProvider
 {
     string Name { get; }
     bool IsAvailable(SmsGatewaySettings settings);

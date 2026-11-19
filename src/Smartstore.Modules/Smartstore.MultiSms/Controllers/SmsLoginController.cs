@@ -201,6 +201,10 @@ public sealed class SmsLoginController : PublicController
             customer.IsRegistered() ? customer : null;
     }
 
+    /// <summary>
+    /// Compatibility redirect: binding or changing a mobile now happens inline
+    /// on Smartstore's native Customer profile instead of a separate page.
+    /// </summary>
     [HttpGet("enroll")]
     public async Task<IActionResult> Enroll()
     {
@@ -209,77 +213,15 @@ public sealed class SmsLoginController : PublicController
             return NotFound();
         }
 
-        var customer = Services.WorkContext.CurrentCustomer;
-        if (customer is null || !customer.Active || customer.Deleted ||
-            !customer.IsRegistered() || !_signInManager.IsSignedIn(User))
+        if (await GetSignedInCustomerAsync() is null)
         {
-            return RedirectToRoute("Login", new { method = "password", returnUrl = Url.Action(nameof(Enroll)) });
+            return RedirectToRoute("Login", new
+            {
+                method = "password",
+                returnUrl = Url.Action("Info", "Customer")
+            });
         }
 
-        return View(new SmsOtpLoginModel
-        {
-            IsEnrolling = true,
-            VerifiedPhone = await _otp.GetVerifiedPhoneAsync(customer.Id)
-        });
-    }
-
-    [HttpPost("enroll/request")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RequestEnrollment(SmsOtpLoginModel model, CancellationToken ct)
-    {
-        if (!await _otp.IsEnabledAsync())
-        {
-            return NotFound();
-        }
-
-        var customer = Services.WorkContext.CurrentCustomer;
-        if (customer is null || !customer.Active || customer.Deleted ||
-            !customer.IsRegistered() || !_signInManager.IsSignedIn(User))
-        {
-            return RedirectToRoute("Login", new { method = "password", returnUrl = Url.Action(nameof(Enroll)) });
-        }
-
-        if (SmsPhoneNormalizer.Normalize(model.Phone) is null)
-        {
-            ModelState.AddModelError(nameof(model.Phone), T("Plugins.Sms.MultiSms.Otp.InvalidPhone").Value);
-            model.VerifiedPhone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
-            return View("Enroll", model);
-        }
-
-        await _otp.RequestEnrollmentCodeAsync(customer, model.Phone, ct);
-        ModelState.Clear();
-        model.IsEnrolling = true;
-        model.CodeRequested = true;
-        model.VerifiedPhone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
-        model.StatusMessage = T("Plugins.Sms.MultiSms.Otp.EnrollmentSentGeneric").Value;
-        return View("Enroll", model);
-    }
-
-    [HttpPost("enroll/verify")]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ConfirmEnrollment(SmsOtpLoginModel model, CancellationToken ct)
-    {
-        if (!await _otp.IsEnabledAsync())
-        {
-            return NotFound();
-        }
-
-        var customer = Services.WorkContext.CurrentCustomer;
-        if (customer is null || !customer.Active || customer.Deleted ||
-            !customer.IsRegistered() || !_signInManager.IsSignedIn(User))
-        {
-            return RedirectToRoute("Login", new { method = "password", returnUrl = Url.Action(nameof(Enroll)) });
-        }
-
-        if (!await _otp.ConfirmEnrollmentAsync(customer, model.Phone, model.Code, ct))
-        {
-            ModelState.AddModelError(nameof(model.Code), T("Plugins.Sms.MultiSms.Otp.InvalidCode").Value);
-            model.IsEnrolling = true;
-            model.CodeRequested = true;
-            model.VerifiedPhone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
-            return View("Enroll", model);
-        }
-
-        return RedirectToAction(nameof(Enroll));
+        return RedirectToAction("Info", "Customer");
     }
 }

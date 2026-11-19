@@ -24,6 +24,12 @@ public interface ISmsOtpLoginService
     /// <summary>Verifies and binds a mobile number to its authenticated account.</summary>
     Task<bool> ConfirmEnrollmentAsync(Customer customer, string phone, string code, CancellationToken ct = default);
 
-    /// <summary>Consumes a login code and returns its account, or null on failure.</summary>
+    /// <summary>Whether a verified phone account has not yet completed its onboarding profile.</summary>
+    Task<bool> IsProfileIncompleteAsync(int customerId, CancellationToken ct = default);
+
+    /// <summary>Consumes a login code, creating a native Customer on first use if registration is enabled.</summary>
     Task<Customer?> ConfirmLoginAsync(string phone, string code, CancellationToken ct = default);
+
+    /// <summary>Complete or update the phone-linked Customer's profile. Email may be omitted.</summary>
+    Task<Microsoft.AspNetCore.Identity.IdentityResult> CompleteProfileAsync(Customer customer, string username, string? firstName, string? lastName, string? email, CancellationToken ct = default);
 }

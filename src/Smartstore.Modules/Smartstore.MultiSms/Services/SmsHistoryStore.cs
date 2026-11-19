@@ -12,7 +12,7 @@ namespace Smartstore.MultiSms.Services;
 /// must never trigger a second SMS or conceal a successful provider acknowledgement.
 /// No OTP body is copied to SQL, including on failed delivery.
 /// </summary>
-public sealed class SmsHistoryStore
+public sealed class SmsHistoryStore : ISmsHistoryWriter
 {
     private readonly SmartDbContext _db;
     private readonly ILogger<SmsHistoryStore> _logger;
@@ -46,7 +46,8 @@ public sealed class SmsHistoryStore
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _db.Entry(message).State = EntityState.Detached;
+            try { _db.Entry(message).State = EntityState.Detached; }
+            catch (InvalidOperationException) { }
             _logger.LogWarning("SMS history could not be started; provider send will continue.");
             return null;
         }
@@ -85,7 +86,8 @@ public sealed class SmsHistoryStore
         }
         catch (Exception)
         {
-            _db.Entry(attempt).State = EntityState.Detached;
+            try { _db.Entry(attempt).State = EntityState.Detached; }
+            catch (InvalidOperationException) { }
             _logger.LogWarning("SMS attempt history could not be saved; provider result is unchanged.");
         }
     }

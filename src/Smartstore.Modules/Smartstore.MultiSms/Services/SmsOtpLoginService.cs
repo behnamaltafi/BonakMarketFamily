@@ -278,6 +278,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                     LastActivityDateUtc = now
                 };
 
+                customer.GenericAttributes.Phone = username;
+
                 customer.CustomerRoleMappings.Add(new CustomerRoleMapping
                 {
                     CustomerRoleId = registeredRole.Id,

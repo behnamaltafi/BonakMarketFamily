@@ -528,7 +528,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         try
         {
             await _sms.SendAsync(new SmsSendRequest(phone,
-                $"Your Smartstore verification code is {code}. Valid for 5 minutes."), ct);
+                $"Your Smartstore verification code is {code}. Valid for 5 minutes.", SmsMessageKind.Otp), ct);
             return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

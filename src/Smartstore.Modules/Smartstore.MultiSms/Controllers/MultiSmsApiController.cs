@@ -51,7 +51,7 @@ public sealed class MultiSmsApiController : ControllerBase
 
         try
         {
-            var result = await _sender.SendAsync(new SmsSendRequest(request.Phone, request.Text), ct);
+            var result = await _sender.SendAsync(new SmsSendRequest(request.Phone, request.Text, SmsMessageKind.Test), ct);
             return Ok(new { code = "accepted", provider = result.Provider, messageId = result.MessageId });
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

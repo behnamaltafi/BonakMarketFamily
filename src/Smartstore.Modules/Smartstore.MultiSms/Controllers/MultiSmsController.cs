@@ -190,6 +190,7 @@ public sealed class MultiSmsController : AdminController
     }
 
     [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> History(
         string phone = null, string kind = null, string status = null,
         int page = 1, CancellationToken ct = default)
@@ -213,6 +214,7 @@ public sealed class MultiSmsController : AdminController
     }
 
     [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<IActionResult> Message(int id, CancellationToken ct = default)
     {
         var message = await _history.FindAsync(id, ct);

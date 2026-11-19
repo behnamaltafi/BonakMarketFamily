@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Smartstore.Core.Configuration;
 using Smartstore.Core.Data;
 using Smartstore.Core.Identity;
@@ -12,9 +13,8 @@ using Smartstore.MultiSms.Domain;
 namespace Smartstore.MultiSms.Services;
 
 /// <summary>
-/// Enrolls a verified phone for an existing native Customer and issues
-/// single-use login codes. It never authenticates against an unverified
-/// Customer.GenericAttributes.Phone value.
+/// Unifies mobile-number login and post-verification Customer registration.
+/// Never trusts an unverified Customer.GenericAttributes.Phone value.
 /// </summary>
 public sealed class SmsOtpLoginService : ISmsOtpLoginService
 {
@@ -22,17 +22,23 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     private readonly ISmsSender _sms;
     private readonly ISettingFactory _settings;
     private readonly IDataProtector _codeProtector;
+    private readonly UserManager<Customer> _userManager;
+    private readonly SignInManager<Customer> _signInManager;
 
     public SmsOtpLoginService(
         SmartDbContext db,
         ISmsSender sms,
         ISettingFactory settings,
-        IDataProtectionProvider protection)
+        IDataProtectionProvider protection,
+        UserManager<Customer> userManager,
+        SignInManager<Customer> signInManager)
     {
         _db = db;
         _sms = sms;
         _settings = settings;
         _codeProtector = protection.CreateProtector("Smartstore.MultiSms.Otp.v1");
+        _userManager = userManager;
+        _signInManager = signInManager;
     }
 
     public async Task<bool> IsEnabledAsync()
@@ -78,20 +84,29 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             return;
         }
 
-        // Unknown numbers intentionally return exactly the same public result.
-        // Only verified mobile identities are eligible to receive a login code.
+        // Same public response for known/unknown numbers. Unknown numbers receive an OTP
+        // so they can register only AFTER proving possession of that mobile number.
         var binding = await _db.Set<SmsLoginPhone>().AsNoTracking()
             .FirstOrDefaultAsync(x => x.Phone == canonical, ct);
         if (binding is null)
         {
-            return;
+            var customerSettings = await _settings.LoadSettingsAsync<CustomerSettings>();
+            if (customerSettings.UserRegistrationType != UserRegistrationType.Standard)
+            {
+                return;
+            }
         }
-
-        var customer = await _db.Customers.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.Id == binding.CustomerId, ct);
-        if (customer is null || !customer.Active || customer.Deleted)
+        else
         {
-            return;
+            var customer = await _db.Customers.IncludeCustomerRoles().FirstOrDefaultAsync(
+                x => x.Id == binding.CustomerId, ct);
+            if (customer is null || !customer.Active || customer.Deleted || !customer.IsRegistered() ||
+                !await _signInManager.CanSignInAsync(customer) ||
+                await _userManager.IsLockedOutAsync(customer) ||
+                await _userManager.GetTwoFactorEnabledAsync(customer))
+            {
+                return;
+            }
         }
 
         await IssueCodeAsync(canonical, "login", ct);
@@ -127,13 +142,15 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             {
                 CustomerId = customer.Id,
                 Phone = canonical,
-                VerifiedOnUtc = DateTime.UtcNow
+                VerifiedOnUtc = DateTime.UtcNow,
+                ProfileCompletedOnUtc = DateTime.UtcNow
             });
         }
         else
         {
             binding.Phone = canonical;
             binding.VerifiedOnUtc = DateTime.UtcNow;
+            binding.ProfileCompletedOnUtc ??= DateTime.UtcNow;
         }
 
         _db.Set<SmsOtpChallenge>().Remove(challenge);
@@ -149,6 +166,11 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         }
     }
 
+    /// <summary>
+    /// One OTP works for BOTH sign-in and sign-up. Unbound numbers create a native
+    /// Customer after code verification, never before it. Existing accounts are
+    /// matched exclusively through the verified phone binding (no untrusted profile-phone lookup).
+    /// </summary>
     public async Task<Customer> ConfirmLoginAsync(string phone, string code,
         CancellationToken ct = default)
     {
@@ -160,9 +182,54 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
         var binding = await _db.Set<SmsLoginPhone>().AsNoTracking()
             .FirstOrDefaultAsync(x => x.Phone == canonical, ct);
-        if (binding is null)
+
+        Customer customer = null;
+        CustomerSettings customerSettings = null;
+        CustomerRole registeredRole = null;
+        string username = null;
+        string internalEmail = null;
+
+        if (binding is not null)
         {
-            return null;
+            customer = await _db.Customers.IncludeCustomerRoles()
+                .FirstOrDefaultAsync(x => x.Id == binding.CustomerId, ct);
+            if (customer is null || customer.Deleted || !customer.Active || !customer.IsRegistered() ||
+                !await _signInManager.CanSignInAsync(customer) ||
+                await _userManager.IsLockedOutAsync(customer) ||
+                await _userManager.GetTwoFactorEnabledAsync(customer))
+            {
+                return null;
+            }
+        }
+        else
+        {
+            customerSettings = await _settings.LoadSettingsAsync<CustomerSettings>();
+            // Respect native shop registration policy. Never bypass email validation,
+            // disabled registrations or administrator approval through the OTP path.
+            if (customerSettings.UserRegistrationType != UserRegistrationType.Standard)
+            {
+                return null;
+            }
+
+            username = SmsPhoneNormalizer.ToProviderPhone(canonical);
+            // Smartstore's native IUserValidator requires Email, even for passwordless
+            // users. Reserved .invalid is never a deliverable email address.
+            internalEmail = "sms-" + canonical[1..] + "@accounts.invalid";
+
+            // Do not hijack legacy customers merely because their username/phone matches.
+            // They must explicitly bind this mobile while signed in to their existing account.
+            if (await _db.Customers.IgnoreQueryFilters().AnyAsync(
+                x => x.Username == username || x.Email == internalEmail, ct))
+            {
+                return null;
+            }
+
+            registeredRole = await _db.CustomerRoles.FirstOrDefaultAsync(
+                x => x.SystemName == SystemCustomerRoleNames.Registered, ct);
+            if (registeredRole is null)
+            {
+                return null;
+            }
         }
 
         var challenge = await ValidateCodeAsync(canonical, "login", code, ct);
@@ -171,25 +238,99 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             return null;
         }
 
-        var customer = await _db.Customers
-            .FirstOrDefaultAsync(x => x.Id == binding.CustomerId, ct);
-        if (customer is null || !customer.Active || customer.Deleted ||
-            !customer.IsRegistered())
-        {
-            return null;
-        }
-
-        _db.Set<SmsOtpChallenge>().Remove(challenge);
+        // Consume the code atomically before adding the new Customer and phone binding.
+        // The transaction rolls everything back if account creation fails.
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
         try
         {
-            await _db.SaveChangesAsync(ct);
+            var deleted = await _db.Set<SmsOtpChallenge>()
+                .Where(x => x.Id == challenge.Id && x.Version == challenge.Version &&
+                    x.ExpiresOnUtc > DateTime.UtcNow)
+                .ExecuteDeleteAsync(ct);
+            if (deleted != 1)
+            {
+                await transaction.RollbackAsync(ct);
+                return null;
+            }
+
+            _db.Entry(challenge).State = EntityState.Detached;
+            if (binding is null)
+            {
+                var now = DateTime.UtcNow;
+                customer = new Customer
+                {
+                    Username = username,
+                    Email = internalEmail,
+                    Active = true,
+                    CreatedOnUtc = now,
+                    LastActivityDateUtc = now
+                };
+
+                customer.CustomerRoleMappings.Add(new CustomerRoleMapping
+                {
+                    CustomerRoleId = registeredRole.Id,
+                    CustomerRole = registeredRole
+                });
+
+                if (customerSettings.RegisterCustomerRoleId is int extraRoleId &&
+                    extraRoleId != 0 && extraRoleId != registeredRole.Id)
+                {
+                    var extraRole = await _db.CustomerRoles.FirstOrDefaultAsync(
+                        x => x.Id == extraRoleId && x.Active, ct);
+                    if (extraRole is not null)
+                    {
+                        customer.CustomerRoleMappings.Add(new CustomerRoleMapping
+                        {
+                            CustomerRoleId = extraRole.Id,
+                            CustomerRole = extraRole
+                        });
+                    }
+                }
+
+                var result = await _userManager.CreateAsync(customer);
+                if (!result.Succeeded)
+                {
+                    await transaction.RollbackAsync(ct);
+                    return null;
+                }
+
+                _db.Set<SmsLoginPhone>().Add(new SmsLoginPhone
+                {
+                    CustomerId = customer.Id,
+                    Phone = canonical,
+                    VerifiedOnUtc = now
+                    // ProfileCompletedOnUtc remains null until the new user confirms details.
+                });
+                await _db.SaveChangesAsync(ct);
+            }
+
+            await transaction.CommitAsync(ct);
             return customer;
         }
         catch (DbUpdateException)
         {
+            await transaction.RollbackAsync(ct);
             _db.ChangeTracker.Clear();
             return null;
         }
+    }
+
+    public Task<bool> IsProfileIncompleteAsync(int customerId, CancellationToken ct = default)
+        => _db.Set<SmsLoginPhone>().AsNoTracking()
+            .AnyAsync(x => x.CustomerId == customerId && x.ProfileCompletedOnUtc == null, ct);
+
+    public async Task<bool> MarkProfileCompletedAsync(int customerId, CancellationToken ct = default)
+    {
+        var row = await _db.Set<SmsLoginPhone>().FirstOrDefaultAsync(
+            x => x.CustomerId == customerId, ct);
+        if (row is null)
+        {
+            return false;
+        }
+
+        row.ProfileCompletedOnUtc ??= DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+        return true;
     }
 
     private async Task<bool> ConsumeEnrollmentQuotaAsync(int customerId, CancellationToken ct)

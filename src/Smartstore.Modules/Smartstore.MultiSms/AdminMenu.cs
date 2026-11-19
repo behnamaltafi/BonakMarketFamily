@@ -25,6 +25,7 @@ public sealed class AdminMenu : IMenuProvider
     private static MenuItem BuildHistoryItem()
         => new MenuItem().ToBuilder()
             .Text("SMS History")
+            .ResKey("Plugins.Sms.MultiSms.HistoryTitle")
             .Icon("list")
             .PermissionNames("configuration.setting")
             .Action("History", "MultiSms", new { area = "Admin" })

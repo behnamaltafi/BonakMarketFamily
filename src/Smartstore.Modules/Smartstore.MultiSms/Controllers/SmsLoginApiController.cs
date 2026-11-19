@@ -127,6 +127,7 @@ public sealed class SmsLoginApiController : ControllerBase
 
     /// <summary>Requests a phone binding for the currently signed-in account only.</summary>
     [HttpPost("enroll/request")]
+    [HttpPost("profile/phone/request")]
     public async Task<IActionResult> RequestEnrollment([FromBody] SmsCodeRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -146,6 +147,7 @@ public sealed class SmsLoginApiController : ControllerBase
 
     /// <summary>Confirms a phone binding without accepting a client-supplied customer ID.</summary>
     [HttpPost("enroll/verify")]
+    [HttpPost("profile/phone/verify")]
     public async Task<IActionResult> ConfirmEnrollment([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())

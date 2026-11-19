@@ -104,7 +104,7 @@ public sealed class SmsGatewaySender : ISmsSender
             {
                 await _history.RecordAttemptAsync(
                     message, provider.Name, "Accepted", messageId, null,
-                    startedOnUtc, (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), ct);
+                    startedOnUtc, (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), CancellationToken.None);
             }
             return messageId;
         }
@@ -116,7 +116,7 @@ public sealed class SmsGatewaySender : ISmsSender
                 await _history.RecordAttemptAsync(
                     message, provider.Name, SmsHistoryFormatter.FailedStatus(ex), null,
                     SmsHistoryFormatter.SafeCategory(ex), startedOnUtc,
-                    (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), ct);
+                    (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), CancellationToken.None);
             }
             throw;
         }

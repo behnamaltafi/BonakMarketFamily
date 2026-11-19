@@ -49,6 +49,8 @@ public sealed class SmsLoginApiController : ControllerBase
         {
             enabled,
             isAuthenticated = customer is not null,
+            profileRequired = enabled && customer is not null &&
+                await _otp.IsProfileIncompleteAsync(customer.Id, ct),
             phone = enabled && customer is not null ? await _otp.GetVerifiedPhoneAsync(customer.Id, ct) : null,
             requestToken = tokens.RequestToken,
             headerName = tokens.HeaderName
@@ -89,7 +91,33 @@ public sealed class SmsLoginApiController : ControllerBase
         await _signInManager.SignInAsync(customer, isPersistent: false);
         customer.LastLoginDateUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
-        return Ok(new { code = "signed_in" });
+        bool profileRequired = await _otp.IsProfileIncompleteAsync(customer.Id, ct);
+        return Ok(new { code = "signed_in", profileRequired, profilePath = "/sms-login/profile" });
+    }
+
+    /// <summary>Updates the phone-linked Customer's optional profile using the auth cookie.</summary>
+    [HttpPost("profile")]
+    public async Task<IActionResult> CompleteProfile([FromBody] SmsProfileApiRequest request, CancellationToken ct)
+    {
+        if (!await _otp.IsEnabledAsync())
+        {
+            return NotFound();
+        }
+
+        var customer = await GetCustomerAsync();
+        if (customer is null)
+        {
+            return Unauthorized();
+        }
+
+        var result = await _otp.CompleteProfileAsync(
+            customer, request.Username, request.FirstName, request.LastName, request.Email, ct);
+        if (!result.Succeeded)
+        {
+            return BadRequest(new { code = "invalid_profile", errors = result.Errors.Select(x => x.Description) });
+        }
+
+        return Ok(new { code = "profile_saved" });
     }
 
     /// <summary>Requests a phone binding for the currently signed-in account only.</summary>

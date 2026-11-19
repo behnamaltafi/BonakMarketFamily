@@ -17,6 +17,7 @@ using Smartstore.Core.Data;
 using Smartstore.Core.Identity;
 using Smartstore.Core.Messaging;
 using Smartstore.Core.Security;
+using Smartstore.Events;
 using Smartstore.MultiSms.Controllers;
 using Smartstore.MultiSms.Models;
 using Smartstore.MultiSms.Services;
@@ -140,7 +141,7 @@ public class SmsApiControllerTests
         antiforgery.Setup(x => x.GetAndStoreTokens(It.IsAny<HttpContext>()))
             .Returns(new AntiforgeryTokenSet("request-token", "cookie-token", "__RequestVerificationToken", "X-XSRF-Token"));
         var users = CreateUserManager();
-        var controller = new SmsLoginApiController(otp.Object, CreateSignInManager(users).Object, users.Object, null, antiforgery.Object)
+        var controller = new SmsLoginApiController(otp.Object, CreateSignInManager(users).Object, users.Object, null, antiforgery.Object, Mock.Of<IEventPublisher>())
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };
@@ -185,7 +186,7 @@ public class SmsApiControllerTests
     {
         users ??= CreateUserManager();
         signIn ??= CreateSignInManager(users);
-        return new SmsLoginApiController(otp.Object, signIn.Object, users.Object, db, Mock.Of<IAntiforgery>())
+        return new SmsLoginApiController(otp.Object, signIn.Object, users.Object, db, Mock.Of<IAntiforgery>(), Mock.Of<IEventPublisher>())
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

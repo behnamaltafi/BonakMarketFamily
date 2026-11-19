@@ -49,7 +49,7 @@
     <LocaleResource Name="Otp.CodeLabel"><Value>6-digit code</Value></LocaleResource>
     <LocaleResource Name="Otp.SignIn"><Value>Sign in</Value></LocaleResource>
     <LocaleResource Name="Otp.PasswordLogin"><Value>Password sign-in</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnrollLink"><Value>Link mobile to an existing account</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollLink"><Value>Add or change mobile in your profile</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollTitle"><Value>Verify mobile for SMS sign-in</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollHint"><Value>Sign in with your existing account first. Verify that you control this phone before it can be used to sign in.</Value></LocaleResource>
     <LocaleResource Name="Otp.CurrentVerified"><Value>Current verified number: {0}</Value></LocaleResource>

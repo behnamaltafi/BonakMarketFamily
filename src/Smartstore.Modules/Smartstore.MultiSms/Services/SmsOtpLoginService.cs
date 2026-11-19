@@ -165,6 +165,9 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             binding.ProfileCompletedOnUtc ??= DateTime.UtcNow;
         }
 
+        // Profile contact phone follows the verified authentication number.
+        // A profile form submission alone never changes the SMS login binding.
+        customer.GenericAttributes.Phone = SmsPhoneNormalizer.ToProviderPhone(canonical);
         _db.Set<SmsOtpChallenge>().Remove(challenge);
         try
         {

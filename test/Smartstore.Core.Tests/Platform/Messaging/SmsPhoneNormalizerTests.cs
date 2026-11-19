@@ -10,6 +10,8 @@ public sealed class SmsPhoneNormalizerTests
     [TestCase("989123456789", "+989123456789")]
     [TestCase("+989123456789", "+989123456789")]
     [TestCase(" 09123456789 ", "+989123456789")]
+    [TestCase("۰۹۱۲۳۴۵۶۷۸۹", "+989123456789")]
+    [TestCase("٠٩١٢٣٤٥٦٧٨٩", "+989123456789")]
     public void Iranian_mobile_numbers_have_a_single_canonical_identity(string input, string expected)
         => Assert.That(SmsPhoneNormalizer.Normalize(input), Is.EqualTo(expected));
 

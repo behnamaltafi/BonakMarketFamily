@@ -20,4 +20,7 @@ public sealed class SmsLoginPhone : BaseEntity
     public string Phone { get; set; }
 
     public DateTime VerifiedOnUtc { get; set; }
+
+    /// <summary>Null until a newly registered customer finishes the optional-details screen.</summary>
+    public DateTime? ProfileCompletedOnUtc { get; set; }
 }

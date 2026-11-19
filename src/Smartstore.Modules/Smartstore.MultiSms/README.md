@@ -40,6 +40,64 @@ Customer authentication, or depend on earlier identity-separation branches.
   profile completion on the module-owned phone-binding table. Neither
   migration modifies `Customer`, `Order` or default Identity tables.
 
+## SQL Server message and attempt history
+
+The central `SmsGatewaySender` records a parent `MultiSmsMessage` row
+and a `MultiSmsSendAttempt` row for each transport attempt. Safe failover
+creates **two attempt rows** under the same message: e.g.
+Kavenegar/Rejected → Melipayamak/Accepted.
+
+- `Accepted` means provider acceptance **only**, not handset delivery.
+- `Rejected` means a definite provider rejection; `Unknown` means a
+  potentially delivered request failed without a definitive receipt.
+  Ambiguous sends are NEVER automatically retried.
+- The default `HistoryEnabled=true` and `HistoryRetentionDays=90`
+  may be changed in Admin settings (1–3650 days).
+  Expired records are removed in bounded batches during subsequent history
+  writes (at most once every six hours per running process); this is
+  **best-effort request-triggered cleanup**, not a guaranteed exact-time
+  scheduler. A disabled/idle gateway will not run retention cleanup.
+- Full recipient phone numbers are retained in SQL to permit exact-match
+  administrator search; admin history views mask them. Restrict database access
+  accordingly. No message body is stored by default.
+- The optional `StoreNonOtpMessageBody` flag stores bodies of messages
+  explicitly classified `General`. OTP and manual Test message bodies are
+  never persisted even if enabled.
+- History write errors are non-blocking: they cannot turn an accepted SMS into
+  a retryable error. The admin status is operational history, not a delivery
+  status verification service. There is no delivery callback integration yet.
+- Additional migration `20261119102000_SmsMessageHistory.cs` creates the
+  two module-owned history tables (FluentMigrator), without touching Customer
+  or core Smartstore schema.
+
+The history is at Admin → Settings → SMS History or from the SMS module's
+configuration page. The history listing includes a filter by full destination
+phone, message type, status, pagination and drill-down into attempts.
+
+## Development Mock provider and temporary inbox
+
+1. Run the Smartstore web host with
+   `ASPNETCORE_ENVIRONMENT=Development` (use a local **test database**).
+2. Install/update the MultiSms module and apply its native SQL migrations.
+3. In Admin → SMS Gateway: enable the gateway and OTP, check
+   **Enable development Mock SMS**, set **Primary provider = Mock**,
+   and save. No Kavenegar/Melipayamak key is required.
+4. Open `/sms-login`, enter a test Iranian mobile and request the OTP.
+5. Go to Admin → SMS Gateway → **Development SMS Inbox**.
+   The test SMS and its code are visible there for **at most five minutes**,
+   in process memory only. Use the code to complete login or auto-registration.
+6. Open Admin → **SMS History** to see the request metadata, its accepted
+   Mock attempt and the mock provider message ID. There is no OTP text or
+   plaintext code in the SQL history.
+
+**The mock is forcibly blocked outside Development**, regardless of settings,
+and a production deployment with a stale primary Mock setting will fail closed
+rather than sending real SMS as an unintended fallback. The inbox is
+administrative-only, with no API that exposes OTPs to anonymous clients.
+The temporary inbox is **single-instance only** and is cleared on app restart;
+when running multiple development nodes, read from the same node that
+processed the send.
+
 ## Install and configure
 
 1. Build `Smartstore.sln` and install **Multi-provider SMS Gateway** under
@@ -97,8 +155,9 @@ for higher-assurance deployments.
 - Email is optional in this module's UI but native Smartstore still requires
   an internally valid Email. Other native screens may show the reserved
   placeholder, so core-wide optional-email semantics need separate work.
-- There is no Mock SMS provider in this branch; end-to-end SMS tests need
-  provider credentials. Unit tests alone do not prove full registration.
+- A Development-only Mock provider and temporary admin inbox are now available;
+  they let you test the complete OTP flow without a real SMS panel. Production
+  must still be verified against real Kavenegar/Melipayamak credentials.
 
 ## Security and deployment
 
@@ -193,7 +252,7 @@ or changing the phone number without JavaScript.
 
 ```powershell
 dotnet build Smartstore.sln -c Release
-dotnet test test/Smartstore.Core.Tests/Smartstore.Core.Tests.csproj -c Release --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"
+dotnet test test/Smartstore.Core.Tests/Smartstore.Core.Tests.csproj -c Release --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests|FullyQualifiedName~SmsMockAndHistoryTests"
 ```
 
 Do not run EF Core `Add-Migration` for these module tables. Smartstore's

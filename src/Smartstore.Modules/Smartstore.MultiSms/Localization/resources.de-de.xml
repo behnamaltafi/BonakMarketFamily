@@ -70,4 +70,14 @@
     <LocaleResource Name="Otp.EmailOptionalLabel"><Value>E-Mail (optional)</Value></LocaleResource>
     <LocaleResource Name="Otp.SaveProfile"><Value>Speichern und fortfahren</Value></LocaleResource>
     <LocaleResource Name="Otp.EditProfile"><Value>Profil und Benutzername bearbeiten</Value></LocaleResource>
+    <LocaleResource Name="Otp.PhoneManageTitle"><Value>Mobilnummer für die Anmeldung verwalten</Value></LocaleResource>
+    <LocaleResource Name="Otp.PhoneManageHint"><Value>Die Anmeldenummer wird erst nach SMS-Bestätigung hinzugefügt oder geändert. Andere Profildaten ändern die verifizierte Nummer nicht.</Value></LocaleResource>
+    <LocaleResource Name="Otp.VerifiedLoginPhone"><Value>Verifizierte Anmeldenummer</Value></LocaleResource>
+    <LocaleResource Name="Otp.UnverifiedLoginPhone"><Value>Noch keine Mobilnummer verifiziert</Value></LocaleResource>
+    <LocaleResource Name="Otp.NewPhoneLabel"><Value>Neue Mobilnummer</Value></LocaleResource>
+    <LocaleResource Name="Otp.RequestPhoneChange"><Value>Bestätigungscode senden</Value></LocaleResource>
+    <LocaleResource Name="Otp.VerifyPhoneChange"><Value>Mobilnummer bestätigen und speichern</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhoneRequested"><Value>Wenn die Anfrage zulässig ist, wird ein Bestätigungscode an die neue Nummer gesendet. Geben Sie ihn unten ein.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhoneSucceeded"><Value>Die Anmeldenummer wurde bestätigt und aktualisiert.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhoneFailed"><Value>Die Nummer konnte nicht bestätigt werden. Prüfen Sie Code, Versandlimits und Telefonnummer.</Value></LocaleResource>
 </Language>

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Smartstore.Core.Messaging;
 using Smartstore.Core.Security;
 using Smartstore.MultiSms.Configuration;
@@ -18,16 +19,27 @@ public sealed class MultiSmsController : AdminController
 {
     private readonly SmsCredentialProtection _protection;
     private readonly ISmsSender _sender;
+    private readonly IHostEnvironment _environment;
+    private readonly SmsHistoryStore _history;
+    private readonly DevelopmentSmsInbox _inbox;
     private readonly string[] _providerNames;
 
     public MultiSmsController(
         SmsCredentialProtection protection,
         ISmsSender sender,
-        IEnumerable<ISmsProvider> providers)
+        IEnumerable<ISmsProvider> providers,
+        IHostEnvironment environment,
+        SmsHistoryStore history,
+        DevelopmentSmsInbox inbox)
     {
         _protection = protection;
         _sender = sender;
-        _providerNames = providers.Select(x => x.Name)
+        _environment = environment;
+        _history = history;
+        _inbox = inbox;
+        _providerNames = providers
+            .Where(x => environment.IsDevelopment() || !string.Equals(x.Name, "Mock", StringComparison.OrdinalIgnoreCase))
+            .Select(x => x.Name)
             .Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToArray();
     }
 
@@ -67,8 +79,17 @@ public sealed class MultiSmsController : AdminController
             ModelState.AddModelError(nameof(model.FallbackProvider), "Choose a different supported fallback provider.");
         }
 
+        if (model.HistoryRetentionDays < 1 || model.HistoryRetentionDays > 3650)
+        {
+            ModelState.AddModelError(nameof(model.HistoryRetentionDays), "Retention must be between 1 and 3650 days.");
+        }
+
         if (model.Enabled)
         {
+            if (model.PrimaryProvider == "Mock" && (!_environment.IsDevelopment() || !model.MockEnabled))
+            {
+                ModelState.AddModelError(nameof(model.PrimaryProvider), "Mock provider is available only when enabled in Development.");
+            }
             if (model.PrimaryProvider == "Kavenegar" &&
                 (!model.KavenegarEnabled || string.IsNullOrWhiteSpace(model.KavenegarSender) ||
                  string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey)))
@@ -87,6 +108,10 @@ public sealed class MultiSmsController : AdminController
 
         if (model.Enabled && model.EnableFailover)
         {
+            if (model.FallbackProvider == "Mock" && (!_environment.IsDevelopment() || !model.MockEnabled))
+            {
+                ModelState.AddModelError(nameof(model.FallbackProvider), "Mock fallback is available only in Development.");
+            }
             if (model.FallbackProvider == "Kavenegar" &&
                 (!model.KavenegarEnabled || string.IsNullOrWhiteSpace(model.KavenegarSender) ||
                  string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey)))
@@ -110,6 +135,7 @@ public sealed class MultiSmsController : AdminController
             ModelState.Remove(nameof(model.NewKavenegarApiKey));
             ModelState.Remove(nameof(model.NewMelipayamakPassword));
             model.AvailableProviders = _providerNames;
+            model.DevelopmentMode = _environment.IsDevelopment();
             model.HasKavenegarApiKey = !string.IsNullOrEmpty(settings.EncryptedKavenegarApiKey);
             model.HasMelipayamakPassword = !string.IsNullOrEmpty(settings.EncryptedMelipayamakPassword);
             return View(model);
@@ -117,6 +143,10 @@ public sealed class MultiSmsController : AdminController
 
         settings.Enabled = model.Enabled;
         settings.OtpLoginEnabled = model.OtpLoginEnabled;
+        settings.MockEnabled = _environment.IsDevelopment() && model.MockEnabled;
+        settings.HistoryEnabled = model.HistoryEnabled;
+        settings.HistoryRetentionDays = model.HistoryRetentionDays;
+        settings.StoreNonOtpMessageBody = model.StoreNonOtpMessageBody;
         settings.SmsAsPrimaryLogin = model.SmsAsPrimaryLogin;
         settings.PrimaryProvider = model.PrimaryProvider;
         settings.EnableFailover = model.EnableFailover;
@@ -159,10 +189,64 @@ public sealed class MultiSmsController : AdminController
         return View(nameof(Configure), model);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> History(
+        string phone = null, string kind = null, string status = null,
+        int page = 1, CancellationToken ct = default)
+    {
+        page = Math.Clamp(page, 1, 100_000);
+        phone = string.IsNullOrWhiteSpace(phone) ? null
+            : SmsPhoneNormalizer.Normalize(phone) ?? phone.Trim();
+        kind = kind is "Otp" or "Test" or "General" ? kind : null;
+        status = status is "Accepted" or "Rejected" or "Unknown" or "Pending" ? status : null;
+
+        var data = await _history.SearchAsync(phone, kind, status, page, 30, ct);
+        return View(new SmsHistoryModel
+        {
+            Messages = data.Items,
+            Total = data.Total,
+            Page = page,
+            Phone = phone,
+            Kind = kind,
+            Status = status
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Message(int id, CancellationToken ct = default)
+    {
+        var message = await _history.FindAsync(id, ct);
+        if (message is null) return NotFound();
+
+        return View(new SmsHistoryDetailsModel
+        {
+            Message = message,
+            Attempts = await _history.AttemptsAsync(id, ct)
+        });
+    }
+
+    [HttpGet]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public IActionResult DevelopmentInbox()
+    {
+        // Defense in depth: production NEVER reads in-memory OTPs.
+        if (!_environment.IsDevelopment() || !_inbox.IsAvailable)
+        {
+            return NotFound();
+        }
+
+        return View(_inbox.Snapshot());
+    }
+
     private ConfigurationModel CreateModel(SmsGatewaySettings settings)
         => new()
         {
             AvailableProviders = _providerNames,
+            DevelopmentMode = _environment.IsDevelopment(),
+            MockEnabled = settings.MockEnabled,
+            HistoryEnabled = settings.HistoryEnabled,
+            HistoryRetentionDays = settings.HistoryRetentionDays,
+            StoreNonOtpMessageBody = settings.StoreNonOtpMessageBody,
             Enabled = settings.Enabled,
             OtpLoginEnabled = settings.OtpLoginEnabled,
             SmsAsPrimaryLogin = settings.SmsAsPrimaryLogin,

@@ -28,13 +28,13 @@ internal sealed class SmsMessageHistory : Migration
         if (!Schema.Table("MultiSmsMessage").Index("IX_MultiSmsMessage_Created").Exists())
         {
             Create.Index("IX_MultiSmsMessage_Created")
-                .OnTable("MultiSmsMessage").OnColumn("CreatedOnUtc").Descending();
+                .OnTable("MultiSmsMessage").OnColumn("CreatedOnUtc").Ascending();
         }
         if (!Schema.Table("MultiSmsMessage").Index("IX_MultiSmsMessage_Phone_Created").Exists())
         {
             Create.Index("IX_MultiSmsMessage_Phone_Created")
                 .OnTable("MultiSmsMessage").OnColumn("Phone").Ascending()
-                .OnColumn("CreatedOnUtc").Descending();
+                .OnColumn("CreatedOnUtc").Ascending();
         }
 
         if (!Schema.Table("MultiSmsSendAttempt").Exists())

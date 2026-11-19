@@ -69,4 +69,5 @@
     <LocaleResource Name="Otp.LastNameLabel"><Value>Nachname</Value></LocaleResource>
     <LocaleResource Name="Otp.EmailOptionalLabel"><Value>E-Mail (optional)</Value></LocaleResource>
     <LocaleResource Name="Otp.SaveProfile"><Value>Speichern und fortfahren</Value></LocaleResource>
+    <LocaleResource Name="Otp.EditProfile"><Value>Profil und Benutzername bearbeiten</Value></LocaleResource>
 </Language>

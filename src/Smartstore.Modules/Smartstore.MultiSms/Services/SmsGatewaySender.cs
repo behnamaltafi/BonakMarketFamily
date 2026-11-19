@@ -16,14 +16,14 @@ public sealed class SmsGatewaySender : ISmsSender
     private readonly ISettingFactory _settings;
     private readonly IReadOnlyDictionary<string, ISmsProvider> _providers;
     private readonly ILogger<SmsGatewaySender> _logger;
-    private readonly SmsHistoryStore _history;
+    private readonly ISmsHistoryWriter _history;
 
     // Optional history parameter keeps existing isolated sender unit tests compatible.
     public SmsGatewaySender(
         ISettingFactory settings,
         IEnumerable<ISmsProvider> providers,
         ILogger<SmsGatewaySender> logger,
-        SmsHistoryStore history = null)
+        ISmsHistoryWriter history = null)
     {
         _settings = settings;
         _providers = providers.ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
@@ -60,8 +60,19 @@ public sealed class SmsGatewaySender : ISmsSender
             throw new InvalidOperationException("Mock SMS transport can only run in Development.");
         }
 
-        var historyMessage = _history is null ? null
-            : await _history.BeginAsync(request, settings, cancelToken);
+        SmsMessage historyMessage = null;
+        if (_history is not null)
+        {
+            try
+            {
+                historyMessage = await _history.BeginAsync(request, settings, cancelToken);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // A history database outage must not prevent a real SMS from being sent.
+                _logger.LogWarning("Could not initialize SMS history; continuing with provider.");
+            }
+        }
 
         try
         {
@@ -91,6 +102,10 @@ public sealed class SmsGatewaySender : ISmsSender
     {
         var startedOnUtc = DateTime.UtcNow;
         var timer = Stopwatch.StartNew();
+        string messageId;
+
+        // Only provider-side failures may qualify for failover. The optional
+        // database audit is always performed *outside* the provider try/catch.
         try
         {
             if (!provider.IsAvailable(settings))
@@ -98,27 +113,38 @@ public sealed class SmsGatewaySender : ISmsSender
                 throw new SmsProviderException("SMS provider is unavailable or not configured.", safeToFailover: true);
             }
 
-            var messageId = await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
-            timer.Stop();
-            if (_history is not null)
-            {
-                await _history.RecordAttemptAsync(
-                    message, provider.Name, "Accepted", messageId, null,
-                    startedOnUtc, (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), CancellationToken.None);
-            }
-            return messageId;
+            messageId = await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             timer.Stop();
-            if (_history is not null)
-            {
-                await _history.RecordAttemptAsync(
-                    message, provider.Name, SmsHistoryFormatter.FailedStatus(ex), null,
-                    SmsHistoryFormatter.SafeCategory(ex), startedOnUtc,
-                    (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), CancellationToken.None);
-            }
+            await RecordSafelyAsync(message, provider.Name, SmsHistoryFormatter.FailedStatus(ex),
+                null, SmsHistoryFormatter.SafeCategory(ex), startedOnUtc,
+                (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue));
             throw;
+        }
+
+        timer.Stop();
+        await RecordSafelyAsync(message, provider.Name, "Accepted", messageId,
+            null, startedOnUtc, (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue));
+        return messageId;
+    }
+
+    private async Task RecordSafelyAsync(SmsMessage message, string provider,
+        string status, string providerMessageId, string errorCategory,
+        DateTime startedOnUtc, int durationMs)
+    {
+        if (_history is null || message is null) return;
+
+        try
+        {
+            await _history.RecordAttemptAsync(message, provider, status, providerMessageId,
+                errorCategory, startedOnUtc, durationMs, CancellationToken.None);
+        }
+        catch (Exception)
+        {
+            // Never turn an accepted SMS into a transport exception or duplicate send.
+            _logger.LogWarning("SMS attempt audit could not be recorded.");
         }
     }
 }

@@ -26,8 +26,8 @@ Customer authentication, or depend on earlier identity-separation branches.
   non-deliverable internal `sms-989...@accounts.invalid` placeholder until
   they supply a real email. Do not use it for transactional email/newsletters.
 - Existing password-based accounts must explicitly verify and link a phone
-  through `/sms-login/enroll`; matching a username or unverified profile
-  phone is NOT proof of ownership. Original password, external and checkout
+  inside the normal customer account profile (`Customer → Info`); matching
+  a username or unverified profile phone is NOT proof of ownership. Original password, external and checkout
   flows remain available.
 - Encrypted-at-rest one-time codes, 5 minute lifetime, at most five
   verification attempts per challenge, 2 minute resend cooldown and
@@ -59,9 +59,28 @@ Customer authentication, or depend on earlier identity-separation branches.
    the phone-based username and optionally enter name and email. The same page
    can later be used to change the public username without changing OTP login.
    Customers with an existing password account should use the password link
-   and `/sms-login/enroll` to bind that account explicitly.
+   and manage their phone under the native customer profile.
 7. Back up the SQL Server database before installing/upgrading on a live shop.
    Verify the schema and restore procedure on a staging clone first.
+
+## Mobile number management in profile
+
+The old standalone `/sms-login/enroll` page is no longer used. Both native
+`Customer → Info` and the new-customer `/sms-login/profile` show an inline
+verified-mobile editor. Authenticated customers can **add** their first
+login mobile or **change** it. Both actions request a fresh OTP for the
+destination number. Only successful verification updates the unique phone
+binding and `Customer.GenericAttributes.Phone` (contact number). Existing
+OTP login remains bound to the previous number until confirmation succeeds.
+The old `/sms-login/enroll` GET route remains a compatibility redirect to
+the native profile. The historical `/api/sms-login/enroll/*` routes remain
+aliases for the new `/api/sms-login/profile/phone/*` endpoints.
+
+The native customer-info field labeled Phone is **not** the authentication
+authority. Never log a customer in using an unverified profile field.
+Changing the sign-in mobile currently requires an authenticated session and
+a code sent to the *new* mobile; consider a stronger re-authentication step
+for higher-assurance deployments.
 
 ## Acceptance scenarios
 
@@ -114,8 +133,8 @@ Changes take effect on the next request without restarting the application.
 
 The password form remains reachable at `/login?method=password`, including for
 administrators and users who have not enrolled a phone yet. Native password
-POST handling is preserved. Enrollment sends unauthenticated users to this
-password form and returns them to phone verification after login. Local return
+POST handling is preserved. The legacy `/sms-login/enroll` URL now redirects to the native customer
+profile (and sends unauthenticated users to the password form first). Local return
 URLs and guest checkout are preserved; external return URLs are discarded.
 
 ## JSON API
@@ -129,8 +148,8 @@ They use native Customer cookies, not JWTs or administrative OData credentials.
 | POST | `/api/sms-login/request` | Request login OTP: `{ "phone": "09123456789" }` |
 | POST | `/api/sms-login/verify` | Sign in or register: returns `profileRequired` and `profilePath` |
 | POST | `/api/sms-login/profile` | Change username and save optional name/email using a signed-in cookie |
-| POST | `/api/sms-login/enroll/request` | Request phone verification for the signed-in account |
-| POST | `/api/sms-login/enroll/verify` | Confirm phone verification for the signed-in account |
+| POST | `/api/sms-login/profile/phone/request` | Request OTP to add or change the sign-in phone from profile |
+| POST | `/api/sms-login/profile/phone/verify` | Confirm and save the new phone only after receiving an OTP |
 | POST | `/api/sms-gateway/test` | Admin test: `{ "phone": "09123456789", "text": "Test" }` |
 
 Keep cookies between requests. Read `requestToken` and `headerName` from Session,

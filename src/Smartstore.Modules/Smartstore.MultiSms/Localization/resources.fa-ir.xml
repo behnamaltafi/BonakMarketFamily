@@ -49,7 +49,7 @@
     <LocaleResource Name="Otp.CodeLabel"><Value>کد شش‌رقمی</Value></LocaleResource>
     <LocaleResource Name="Otp.SignIn"><Value>ورود</Value></LocaleResource>
     <LocaleResource Name="Otp.PasswordLogin"><Value>ورود با رمز عبور</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnrollLink"><Value>اتصال شماره به حساب قدیمی</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollLink"><Value>افزودن یا تغییر شماره همراه از پروفایل</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollTitle"><Value>تأیید شماره موبایل برای ورود پیامکی</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollHint"><Value>ابتدا با حساب فعلی وارد شوید و مالکیت شماره موبایل خود را تأیید کنید.</Value></LocaleResource>
     <LocaleResource Name="Otp.CurrentVerified"><Value>شماره تأییدشده فعلی: {0}</Value></LocaleResource>

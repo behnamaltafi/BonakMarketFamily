@@ -41,15 +41,15 @@
     <LocaleResource Name="TestAccepted"><Value>Provider {0} accepted the SMS (message ID {1}). Delivery to the handset is not yet confirmed.</Value></LocaleResource>
     <LocaleResource Name="TestRejected"><Value>The SMS was not confirmed. Check your provider configuration and the application logs.</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled"><Value>Enable SMS one-time-code login</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>Allow native Smartstore Customer sign-in by SMS only after authenticated phone enrollment.</Value></LocaleResource>
-    <LocaleResource Name="Otp.LoginTitle"><Value>Sign in with an SMS code</Value></LocaleResource>
-    <LocaleResource Name="Otp.LoginHint"><Value>Use the mobile number you have verified in your Smartstore account.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>Enable SMS sign-in and sign-up with a verified mobile. Existing customers can explicitly link their number without creating a new account.</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginTitle"><Value>Sign in or register with mobile</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginHint"><Value>Enter your mobile number. If you have an account, sign in with the code; otherwise a new account is created after verification.</Value></LocaleResource>
     <LocaleResource Name="Otp.PhoneLabel"><Value>Mobile number</Value></LocaleResource>
     <LocaleResource Name="Otp.SendCode"><Value>Send verification code</Value></LocaleResource>
     <LocaleResource Name="Otp.CodeLabel"><Value>6-digit code</Value></LocaleResource>
     <LocaleResource Name="Otp.SignIn"><Value>Sign in</Value></LocaleResource>
     <LocaleResource Name="Otp.PasswordLogin"><Value>Password sign-in</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnrollLink"><Value>Verify a phone for SMS sign-in</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollLink"><Value>Link mobile to an existing account</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollTitle"><Value>Verify mobile for SMS sign-in</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollHint"><Value>Sign in with your existing account first. Verify that you control this phone before it can be used to sign in.</Value></LocaleResource>
     <LocaleResource Name="Otp.CurrentVerified"><Value>Current verified number: {0}</Value></LocaleResource>
@@ -62,4 +62,11 @@
     <LocaleResource Name="Otp.InvalidPhone"><Value>Enter a valid Iranian mobile number.</Value></LocaleResource>
     <LocaleResource Name="Fields.SmsAsPrimaryLogin"><Value>Use SMS as the primary sign-in method</Value></LocaleResource>
     <LocaleResource Name="Fields.SmsAsPrimaryLogin.Hint"><Value>Open SMS sign-in from the standard login page when SMS Gateway and SMS login are enabled. Password sign-in remains available.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ProfileTitle"><Value>Complete your profile</Value></LocaleResource>
+    <LocaleResource Name="Otp.ProfileHint"><Value>Your mobile is verified. Your username initially matches your phone, but you can change it later. Email and other details are optional.</Value></LocaleResource>
+    <LocaleResource Name="Otp.UsernameLabel"><Value>Username</Value></LocaleResource>
+    <LocaleResource Name="Otp.FirstNameLabel"><Value>First name</Value></LocaleResource>
+    <LocaleResource Name="Otp.LastNameLabel"><Value>Last name</Value></LocaleResource>
+    <LocaleResource Name="Otp.EmailOptionalLabel"><Value>Email (optional)</Value></LocaleResource>
+    <LocaleResource Name="Otp.SaveProfile"><Value>Save and continue</Value></LocaleResource>
 </Language>

@@ -130,7 +130,14 @@ public sealed class SmsHistoryStore
         string phone, string kind, string status, int page, int pageSize, CancellationToken ct)
     {
         var q = _db.Set<SmsMessage>().AsNoTracking().AsQueryable();
-        if (!string.IsNullOrWhiteSpace(phone)) q = q.Where(x => x.Phone == phone);
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            // OTP calls store canonical +98; manual test calls may store local 09.
+            // An exact-match search covers both without scanning message bodies.
+            var canonical = SmsPhoneNormalizer.Normalize(phone) ?? phone;
+            var local = SmsPhoneNormalizer.ToProviderPhone(canonical);
+            q = q.Where(x => x.Phone == canonical || x.Phone == local);
+        }
         if (!string.IsNullOrWhiteSpace(kind)) q = q.Where(x => x.Kind == kind);
         if (!string.IsNullOrWhiteSpace(status)) q = q.Where(x => x.Status == status);
 

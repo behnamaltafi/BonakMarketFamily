@@ -83,7 +83,7 @@ public sealed class SmsHistoryStore
             _db.Set<SmsSendAttempt>().Add(attempt);
             await _db.SaveChangesAsync(ct);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception)
         {
             _db.Entry(attempt).State = EntityState.Detached;
             _logger.LogWarning("SMS attempt history could not be saved; provider result is unchanged.");

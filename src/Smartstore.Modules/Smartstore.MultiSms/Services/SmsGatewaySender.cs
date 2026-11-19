@@ -1,25 +1,34 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Smartstore.Core.Configuration;
 using Smartstore.Core.Messaging;
 using Smartstore.MultiSms.Configuration;
+using Smartstore.MultiSms.Domain;
 
 namespace Smartstore.MultiSms.Services;
 
 /// <summary>
-/// Runtime selection and failover. Each send obtains current settings rather than caching
-/// the selected provider in a singleton, so changes take effect without application restart.
+/// Runtime-selected transport with best-effort history for EVERY provider attempt.
+/// Never sends a second SMS after ambiguous timeouts or connection failures.
 /// </summary>
 public sealed class SmsGatewaySender : ISmsSender
 {
     private readonly ISettingFactory _settings;
     private readonly IReadOnlyDictionary<string, ISmsProvider> _providers;
     private readonly ILogger<SmsGatewaySender> _logger;
+    private readonly SmsHistoryStore _history;
 
-    public SmsGatewaySender(ISettingFactory settings, IEnumerable<ISmsProvider> providers, ILogger<SmsGatewaySender> logger)
+    // Optional history parameter keeps existing isolated sender unit tests compatible.
+    public SmsGatewaySender(
+        ISettingFactory settings,
+        IEnumerable<ISmsProvider> providers,
+        ILogger<SmsGatewaySender> logger,
+        SmsHistoryStore history = null)
     {
         _settings = settings;
         _providers = providers.ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
         _logger = logger;
+        _history = history;
     }
 
     public async Task<SmsSendResult> SendAsync(SmsSendRequest request, CancellationToken cancelToken = default)
@@ -43,14 +52,20 @@ public sealed class SmsGatewaySender : ISmsSender
             throw new InvalidOperationException("Primary SMS provider is not recognized.");
         }
 
+        // A Development configuration copied to production is never allowed to
+        // silently fall back from Mock to a real payable SMS transport.
+        if (string.Equals(primary.Name, "Mock", StringComparison.OrdinalIgnoreCase) &&
+            !primary.IsAvailable(settings))
+        {
+            throw new InvalidOperationException("Mock SMS transport can only run in Development.");
+        }
+
+        var historyMessage = _history is null ? null
+            : await _history.BeginAsync(request, settings, cancelToken);
+
         try
         {
-            if (!primary.IsAvailable(settings))
-            {
-                throw new SmsProviderException("Primary SMS provider is not enabled or configured.", safeToFailover: true);
-            }
-
-            var messageId = await primary.SendAsync(request.PhoneNumber, request.Text, settings, cancelToken);
+            var messageId = await AttemptAsync(primary, request, settings, historyMessage, cancelToken);
             return new SmsSendResult(primary.Name, messageId);
         }
         catch (SmsProviderException ex) when (ex.SafeToFailover && settings.EnableFailover && !cancelToken.IsCancellationRequested)
@@ -62,10 +77,48 @@ public sealed class SmsGatewaySender : ISmsSender
                 throw;
             }
 
-            _logger.LogWarning("SMS provider {Provider} explicitly rejected delivery; switching to {Fallback}.",
+            _logger.LogWarning(
+                "SMS provider {Provider} definitely rejected delivery; switching to {Fallback}.",
                 primary.Name, fallback.Name);
-            var fallbackId = await fallback.SendAsync(request.PhoneNumber, request.Text, settings, cancelToken);
+            var fallbackId = await AttemptAsync(fallback, request, settings, historyMessage, cancelToken);
             return new SmsSendResult(fallback.Name, fallbackId);
+        }
+    }
+
+    private async Task<string> AttemptAsync(
+        ISmsProvider provider, SmsSendRequest request, SmsGatewaySettings settings,
+        SmsMessage message, CancellationToken ct)
+    {
+        var startedOnUtc = DateTime.UtcNow;
+        var timer = Stopwatch.StartNew();
+        try
+        {
+            if (!provider.IsAvailable(settings))
+            {
+                throw new SmsProviderException("SMS provider is unavailable or not configured.", safeToFailover: true);
+            }
+
+            var messageId = await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
+            timer.Stop();
+            if (_history is not null)
+            {
+                await _history.RecordAttemptAsync(
+                    message, provider.Name, "Accepted", messageId, null,
+                    startedOnUtc, (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), ct);
+            }
+            return messageId;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            timer.Stop();
+            if (_history is not null)
+            {
+                await _history.RecordAttemptAsync(
+                    message, provider.Name, SmsHistoryFormatter.FailedStatus(ex), null,
+                    SmsHistoryFormatter.SafeCategory(ex), startedOnUtc,
+                    (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue), ct);
+            }
+            throw;
         }
     }
 }

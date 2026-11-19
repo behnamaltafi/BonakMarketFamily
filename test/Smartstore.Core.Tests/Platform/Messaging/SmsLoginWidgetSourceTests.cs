@@ -25,6 +25,19 @@ public class SmsLoginWidgetSourceTests
     }
 
     [Test]
+    public async Task Verified_mobile_profile_editor_is_available_on_native_customer_info_page()
+    {
+        var otp = new Mock<ISmsOtpLoginService>();
+        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        var source = new SmsLoginWidgetSource(otp.Object);
+
+        var widgets = (await source.GetWidgetsAsync(new PlainWidgetZone("customer_info_top"), true)).ToArray();
+
+        Assert.That(widgets, Has.Length.EqualTo(1));
+        Assert.That(((ComponentWidget)widgets[0]).ComponentType, Is.EqualTo(typeof(SmsProfileLinkViewComponent)));
+    }
+
+    [Test]
     public async Task Runtime_setting_changes_immediately_control_visibility()
     {
         var otp = new Mock<ISmsOtpLoginService>();

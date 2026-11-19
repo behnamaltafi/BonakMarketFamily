@@ -13,6 +13,20 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*SmsAsPrimaryLogin")]
     public bool SmsAsPrimaryLogin { get; set; }
 
+    [LocalizedDisplay("*MockEnabled")]
+    public bool MockEnabled { get; set; }
+
+    [LocalizedDisplay("*HistoryEnabled")]
+    public bool HistoryEnabled { get; set; }
+
+    [LocalizedDisplay("*HistoryRetentionDays")]
+    public int HistoryRetentionDays { get; set; } = 90;
+
+    [LocalizedDisplay("*StoreNonOtpMessageBody")]
+    public bool StoreNonOtpMessageBody { get; set; }
+
+    public bool DevelopmentMode { get; set; }
+
     [LocalizedDisplay("*PrimaryProvider")]
     public string PrimaryProvider { get; set; } = "Kavenegar";
 

@@ -80,4 +80,34 @@
     <LocaleResource Name="Otp.ChangePhoneRequested"><Value>اگر درخواست مجاز باشد، کد تأیید به شماره جدید ارسال می‌شود. کد را وارد کنید.</Value></LocaleResource>
     <LocaleResource Name="Otp.ChangePhoneSucceeded"><Value>شماره همراه ورود با موفقیت تأیید و به‌روزرسانی شد.</Value></LocaleResource>
     <LocaleResource Name="Otp.ChangePhoneFailed"><Value>ثبت یا تأیید شماره انجام نشد. کد، محدودیت ارسال و شماره مقصد را بررسی کنید.</Value></LocaleResource>
+    <LocaleResource Name="Fields.MockEnabled"><Value>فعال‌سازی سرویس پیامک آزمایشی</Value></LocaleResource>
+    <LocaleResource Name="Fields.HistoryEnabled"><Value>ثبت تاریخچه پیامک</Value></LocaleResource>
+    <LocaleResource Name="Fields.HistoryRetentionDays"><Value>مدت نگهداری تاریخچه (روز)</Value></LocaleResource>
+    <LocaleResource Name="Fields.StoreNonOtpMessageBody"><Value>ذخیره متن پیامک‌های معمولی (به‌جز OTP و تست)</Value></LocaleResource>
+    <LocaleResource Name="MockWarning"><Value>سرویس Mock تنها در محیط Development کار می‌کند و پیامکی به شماره واقعی ارسال نمی‌کند.</Value></LocaleResource>
+    <LocaleResource Name="HistoryTitle"><Value>تاریخچه پیامک‌ها</Value></LocaleResource>
+    <LocaleResource Name="HistoryHint"><Value>وضعیت Accepted فقط پذیرش توسط سرویس‌دهنده است، نه تحویل قطعی به گوشی. متن و کد OTP در دیتابیس تاریخچه ذخیره نمی‌شوند.</Value></LocaleResource>
+    <LocaleResource Name="SettingsLink"><Value>تنظیمات پیامک</Value></LocaleResource>
+    <LocaleResource Name="HistoryPhone"><Value>شماره گیرنده</Value></LocaleResource>
+    <LocaleResource Name="HistoryKind"><Value>نوع پیامک</Value></LocaleResource>
+    <LocaleResource Name="HistoryStatus"><Value>وضعیت</Value></LocaleResource>
+    <LocaleResource Name="HistoryAll"><Value>همه</Value></LocaleResource>
+    <LocaleResource Name="HistorySearch"><Value>جست‌وجو</Value></LocaleResource>
+    <LocaleResource Name="HistoryDate"><Value>تاریخ</Value></LocaleResource>
+    <LocaleResource Name="HistoryProvider"><Value>تأمین‌کننده</Value></LocaleResource>
+    <LocaleResource Name="HistoryAttempts"><Value>تعداد تلاش‌ها / جزئیات ارسال</Value></LocaleResource>
+    <LocaleResource Name="HistoryDetails"><Value>جزئیات</Value></LocaleResource>
+    <LocaleResource Name="HistoryEmpty"><Value>هیچ پیامکی مطابق فیلترها پیدا نشد.</Value></LocaleResource>
+    <LocaleResource Name="HistoryTotal"><Value>رکورد</Value></LocaleResource>
+    <LocaleResource Name="Previous"><Value>قبلی</Value></LocaleResource>
+    <LocaleResource Name="Next"><Value>بعدی</Value></LocaleResource>
+    <LocaleResource Name="HistoryBody"><Value>متن پیامک</Value></LocaleResource>
+    <LocaleResource Name="HistoryDuration"><Value>مدت پاسخ</Value></LocaleResource>
+    <LocaleResource Name="HistoryMessageId"><Value>شناسه پیام</Value></LocaleResource>
+    <LocaleResource Name="HistoryError"><Value>دسته خطا</Value></LocaleResource>
+    <LocaleResource Name="DevInboxTitle"><Value>صندوق پیامک آزمایشی</Value></LocaleResource>
+    <LocaleResource Name="DevInboxWarning"><Value>فقط برای محیط Development؛ کدهای آزمایشی حداکثر ۵ دقیقه در حافظهٔ همین فرآیند نگهداری می‌شوند. در محیط عملیاتی غیرفعال است.</Value></LocaleResource>
+    <LocaleResource Name="DevInboxMessage"><Value>متن پیام آزمایشی</Value></LocaleResource>
+    <LocaleResource Name="DevInboxEmpty"><Value>صندوق پیامک خالی است. یک درخواست OTP یا پیامک تست با Provider=Mock ارسال کنید.</Value></LocaleResource>
+    <LocaleResource Name="RefreshInbox"><Value>به‌روزرسانی</Value></LocaleResource>
 </Language>

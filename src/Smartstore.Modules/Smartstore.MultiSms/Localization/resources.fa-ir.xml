@@ -41,15 +41,15 @@
     <LocaleResource Name="TestAccepted"><Value>تأمین‌کننده {0} پیامک را پذیرفت (شناسه پیام {1}). تحویل به موبایل هنوز تأیید نشده است.</Value></LocaleResource>
     <LocaleResource Name="TestRejected"><Value>ارسال پیامک تأیید نشد. تنظیمات تأمین‌کننده و گزارش‌های برنامه را بررسی کنید.</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled"><Value>فعال‌سازی ورود با کد پیامکی</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>ورود پیامکی برای حساب‌های اصلی Smartstore پس از تأیید اولیه شماره همراه فعال می‌شود.</Value></LocaleResource>
-    <LocaleResource Name="Otp.LoginTitle"><Value>ورود با کد پیامکی</Value></LocaleResource>
-    <LocaleResource Name="Otp.LoginHint"><Value>شماره موبایلی را وارد کنید که قبلاً در حساب خود تأیید کرده‌اید.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>ورود و ثبت‌نام پیامکی با شماره همراه انجام می‌شود. مشتری‌های قدیمی برای اتصال شماره به حساب فعلی خود می‌توانند از بخش تأیید شماره استفاده کنند.</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginTitle"><Value>ورود یا ثبت‌نام با شماره موبایل</Value></LocaleResource>
+    <LocaleResource Name="Otp.LoginHint"><Value>شماره موبایل را وارد کنید. اگر قبلاً ثبت‌نام کرده باشید وارد می‌شوید؛ در غیر این صورت پس از تأیید کد حساب جدید ساخته می‌شود.</Value></LocaleResource>
     <LocaleResource Name="Otp.PhoneLabel"><Value>شماره موبایل</Value></LocaleResource>
     <LocaleResource Name="Otp.SendCode"><Value>ارسال کد تأیید</Value></LocaleResource>
     <LocaleResource Name="Otp.CodeLabel"><Value>کد شش‌رقمی</Value></LocaleResource>
     <LocaleResource Name="Otp.SignIn"><Value>ورود</Value></LocaleResource>
     <LocaleResource Name="Otp.PasswordLogin"><Value>ورود با رمز عبور</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnrollLink"><Value>تأیید شماره برای ورود پیامکی</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollLink"><Value>اتصال شماره به حساب قدیمی</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollTitle"><Value>تأیید شماره موبایل برای ورود پیامکی</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollHint"><Value>ابتدا با حساب فعلی وارد شوید و مالکیت شماره موبایل خود را تأیید کنید.</Value></LocaleResource>
     <LocaleResource Name="Otp.CurrentVerified"><Value>شماره تأییدشده فعلی: {0}</Value></LocaleResource>
@@ -62,4 +62,11 @@
     <LocaleResource Name="Otp.InvalidPhone"><Value>شماره موبایل معتبر ایران وارد کنید.</Value></LocaleResource>
     <LocaleResource Name="Fields.SmsAsPrimaryLogin"><Value>ورود پیامکی به‌عنوان روش اصلی</Value></LocaleResource>
     <LocaleResource Name="Fields.SmsAsPrimaryLogin.Hint"><Value>وقتی درگاه پیامک و ورود پیامکی فعال باشند، صفحه ورود اصلی فرم پیامکی را نمایش می‌دهد. ورود با رمز عبور نیز در دسترس می‌ماند.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ProfileTitle"><Value>تکمیل اطلاعات حساب</Value></LocaleResource>
+    <LocaleResource Name="Otp.ProfileHint"><Value>شماره موبایل شما تأیید شد. نام کاربری به‌صورت پیش‌فرض شماره موبایل است و بعداً قابل تغییر است. ایمیل و سایر مشخصات اختیاری‌اند.</Value></LocaleResource>
+    <LocaleResource Name="Otp.UsernameLabel"><Value>نام کاربری</Value></LocaleResource>
+    <LocaleResource Name="Otp.FirstNameLabel"><Value>نام</Value></LocaleResource>
+    <LocaleResource Name="Otp.LastNameLabel"><Value>نام خانوادگی</Value></LocaleResource>
+    <LocaleResource Name="Otp.EmailOptionalLabel"><Value>ایمیل (اختیاری)</Value></LocaleResource>
+    <LocaleResource Name="Otp.SaveProfile"><Value>ذخیره و ادامه</Value></LocaleResource>
 </Language>

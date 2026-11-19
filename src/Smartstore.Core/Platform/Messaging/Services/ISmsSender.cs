@@ -15,7 +15,11 @@ public interface ISmsSender
 /// <summary>
 /// A single recipient and message body. OTP creation and verification are deliberately separate.
 /// </summary>
-public sealed record SmsSendRequest(string PhoneNumber, string Text);
+public enum SmsMessageKind { General, Otp, Test }
+
+/// <summary>Mark OTP explicitly so audit storage never persists authentication secrets.</summary>
+public sealed record SmsSendRequest(
+    string PhoneNumber, string Text, SmsMessageKind Kind = SmsMessageKind.General);
 
 /// <summary>
 /// The provider that accepted the message and its provider-generated identifier.

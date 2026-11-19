@@ -82,6 +82,36 @@ public sealed class SmsMockAndHistoryTests
         Assert.That(request.Kind, Is.EqualTo(SmsMessageKind.Otp));
     }
 
+    [Test]
+    public void Long_lived_history_never_persists_OTP_or_test_message_body()
+    {
+        var config = new SmsGatewaySettings { HistoryEnabled = true, StoreNonOtpMessageBody = true };
+        var otp = SmsHistoryStore.CreateMessageMetadata(
+            new SmsSendRequest("09123456789", "Your code is 123456", SmsMessageKind.Otp), config);
+        var test = SmsHistoryStore.CreateMessageMetadata(
+            new SmsSendRequest("09123456789", "Test includes 123456", SmsMessageKind.Test), config);
+        var ordinary = SmsHistoryStore.CreateMessageMetadata(
+            new SmsSendRequest("09123456789", "Order shipped", SmsMessageKind.General), config);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(otp.Body, Is.Null);
+            Assert.That(test.Body, Is.Null);
+            Assert.That(ordinary.Body, Is.EqualTo("Order shipped"));
+            Assert.That(otp.Kind, Is.EqualTo("Otp"));
+        });
+    }
+
+    [Test]
+    public void Ordinary_history_body_is_not_persisted_by_default()
+    {
+        var config = new SmsGatewaySettings();
+        var metadata = SmsHistoryStore.CreateMessageMetadata(
+            new SmsSendRequest("09123456789", "Order shipped"), config);
+
+        Assert.That(metadata.Body, Is.Null);
+    }
+
     private static IHostEnvironment Environment(string name)
     {
         var mock = new Mock<IHostEnvironment>();

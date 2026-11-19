@@ -34,6 +34,6 @@ public sealed class SmsProfileLinkViewComponent : SmartViewComponent
             return Empty();
         }
 
-        return View(await _otp.GetVerifiedPhoneAsync(customer.Id));
+        return View("Default", await _otp.GetVerifiedPhoneAsync(customer.Id));
     }
 }

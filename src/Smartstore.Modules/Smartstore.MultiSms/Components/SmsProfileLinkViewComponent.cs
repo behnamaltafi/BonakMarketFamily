@@ -6,7 +6,7 @@ using Smartstore.Web.Components;
 
 namespace Smartstore.MultiSms.Components;
 
-/// <summary>Shows the phone-linked profile editor on the native My Account page.</summary>
+/// <summary>Inline OTP-protected mobile editor in the native customer profile.</summary>
 public sealed class SmsProfileLinkViewComponent : SmartViewComponent
 {
     private readonly ISmsOtpLoginService _otp;
@@ -29,12 +29,11 @@ public sealed class SmsProfileLinkViewComponent : SmartViewComponent
         }
 
         var customer = await _userManager.GetUserAsync(HttpContext.User);
-        if (customer is null || !customer.Active || customer.Deleted ||
-            await _otp.GetVerifiedPhoneAsync(customer.Id) is null)
+        if (customer is null || !customer.Active || customer.Deleted || !customer.IsRegistered())
         {
             return Empty();
         }
 
-        return View();
+        return View(await _otp.GetVerifiedPhoneAsync(customer.Id));
     }
 }

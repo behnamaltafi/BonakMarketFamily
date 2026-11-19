@@ -3,6 +3,7 @@ using System.Text;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using Smartstore.Events;
 using Smartstore.Core.Configuration;
 using Smartstore.Core.Data;
 using Smartstore.Core.Identity;
@@ -24,6 +25,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     private readonly IDataProtector _codeProtector;
     private readonly UserManager<Customer> _userManager;
     private readonly SignInManager<Customer> _signInManager;
+    private readonly IEventPublisher _events;
 
     public SmsOtpLoginService(
         SmartDbContext db,
@@ -31,7 +33,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         ISettingFactory settings,
         IDataProtectionProvider protection,
         UserManager<Customer> userManager,
-        SignInManager<Customer> signInManager)
+        SignInManager<Customer> signInManager,
+        IEventPublisher events)
     {
         _db = db;
         _sms = sms;
@@ -39,6 +42,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         _codeProtector = protection.CreateProtector("Smartstore.MultiSms.Otp.v1");
         _userManager = userManager;
         _signInManager = signInManager;
+        _events = events;
     }
 
     public async Task<bool> IsEnabledAsync()
@@ -272,8 +276,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                     CustomerRole = registeredRole
                 });
 
-                if (customerSettings.RegisterCustomerRoleId is int extraRoleId &&
-                    extraRoleId != 0 && extraRoleId != registeredRole.Id)
+                var extraRoleId = customerSettings.RegisterCustomerRoleId ?? 0;
+                if (extraRoleId != 0 && extraRoleId != registeredRole.Id)
                 {
                     var extraRole = await _db.CustomerRoles.FirstOrDefaultAsync(
                         x => x.Id == extraRoleId && x.Active, ct);
@@ -305,6 +309,10 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             }
 
             await transaction.CommitAsync(ct);
+            if (binding is null)
+            {
+                await _events.PublishAsync(new CustomerRegisteredEvent { Customer = customer });
+            }
             return customer;
         }
         catch (DbUpdateException)

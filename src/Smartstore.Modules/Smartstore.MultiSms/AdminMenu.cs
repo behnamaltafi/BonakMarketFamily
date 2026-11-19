@@ -18,8 +18,17 @@ public sealed class AdminMenu : IMenuProvider
         var modulesNode = rootNode.SelectNodeById("modules");
 
         settingsNode?.Append(BuildItem());
+        settingsNode?.Append(BuildHistoryItem());
         modulesNode?.Append(BuildItem());
     }
+
+    private static MenuItem BuildHistoryItem()
+        => new MenuItem().ToBuilder()
+            .Text("SMS History")
+            .Icon("list")
+            .PermissionNames("configuration.setting")
+            .Action("History", "MultiSms", new { area = "Admin" })
+            .AsItem();
 
     private static MenuItem BuildItem()
         => new MenuItem().ToBuilder()

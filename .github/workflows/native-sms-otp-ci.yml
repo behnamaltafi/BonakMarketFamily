@@ -30,5 +30,5 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Build full Smartstore solution and SMS module
         run: dotnet build Smartstore.sln -c Release -p:SmartstoreBuildRuntime=linux-x64 --no-self-contained
-      - name: Test provider failover and native SMS recipient normalization
-        run: dotnet test test/Smartstore.Core.Tests/Smartstore.Core.Tests.csproj -c Release -p:SmartstoreBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests"
+      - name: Test OTP, provider failover, mock isolation, history helpers and API
+        run: dotnet test test/Smartstore.Core.Tests/Smartstore.Core.Tests.csproj -c Release -p:SmartstoreBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsMockAndHistoryTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"

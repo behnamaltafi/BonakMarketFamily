@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Smartstore.Core.Identity;
+using Smartstore.Core.Checkout.Cart;
 using Smartstore.Core.Data;
 using Smartstore.Core.Security;
 using Smartstore.Core.Stores;
@@ -22,16 +23,19 @@ public sealed class SmsLoginController : PublicController
     private readonly SignInManager<Customer> _signInManager;
     private readonly UserManager<Customer> _userManager;
     private readonly SmartDbContext _db;
+    private readonly IShoppingCartService _shoppingCartService;
 
     public SmsLoginController(SmsOtpLoginService otp,
         SignInManager<Customer> signInManager,
         UserManager<Customer> userManager,
-        SmartDbContext db)
+        SmartDbContext db,
+        IShoppingCartService shoppingCartService)
     {
         _otp = otp;
         _signInManager = signInManager;
         _userManager = userManager;
         _db = db;
+        _shoppingCartService = shoppingCartService;
     }
 
     [HttpGet("")]
@@ -100,7 +104,10 @@ public sealed class SmsLoginController : PublicController
             return View("Index", model);
         }
 
+        var guest = Services.WorkContext.CurrentCustomer;
         await _signInManager.SignInAsync(customer, isPersistent: false);
+        await _shoppingCartService.MigrateCartAsync(guest, customer);
+        await Services.EventPublisher.PublishAsync(new CustomerSignedInEvent { Customer = customer });
         customer.LastLoginDateUtc = DateTime.UtcNow;
         // The OTP service returns a tracked Customer entity, so the standard
         // SmartDbContext unit of work saves the last-login update here.

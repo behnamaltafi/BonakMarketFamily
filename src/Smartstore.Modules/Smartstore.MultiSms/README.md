@@ -15,9 +15,20 @@ Customer authentication, or depend on earlier identity-separation branches.
 - Smartstore Admin module configuration: enable/disable SMS, choose primary
   and fallback providers, rotate encrypted credentials, send a test SMS,
   and independently enable/disable OTP login.
-- Native Customer OTP login via `/sms-login`, authenticated phone enrollment
-  via `/sms-login/enroll`. Original password, external and checkout login flows
-  are preserved.
+- Unified Customer **sign-in or registration** by verified mobile at `/sms-login`.
+  Existing phone bindings sign in; unknown numbers create an original Smartstore
+  Customer only AFTER the OTP is verified and only if native registration
+  mode is Standard. New users are redirected to `/sms-login/profile`.
+- The default username is the local mobile number (`09...`) and can be changed
+  later on the profile page; mobile login always uses the verified phone binding.
+- Email is optional in the SMS profile form. Native Smartstore still requires
+  an Email value in its UserValidator, so phone-only customers have a reserved
+  non-deliverable internal `sms-989...@accounts.invalid` placeholder until
+  they supply a real email. Do not use it for transactional email/newsletters.
+- Existing password-based accounts must explicitly verify and link a phone
+  through `/sms-login/enroll`; matching a username or unverified profile
+  phone is NOT proof of ownership. Original password, external and checkout
+  flows remain available.
 - Encrypted-at-rest one-time codes, 5 minute lifetime, at most five
   verification attempts per challenge, 2 minute resend cooldown and
   10 sends in the challenge's rolling 24-hour window. Authenticated
@@ -25,7 +36,9 @@ Customer authentication, or depend on earlier identity-separation branches.
 - Migration: `Migrations/20261118140000_Initial.cs` creates three
   **module-owned** tables through Smartstore FluentMigrator:
   `MultiSmsLoginPhone`, `MultiSmsOtpChallenge` and `MultiSmsOtpQuota`.
-  It does not modify `Customer`, `Order`, or default Identity tables.
+  `Migrations/20261119090000_UnifiedPhoneRegistration.cs` also tracks
+  profile completion on the module-owned phone-binding table. Neither
+  migration modifies `Customer`, `Order` or default Identity tables.
 
 ## Install and configure
 
@@ -39,13 +52,34 @@ Customer authentication, or depend on earlier identity-separation branches.
    screen when both SMS Gateway and SMS one-time-code login are enabled.
    Separate CMS widget activation is not required. Alternatively, navigate
    to `/sms-login` directly.
-5. Sign in **with your existing password first**. Open
-   `/sms-login/enroll` and verify a number you control. Only one verified
-   mobile number can be assigned to one Customer.
-6. Log out. Enter the verified mobile and the received OTP at
-   `/sms-login`. Invalid/unknown numbers receive the same generic response.
+5. On `/sms-login`, enter any valid Iranian mobile and verify the OTP:
+   a previously verified number signs in; an unknown number creates a native
+   Customer after successful verification, if Standard registration is allowed.
+6. The first login for a new Customer opens `/sms-login/profile` to confirm
+   the phone-based username and optionally enter name and email. The same page
+   can later be used to change the public username without changing OTP login.
+   Customers with an existing password account should use the password link
+   and `/sms-login/enroll` to bind that account explicitly.
 7. Back up the SQL Server database before installing/upgrading on a live shop.
    Verify the schema and restore procedure on a staging clone first.
+
+## Acceptance scenarios
+
+- Unbound number: OTP verifies mobile → creates one native Registered Customer
+  with a mobile username → signs in → asks for optional profile details.
+- Verified number: OTP signs in to the same existing account, even after the
+  username changes.
+- Legacy account with an unverified matching username or profile phone:
+  signup fails closed instead of silently taking over an account; the
+  customer must sign in using the old method and explicitly enroll the phone.
+- Registration disabled, pending email validation or administrator approval:
+  auto-registration is disabled rather than bypassing native approval rules.
+  Existing verified SMS accounts may still sign in.
+- Email is optional in this module's UI but native Smartstore still requires
+  an internally valid Email. Other native screens may show the reserved
+  placeholder, so core-wide optional-email semantics need separate work.
+- There is no Mock SMS provider in this branch; end-to-end SMS tests need
+  provider credentials. Unit tests alone do not prove full registration.
 
 ## Security and deployment
 
@@ -91,9 +125,10 @@ They use native Customer cookies, not JWTs or administrative OData credentials.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/api/sms-login/session` | Availability, session, verified phone and CSRF token |
+| GET | `/api/sms-login/session` | Availability, session, verified phone, profileRequired and CSRF token |
 | POST | `/api/sms-login/request` | Request login OTP: `{ "phone": "09123456789" }` |
-| POST | `/api/sms-login/verify` | Sign in: `{ "phone": "09123456789", "code": "123456" }` |
+| POST | `/api/sms-login/verify` | Sign in or register: returns `profileRequired` and `profilePath` |
+| POST | `/api/sms-login/profile` | Change username and save optional name/email using a signed-in cookie |
 | POST | `/api/sms-login/enroll/request` | Request phone verification for the signed-in account |
 | POST | `/api/sms-login/enroll/verify` | Confirm phone verification for the signed-in account |
 | POST | `/api/sms-gateway/test` | Admin test: `{ "phone": "09123456789", "text": "Test" }` |

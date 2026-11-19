@@ -70,4 +70,14 @@
     <LocaleResource Name="Otp.EmailOptionalLabel"><Value>Email (optional)</Value></LocaleResource>
     <LocaleResource Name="Otp.SaveProfile"><Value>Save and continue</Value></LocaleResource>
     <LocaleResource Name="Otp.EditProfile"><Value>Edit your profile and username</Value></LocaleResource>
+    <LocaleResource Name="Otp.PhoneManageTitle"><Value>Manage your sign-in phone</Value></LocaleResource>
+    <LocaleResource Name="Otp.PhoneManageHint"><Value>Your sign-in mobile is added or changed only after SMS verification. Editing other account details will not change the verified sign-in number.</Value></LocaleResource>
+    <LocaleResource Name="Otp.VerifiedLoginPhone"><Value>Verified sign-in mobile</Value></LocaleResource>
+    <LocaleResource Name="Otp.UnverifiedLoginPhone"><Value>No mobile number verified yet</Value></LocaleResource>
+    <LocaleResource Name="Otp.NewPhoneLabel"><Value>New mobile number</Value></LocaleResource>
+    <LocaleResource Name="Otp.RequestPhoneChange"><Value>Send verification code</Value></LocaleResource>
+    <LocaleResource Name="Otp.VerifyPhoneChange"><Value>Verify and save mobile</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhoneRequested"><Value>A verification code will be sent to the new number if the request is eligible. Enter the code below.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhoneSucceeded"><Value>Your sign-in mobile has been verified and updated.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhoneFailed"><Value>Could not request or confirm the number. Check your code, sending limits and number.</Value></LocaleResource>
 </Language>

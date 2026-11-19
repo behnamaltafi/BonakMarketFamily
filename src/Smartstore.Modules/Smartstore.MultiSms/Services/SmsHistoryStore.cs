@@ -24,12 +24,12 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
         _logger = logger;
     }
 
-    public async Task<SmsMessage> BeginAsync(
-        SmsSendRequest request, SmsGatewaySettings settings, CancellationToken ct)
-    {
-        if (!settings.HistoryEnabled) return null;
-
-        var message = new SmsMessage
+    /// <summary>
+    /// A pure, testable privacy boundary: OTP and manual tests are never
+    /// copied to long-lived history, even with ordinary message storage on.
+    /// </summary>
+    public static SmsMessage CreateMessageMetadata(SmsSendRequest request, SmsGatewaySettings settings)
+        => new()
         {
             Phone = request.PhoneNumber,
             Kind = request.Kind.ToString(),
@@ -38,6 +38,13 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
                 ? request.Text : null,
             CreatedOnUtc = DateTime.UtcNow
         };
+
+    public async Task<SmsMessage> BeginAsync(
+        SmsSendRequest request, SmsGatewaySettings settings, CancellationToken ct)
+    {
+        if (!settings.HistoryEnabled) return null;
+
+        var message = CreateMessageMetadata(request, settings);
 
         try
         {

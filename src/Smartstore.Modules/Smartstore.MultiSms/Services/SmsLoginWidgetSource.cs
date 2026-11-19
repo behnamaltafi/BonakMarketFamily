@@ -24,12 +24,16 @@ public sealed class SmsLoginWidgetSource : IWidgetSource
     {
         ArgumentNullException.ThrowIfNull(zone);
 
-        if (!isPublicArea || !string.Equals(zone.Name, "after_login_buttons", StringComparison.OrdinalIgnoreCase) ||
+        if (!isPublicArea ||
+            (!string.Equals(zone.Name, "after_login_buttons", StringComparison.OrdinalIgnoreCase) &&
+             !string.Equals(zone.Name, "customer_info_top", StringComparison.OrdinalIgnoreCase)) ||
             !await _otp.IsEnabledAsync())
         {
             return Array.Empty<Widget>();
         }
 
-        return [new ComponentWidget(typeof(SmsLoginLinkViewComponent)) { Key = "Smartstore.MultiSms.LoginLink" }];
+        return string.Equals(zone.Name, "customer_info_top", StringComparison.OrdinalIgnoreCase)
+            ? [new ComponentWidget(typeof(SmsProfileLinkViewComponent)) { Key = "Smartstore.MultiSms.ProfileLink" }]
+            : [new ComponentWidget(typeof(SmsLoginLinkViewComponent)) { Key = "Smartstore.MultiSms.LoginLink" }];
     }
 }

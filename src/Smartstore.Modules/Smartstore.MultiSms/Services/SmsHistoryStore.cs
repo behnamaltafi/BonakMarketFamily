@@ -73,6 +73,8 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
             DurationMs = Math.Max(0, durationMs)
         };
 
+        var previous = (message.AttemptCount, message.Provider,
+            message.ProviderMessageId, message.Status, message.FinishedOnUtc);
         message.AttemptCount++;
         message.Provider = provider;
         message.ProviderMessageId = messageId;
@@ -86,7 +88,15 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
         }
         catch (Exception)
         {
-            try { _db.Entry(attempt).State = EntityState.Detached; }
+            // A failed attempt write must not leak modified history entities
+            // into the next provider attempt's SaveChanges call.
+            try
+            {
+                _db.Entry(attempt).State = EntityState.Detached;
+                (message.AttemptCount, message.Provider, message.ProviderMessageId,
+                    message.Status, message.FinishedOnUtc) = previous;
+                _db.Entry(message).State = EntityState.Unchanged;
+            }
             catch (InvalidOperationException) { }
             _logger.LogWarning("SMS attempt history could not be saved; provider result is unchanged.");
         }

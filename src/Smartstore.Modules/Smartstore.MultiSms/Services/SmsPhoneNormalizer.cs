@@ -8,6 +8,17 @@ public static class SmsPhoneNormalizer
     public static string Normalize(string value)
     {
         value = value?.Trim();
+        // Users on Persian/Arabic keyboards often enter localized digits.
+        // Canonical storage and provider traffic always use ASCII digits.
+        if (value is not null)
+        {
+            value = new string(value.Select(c => c switch
+            {
+                >= '\u06F0' and <= '\u06F9' => (char)('0' + c - '\u06F0'),
+                >= '\u0660' and <= '\u0669' => (char)('0' + c - '\u0660'),
+                _ => c
+            }).ToArray());
+        }
         if (value is null)
         {
             return null;

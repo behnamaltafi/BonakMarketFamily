@@ -146,7 +146,7 @@ public sealed class MultiSmsController : AdminController
                 throw new ArgumentException("Enter a recipient and test message.");
             }
 
-            var result = await _sender.SendAsync(new SmsSendRequest(input.TestPhone, input.TestMessage), cancelToken);
+            var result = await _sender.SendAsync(new SmsSendRequest(input.TestPhone, input.TestMessage, SmsMessageKind.Test), cancelToken);
             model.TestSucceeded = true;
             model.TestResult = T("Plugins.Sms.MultiSms.TestAccepted", result.Provider, result.MessageId);
         }

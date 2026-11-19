@@ -106,9 +106,92 @@ public sealed class SmsLoginController : PublicController
         // SmartDbContext unit of work saves the last-login update here.
         await _db.SaveChangesAsync(ct);
 
+        if (await _otp.IsProfileIncompleteAsync(customer.Id, ct))
+        {
+            return RedirectToAction(nameof(Profile), new { returnUrl = model.ReturnUrl });
+        }
+
         return model.ReturnUrl is not null
             ? LocalRedirect(model.ReturnUrl)
             : RedirectToRoute("Homepage");
+    }
+
+    /// <summary>
+    /// A verified new phone account reaches this page immediately after first login.
+    /// It is also available later so username can change without changing the login phone.
+    /// </summary>
+    [HttpGet("profile")]
+    public async Task<IActionResult> Profile(string returnUrl = null, CancellationToken ct = default)
+    {
+        if (!await _otp.IsEnabledAsync())
+        {
+            return NotFound();
+        }
+
+        var customer = await GetSignedInCustomerAsync();
+        if (customer is null || await _otp.GetVerifiedPhoneAsync(customer.Id, ct) is null)
+        {
+            return RedirectToRoute("Login");
+        }
+
+        return View(new SmsProfileModel
+        {
+            Phone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct),
+            Username = customer.Username,
+            FirstName = customer.FirstName,
+            LastName = customer.LastName,
+            Email = customer.Email?.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase) == true
+                ? null : customer.Email,
+            ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null
+        });
+    }
+
+    [HttpPost("profile")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveProfile(SmsProfileModel model, CancellationToken ct)
+    {
+        if (!await _otp.IsEnabledAsync())
+        {
+            return NotFound();
+        }
+
+        var customer = await GetSignedInCustomerAsync();
+        if (customer is null || await _otp.GetVerifiedPhoneAsync(customer.Id, ct) is null)
+        {
+            return RedirectToRoute("Login");
+        }
+
+        model.ReturnUrl = Url.IsLocalUrl(model.ReturnUrl) ? model.ReturnUrl : null;
+        model.Phone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
+        if (!ModelState.IsValid)
+        {
+            return View("Profile", model);
+        }
+
+        var result = await _otp.CompleteProfileAsync(
+            customer, model.Username, model.FirstName, model.LastName, model.Email, ct);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+            return View("Profile", model);
+        }
+
+        return model.ReturnUrl is not null ? LocalRedirect(model.ReturnUrl) : RedirectToRoute("Homepage");
+    }
+
+    private async Task<Customer> GetSignedInCustomerAsync()
+    {
+        if (!_signInManager.IsSignedIn(User))
+        {
+            return null;
+        }
+
+        var customer = await _userManager.GetUserAsync(User);
+        return customer is not null && customer.Active && !customer.Deleted &&
+            customer.IsRegistered() ? customer : null;
     }
 
     [HttpGet("enroll")]

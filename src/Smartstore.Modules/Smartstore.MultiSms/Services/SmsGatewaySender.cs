@@ -115,8 +115,10 @@ public sealed class SmsGatewaySender : ISmsSender
 
             messageId = await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
         {
+            // Cancellation may happen after the provider accepted the SMS.
+            // Keep an Unknown audit result, but never retry it.
             timer.Stop();
             await RecordSafelyAsync(message, provider.Name, SmsHistoryFormatter.FailedStatus(ex),
                 null, SmsHistoryFormatter.SafeCategory(ex), startedOnUtc,

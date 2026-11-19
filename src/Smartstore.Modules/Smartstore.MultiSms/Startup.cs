@@ -28,6 +28,7 @@ internal sealed class Startup : StarterBase
         services.AddSingleton<DevelopmentSmsInbox>();
         services.AddSingleton<ISmsProvider, MockSmsProvider>();
         services.AddScoped<SmsHistoryStore>();
+        services.AddScoped<ISmsHistoryWriter>(sp => sp.GetRequiredService<SmsHistoryStore>());
         services.AddScoped<ISmsSender, SmsGatewaySender>();
         services.AddScoped<SmsOtpLoginService>();
         services.AddScoped<ISmsOtpLoginService>(services => services.GetRequiredService<SmsOtpLoginService>());

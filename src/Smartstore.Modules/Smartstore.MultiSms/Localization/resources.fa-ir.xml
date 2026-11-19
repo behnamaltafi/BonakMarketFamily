@@ -70,4 +70,14 @@
     <LocaleResource Name="Otp.EmailOptionalLabel"><Value>ایمیل (اختیاری)</Value></LocaleResource>
     <LocaleResource Name="Otp.SaveProfile"><Value>ذخیره و ادامه</Value></LocaleResource>
     <LocaleResource Name="Otp.EditProfile"><Value>ویرایش اطلاعات حساب و نام کاربری</Value></LocaleResource>
+    <LocaleResource Name="Otp.PhoneManageTitle"><Value>مدیریت شماره همراه ورود</Value></LocaleResource>
+    <LocaleResource Name="Otp.PhoneManageHint"><Value>شماره همراهی که با آن وارد فروشگاه می‌شوید فقط پس از تأیید کد پیامکی ثبت یا تغییر می‌کند. ویرایش سایر مشخصات حساب، شماره ورود را تغییر نمی‌دهد.</Value></LocaleResource>
+    <LocaleResource Name="Otp.VerifiedLoginPhone"><Value>شماره تأییدشده ورود</Value></LocaleResource>
+    <LocaleResource Name="Otp.UnverifiedLoginPhone"><Value>هنوز شماره‌ای تأیید نشده است</Value></LocaleResource>
+    <LocaleResource Name="Otp.NewPhoneLabel"><Value>شماره همراه جدید</Value></LocaleResource>
+    <LocaleResource Name="Otp.RequestPhoneChange"><Value>ارسال کد تأیید شماره</Value></LocaleResource>
+    <LocaleResource Name="Otp.VerifyPhoneChange"><Value>تأیید شماره و ذخیره</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhoneRequested"><Value>اگر درخواست مجاز باشد، کد تأیید به شماره جدید ارسال می‌شود. کد را وارد کنید.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhoneSucceeded"><Value>شماره همراه ورود با موفقیت تأیید و به‌روزرسانی شد.</Value></LocaleResource>
+    <LocaleResource Name="Otp.ChangePhoneFailed"><Value>ثبت یا تأیید شماره انجام نشد. کد، محدودیت ارسال و شماره مقصد را بررسی کنید.</Value></LocaleResource>
 </Language>

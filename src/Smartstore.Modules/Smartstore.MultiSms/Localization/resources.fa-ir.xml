@@ -69,4 +69,5 @@
     <LocaleResource Name="Otp.LastNameLabel"><Value>نام خانوادگی</Value></LocaleResource>
     <LocaleResource Name="Otp.EmailOptionalLabel"><Value>ایمیل (اختیاری)</Value></LocaleResource>
     <LocaleResource Name="Otp.SaveProfile"><Value>ذخیره و ادامه</Value></LocaleResource>
+    <LocaleResource Name="Otp.EditProfile"><Value>ویرایش اطلاعات حساب و نام کاربری</Value></LocaleResource>
 </Language>

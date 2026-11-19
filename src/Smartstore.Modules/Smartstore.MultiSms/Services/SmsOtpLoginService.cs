@@ -113,6 +113,14 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             }
         }
 
+        // A consumed login challenge no longer stores its own cooldown.
+        // Keep per-phone quota separately to prevent unlimited resend cycles
+        // after repeated successful logins or registrations.
+        if (!await ConsumeQuotaAsync("login-phone:" + canonical, TimeSpan.FromMinutes(2), ct))
+        {
+            return;
+        }
+
         await IssueCodeAsync(canonical, "login", ct);
     }
 
@@ -398,16 +406,18 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         return result;
     }
 
-    private async Task<bool> ConsumeEnrollmentQuotaAsync(int customerId, CancellationToken ct)
+    private Task<bool> ConsumeEnrollmentQuotaAsync(int customerId, CancellationToken ct)
+        => ConsumeQuotaAsync("enroll-account:" + customerId, TimeSpan.FromMinutes(1), ct);
+
+    private async Task<bool> ConsumeQuotaAsync(string key, TimeSpan cooldown, CancellationToken ct)
     {
         var now = DateTime.UtcNow;
-        string key = "enroll-account:" + customerId;
         var quotas = _db.Set<SmsOtpQuota>();
         var row = await quotas.FirstOrDefaultAsync(x => x.QuotaKey == key, ct);
 
         if (row is not null)
         {
-            if (row.LastSendUtc > now.AddMinutes(-1))
+            if (row.LastSendUtc > now.Subtract(cooldown))
             {
                 return false;
             }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Smartstore.Core.Data;
 using Smartstore.Core.Identity;
+using Smartstore.Events;
 using Smartstore.MultiSms.Models;
 using Smartstore.MultiSms.Services;
 
@@ -24,18 +25,21 @@ public sealed class SmsLoginApiController : ControllerBase
     private readonly UserManager<Customer> _userManager;
     private readonly SmartDbContext _db;
     private readonly IAntiforgery _antiforgery;
+    private readonly IEventPublisher _events;
 
     public SmsLoginApiController(ISmsOtpLoginService otp,
         SignInManager<Customer> signInManager,
         UserManager<Customer> userManager,
         SmartDbContext db,
-        IAntiforgery antiforgery)
+        IAntiforgery antiforgery,
+        IEventPublisher events)
     {
         _otp = otp;
         _signInManager = signInManager;
         _userManager = userManager;
         _db = db;
         _antiforgery = antiforgery;
+        _events = events;
     }
 
     /// <summary>Gets feature availability, the current session and a CSRF request token.</summary>
@@ -89,6 +93,7 @@ public sealed class SmsLoginApiController : ControllerBase
         }
 
         await _signInManager.SignInAsync(customer, isPersistent: false);
+        await _events.PublishAsync(new CustomerSignedInEvent { Customer = customer });
         customer.LastLoginDateUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         bool profileRequired = await _otp.IsProfileIncompleteAsync(customer.Id, ct);

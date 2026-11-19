@@ -49,7 +49,7 @@
     <LocaleResource Name="Otp.CodeLabel"><Value>Sechsstelliger Code</Value></LocaleResource>
     <LocaleResource Name="Otp.SignIn"><Value>Anmelden</Value></LocaleResource>
     <LocaleResource Name="Otp.PasswordLogin"><Value>Mit Passwort anmelden</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnrollLink"><Value>Mobilnummer mit bestehendem Konto verknüpfen</Value></LocaleResource>
+    <LocaleResource Name="Otp.EnrollLink"><Value>Mobilnummer im Profil hinzufügen oder ändern</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollTitle"><Value>Mobilnummer für SMS-Anmeldung bestätigen</Value></LocaleResource>
     <LocaleResource Name="Otp.EnrollHint"><Value>Melden Sie sich zunächst mit Ihrem bestehenden Konto an und bestätigen Sie anschließend die Mobilnummer.</Value></LocaleResource>
     <LocaleResource Name="Otp.CurrentVerified"><Value>Aktuell bestätigte Nummer: {0}</Value></LocaleResource>

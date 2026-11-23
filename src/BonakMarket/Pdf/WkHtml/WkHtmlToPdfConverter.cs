@@ -74,7 +74,7 @@ public class WkHtmlToPdfConverter : IPdfConverter
             if (!fi.Exists)
             {
                 using var libraryInstaller = libraryManager.CreateLibraryInstaller();
-                fi = await libraryInstaller.InstallFromPackageAsync(new InstallNativePackageRequest("wkhtmltopdf", true, "BonakMarket.wkhtmltopdf.Native")
+                fi = await libraryInstaller.InstallFromPackageAsync(new InstallNativePackageRequest("wkhtmltopdf", true, "Smartstore.wkhtmltopdf.Native")
                 {
                     MinVersion = minVersion
                 });

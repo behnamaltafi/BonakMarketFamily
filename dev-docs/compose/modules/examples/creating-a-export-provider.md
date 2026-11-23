@@ -1,6 +1,6 @@
 # Creating an Export provider
 
-Export providers allow you to export your store data in many different formats. Smartstore mainly uses CSV and XML. In this tutorial you will write an export provider for the product catalog.
+Export providers allow you to export your store data in many different formats. BonakMarket mainly uses CSV and XML. In this tutorial you will write an export provider for the product catalog.
 
 {% hint style="info" %}
 To learn more about exporting, see [Export](../../../framework/platform/export.md).
@@ -108,7 +108,7 @@ This class inherits from the abstract base class `ExportProviderBase`, so you mu
 
 #### Add Attributes
 
-Smartstore uses the following attributes to correctly integrate the providers: `SystemName`, `FriendlyName` and the optional `ExportFeatures`.
+BonakMarket uses the following attributes to correctly integrate the providers: `SystemName`, `FriendlyName` and the optional `ExportFeatures`.
 
 Add these attributes to your class definition.
 
@@ -501,5 +501,5 @@ await profiles.EachAsync(x => _exportProfileService.DeleteExportProfileAsync(x, 
 In this tutorial, you created an export provider. You have created a configuration profile and a CSV export provider.
 
 {% hint style="info" %}
-The code for [this tutorial](https://github.com/smartstore/dev-docs-code-examples/tree/main/src/MyOrg.ExportTutorial) can be found in the examples repository.
+The code for [this tutorial](https://github.com/BonakMarket/dev-docs-code-examples/tree/main/src/MyOrg.ExportTutorial) can be found in the examples repository.
 {% endhint %}

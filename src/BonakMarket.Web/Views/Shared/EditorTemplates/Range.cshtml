@@ -1,0 +1,155 @@
+﻿@using BonakMarket.Utilities
+
+@model object
+
+@{
+    var attributes = new AttributeDictionary().Merge(ConvertUtility.ObjectToDictionary(ViewData["htmlAttributes"] ?? new object()));
+    var name = ViewData.TemplateInfo.GetFullHtmlFieldName(string.Empty);
+    var propertyName = ViewData.ModelMetadata.PropertyName ?? name;
+    var id = Html.GenerateIdFromName(name);
+    var inputId = $"{id}-range-{Guid.NewGuid():N}";
+    var listId = inputId + "-ticks";
+    var min = GetMetadata<decimal?>("min") ?? 0m;
+    var max = GetMetadata<decimal?>("max") ?? 100m;
+    var step = GetMetadata<decimal?>("step") ?? 1m;
+    var format = GetMetadata<string>("format") ?? "{0}";
+    var showBubble = format.HasValue() && (GetMetadata<bool?>("bubble") ?? true);
+    var inputAttributes = new AttributeDictionary();
+    foreach (var attribute in attributes.Where(x => x.Key.StartsWith("aria-") || x.Key == "disabled" || x.Key == "tabindex" || x.Key == "title"))
+    {
+        inputAttributes[attribute.Key] = attribute.Value;
+    }
+    if (!inputAttributes.ContainsKey("aria-label") && !inputAttributes.ContainsKey("aria-labelledby"))
+    {
+        inputAttributes["aria-label"] = ViewData.ModelMetadata.DisplayName ?? propertyName;
+    }
+    var isNullable = Nullable.GetUnderlyingType(ViewData.ModelMetadata.ModelType) != null;
+    var hasTools = isNullable && GetMetadata<bool?>("tools", true) == true;
+    var hasValue = Model != null;
+    decimal? defaultValue = null;
+
+    // Retrieve default value from ViewData using naming convention.
+    if (isNullable && !ViewData.TryGetAndConvertValue<decimal?>(propertyName + "DefaultValue", out defaultValue))
+    {
+        defaultValue = GetMetadata<decimal?>("defaultValue");
+    }
+
+    if (!ViewData.TryGetAndConvertValue<List<string>>(propertyName + "RangeTicks", out var ticks))
+    {
+        ticks = GetMetadata<string>("ticks").SplitSafe(',').Select(x => x.Trim()).ToList();
+    }
+
+    var hasDefaultValue = defaultValue != null;
+    defaultValue ??= min;
+    var value = (hasValue ? ViewData.Model.Convert<decimal>() : defaultValue).ToStringInvariant();
+
+    // An optional invariant "value|label" format positions non-equidistant ticks accurately.
+    // Plain labels retain the legacy evenly distributed layout.
+    var tickLabels = new List<string>(ticks.Count);
+    var tickPositions = new List<decimal?>(ticks.Count);
+    foreach (var tick in ticks)
+    {
+        var separatorIndex = tick.IndexOf('|');
+        if (max > min
+            && separatorIndex > 0
+            && decimal.TryParse(tick[..separatorIndex].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var tickValue))
+        {
+            tickLabels.Add(tick[(separatorIndex + 1)..].Trim());
+            tickPositions.Add(Math.Clamp(tickValue, min, max));
+        }
+        else
+        {
+            tickLabels.Add(tick);
+            tickPositions.Add(null);
+        }
+    }
+
+    var hasPositionedTicks = max > min && tickPositions.Count > 0 && tickPositions.All(x => x.HasValue);
+
+    var containerCssClass = "form-range edit-control";
+    if (ViewData.ContainsKey("size"))
+    {
+        containerCssClass = containerCssClass.Grow($"form-range-" + ViewData["size"].ToString());
+    }
+    if (ViewData.ContainsKey("class"))
+    {
+        containerCssClass = containerCssClass.Grow(ViewData["class"].ToString());
+    }
+    if (isNullable && !hasValue)
+    {
+        containerCssClass = containerCssClass.Grow("unspecified");
+    }
+
+    async Task RenderRangeControl()
+    {
+        <input type="hidden" asp-for="@Model" attrs="attributes" />
+        <input type="range"
+               id="@inputId"
+               class="form-range-input"
+               data-target="#@id"
+               list="@(ticks.Count > 0 ? listId : null)"
+               attrs="inputAttributes"
+               min="@min.ToStringInvariant()"
+               max="@max.ToStringInvariant()"
+               step="@step.ToStringInvariant()"
+               value="@value" />
+
+        <datalist sm-if="ticks.Count > 0" id="@listId">
+            @for (var i = 0; i < ticks.Count; i++)
+            {
+                var label = hasPositionedTicks ? tickLabels[i] : ticks[i];
+                var tickValue = hasPositionedTicks ? tickPositions[i].Value
+                    : min + (max - min) * i / Math.Max(1, ticks.Count - 1);
+                // Native suggestions must lie on the input's step grid, including reciprocal aspect ratios.
+                if (step > 0 && max > min)
+                {
+                    tickValue = min + Math.Clamp(Math.Round((tickValue - min) / step, MidpointRounding.AwayFromZero),
+                        0m, Math.Floor((max - min) / step)) * step;
+                }
+                <option value="@tickValue.ToStringInvariant()" label="@System.Net.WebUtility.HtmlDecode(label)"></option>
+            }
+        </datalist>
+    }
+}
+
+<div id="range-container-@id"
+     class="@containerCssClass"
+     data-format="@format"
+     data-bubble="@showBubble.ToString().ToLowerInvariant()"
+     data-editor="@(GetMetadata<string>("editor") ?? "range")"
+     data-nullable="@isNullable.ToString().ToLowerInvariant()"
+     data-default-value="@defaultValue.Value.ToStringInvariant()">
+    @* INFO: We have to distinguish here because the HTML wrapping for nullable properties will break the sliders in PageBuilder. *@
+    @if (!isNullable || !hasTools)
+    {
+        await RenderRangeControl();
+    }
+    else
+    {
+        <div class="d-flex align-items-center">
+            <div class="range-control-wrapper flex-grow-1 position-relative">
+                @{
+                    await RenderRangeControl();
+                }
+            </div>
+            <div class="ml-2 hstack flex-shrink-0">
+                @* Use equally sized icon buttons for inherited and explicit values. *@
+                <button type="button"
+                        class="btn btn-sm btn-plain btn-icon range-badge"
+                        style="--btn-icon-color: var(--gray-600); --btn-icon-hover-color: currentcolor;"
+                        attr-class='(hasValue, "d-none")'
+                        title="@T("Admin.Common.Standard") — @T(hasDefaultValue ? "Admin.Common.ClickToSetDifferentValue" : "Admin.Common.ClickToSetValue")"
+                        aria-label="@T("Admin.Common.Standard") — @T(hasDefaultValue ? "Admin.Common.ClickToSetDifferentValue" : "Admin.Common.ClickToSetValue")">
+                    <icon name="layers-plus" />
+                </button>
+                <button type="button"
+                        class="btn btn-sm btn-plain btn-icon range-reset"
+                        attr-class='(!hasValue, "d-none")'
+                        title="@T("Admin.Common.ResetToDefault")"
+                        aria-label="@T("Admin.Common.ResetToDefault")">
+                    <icon name="undo" />
+                </button>
+            </div>
+        </div>
+    }
+</div>

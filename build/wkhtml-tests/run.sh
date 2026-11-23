@@ -20,7 +20,7 @@ docker info --format '{{.Architecture}}' | tee "$scratch/results/docker-host-arc
 for architecture in ${WKHTML_TEST_ARCHES:-amd64 arm64}; do
     case "$architecture" in amd64|arm64) ;; *) exit 1 ;; esac
     for mode in system lazy; do
-        image="smartstore-wkhtml-test:$architecture-$mode"
+        image="bonakmarket-wkhtml-test:$architecture-$mode"
         docker build --platform "linux/$architecture" --build-arg "MODE=$mode" \
             -f build/wkhtml-tests/Tests.Dockerfile -t "$image" . \
             2>&1 | tee "$scratch/results/build-$architecture-$mode.log"

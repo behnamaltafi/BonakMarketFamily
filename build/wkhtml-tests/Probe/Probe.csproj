@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../../src/Smartstore/Smartstore.csproj" />
+    <ProjectReference Include="../../../src/BonakMarket/BonakMarket.csproj" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.8" />
   </ItemGroup>

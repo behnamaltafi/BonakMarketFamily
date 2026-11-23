@@ -1,6 +1,6 @@
 # Linux wkhtmltopdf release gate
 
-This tests the actual Smartstore `NativeLibraryManager`, `NativeLibraryInstaller`,
+This tests the actual BonakMarket `NativeLibraryManager`, `NativeLibraryInstaller`,
 `WkHtmlCommandBuilder` and `WkHtmlToPdfConverter`, not a reimplementation of their CLI.
 No running shop/database is required for the technical probe. Host/DI interfaces
 are mocked; the PDF/native implementations are real.
@@ -10,8 +10,8 @@ are mocked; the PDF/native implementations are real.
 Release and nightly publication share `.github/workflows/publish-linux.yml`.
 It builds `linux-x64` on `ubuntu-24.04` and `linux-arm64` on `ubuntu-24.04-arm`,
 without QEMU. Restore/build/publish use the same explicit RID. Because .NET rejects
-`--runtime` on a solution build, `SmartstoreBuildRuntime` forwards the target RID
-through `Smartstore.Common.props` to the application/module/provider/test projects;
+`--runtime` on a solution build, `BonakMarketBuildRuntime` forwards the target RID
+through `BonakMarket.Common.props` to the application/module/provider/test projects;
 the build tools remain portable. Web publication uses the corresponding `--runtime`.
 A packaging check
 rejects missing Community modules/data providers and wrong-architecture apphosts
@@ -33,7 +33,7 @@ All publication contexts and test results stay under `.temp/`.
 
 ## Run on a working Docker host
 
-Use a checkout of this Smartstore revision and the two locally packed native
+Use a checkout of this BonakMarket revision and the two locally packed native
 packages. They do not need to be published to nuget.org. Put them below a directory
 with `linux-x64/` and `linux-arm64/` subdirectories, as in Smartstore.NativeLibraries.
 The build requires internet access for .NET dependencies and Ubuntu packages.
@@ -41,7 +41,7 @@ The probe seeds NuGet's cache from the local native packages, then calls the rea
 installer for lazy deployment. It does not test downloading the published native
 package from nuget.org; that is a separate post-publication check.
 
-From the Smartstore checkout:
+From the BonakMarket checkout:
 
 ```sh
 bash build/wkhtml-tests/run.sh /path/to/wkhtmltopdf https://your-shop.example/path/to/public-logo.png
@@ -84,7 +84,7 @@ Review every rendered page for overlaps, clipping, missing glyphs and table brea
 
 ## Real shop documents: required manual acceptance
 
-The synthetic invoice fixture is not a Smartstore invoice template. For complete
+The synthetic invoice fixture is not a BonakMarket invoice template. For complete
 acceptance, run the actual shop on each target architecture and verify both paths:
 
 1. Build the real image using its matching published application artifact.

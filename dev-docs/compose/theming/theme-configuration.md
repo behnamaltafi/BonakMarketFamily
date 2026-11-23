@@ -2,7 +2,7 @@
 
 ## Overview
 
-The _theme.config_ file is the manifest file for a theme. It contains all the theme information the system needs and can include theme variables. If a subdirectory of _/Smartstore/src/Smartstore.Web/Themes_ exists in the file system and contains a theme.config file, Smartstore interprets this directory as a theme directory.
+The _theme.config_ file is the manifest file for a theme. It contains all the theme information the system needs and can include theme variables. If a subdirectory of _/BonakMarket/src/BonakMarket.Web/Themes_ exists in the file system and contains a theme.config file, BonakMarket interprets this directory as a theme directory.
 
 Here is an example of a theme.config file without variables.
 

@@ -1,0 +1,16 @@
+{
+  "$schema": "../module.schema.json",
+  "Group": "Security",
+  "SystemName": "BonakMarket.Facebook.Auth",
+  "Icon": "fa:facebook/b?color=#0866FF",
+  "FriendlyName": "Facebook Authentication",
+  "Description": "Enables login with Facebook account.",
+  "Version": "6.4.0",
+  "MinAppVersion": "6.4.0",
+  "Author": "BonakMarket AG",
+  "Order": 1,
+  "ResourceRootKey": "Plugins.ExternalAuth.Facebook",
+  "PrivateReferences": [
+    "Microsoft.AspNetCore.Authentication.Facebook"
+  ]
+}

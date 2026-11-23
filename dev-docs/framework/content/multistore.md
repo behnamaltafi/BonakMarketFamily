@@ -1,20 +1,20 @@
 ---
-description: Running multiple storefronts from a single Smartstore installation
+description: Running multiple storefronts from a single BonakMarket installation
 ---
 
 # Multistore
 
 ## Overview
-Smartstore can host several independent stores using one database and application instance. Each store has its own host name, theme, languages, currencies and catalog scope. Admins manage stores under **Configuration → Stores** and assign a primary domain to each one. Incoming requests are mapped to the matching store. If no match is found the first store becomes the default.
+BonakMarket can host several independent stores using one database and application instance. Each store has its own host name, theme, languages, currencies and catalog scope. Admins manage stores under **Configuration → Stores** and assign a primary domain to each one. Incoming requests are mapped to the matching store. If no match is found the first store becomes the default.
 
 ## IIS host mapping
 To expose multiple stores on a single Windows server:
 
-1. In **IIS Manager** create a site or additional binding for each store and point all of them to the same physical path of the Smartstore web application.
+1. In **IIS Manager** create a site or additional binding for each store and point all of them to the same physical path of the BonakMarket web application.
 2. Set the **Host name** of the binding to the store’s domain.
-3. In Smartstore admin under **Configuration → Stores**, create a store record and enter the same value in **Host values** (one per line if multiple domains should reach the store).
+3. In BonakMarket admin under **Configuration → Stores**, create a store record and enter the same value in **Host values** (one per line if multiple domains should reach the store).
 
-At runtime Smartstore reads the `Host` header from the request and selects the store whose host values contain that domain.
+At runtime BonakMarket reads the `Host` header from the request and selects the store whose host values contain that domain.
 
 ## Store context
 At runtime the current store is exposed through `IStoreContext`. Inject the service where store information is needed.

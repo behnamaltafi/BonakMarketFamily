@@ -1,6 +1,6 @@
-# AGENTS.md — Smartstore
+# AGENTS.md — BonakMarket
 
-Smartstore is a modular, open-source e-commerce platform built on ASP.NET Core.
+BonakMarket is a modular, open-source e-commerce platform built on ASP.NET Core.
 This file states the rules that apply to **every** change in this repository.
 
 `dev-docs/` is the authoritative knowledge base. Consult the relevant page before
@@ -9,11 +9,11 @@ already documented.
 
 ## Non-negotiable rules
 
-- **Never edit anything under `src/Smartstore.Web/Modules/`.** That directory is
+- **Never edit anything under `src/BonakMarket.Web/Modules/`.** That directory is
   gitignored build output — compiled module assemblies plus *copies* of each module's
-  `Views` and `wwwroot`. Source files live in `src/Smartstore.Modules/<Name>/`. A search
+  `Views` and `wwwroot`. Source files live in `src/BonakMarket.Modules/<Name>/`. A search
   for a `.js`, `.scss` or `.cshtml` file will match both; always take the
-  `src/Smartstore.Modules/` hit. Edits to the copy are silently overwritten on the next
+  `src/BonakMarket.Modules/` hit. Edits to the copy are silently overwritten on the next
   build.
 - **English only** in code, comments and XML docs. Never write German comments.
 - **Do not rewrite existing XML documentation comments** (including `<inheritdoc/>`)
@@ -30,14 +30,14 @@ already documented.
 
 | Project | Responsibility |
 |---|---|
-| `src/Smartstore` | Base library: caching, collections, IO, routing, engine, utilities |
-| `src/Smartstore.Core` | Domain layer: catalog, checkout, content, platform. Entry point `CoreStarter.cs` |
-| `src/Smartstore.Web` | ASP.NET Core front-end app: controllers, views, areas, `wwwroot`, `Program.cs` |
-| `src/Smartstore.Web.Common` | Shared web infrastructure: bootstrapping, MVC components, Razor helpers, bundling, theming |
-| `src/Smartstore.Data` | Database provider packages (SQL Server, MySQL, PostgreSQL, SQLite) |
-| `src/Smartstore.Modules` | Optional feature modules (payment, shipping, auth, export, …) |
-| `src/Smartstore.Build` | Central MSBuild properties and targets used by all projects |
-| `test` | `Smartstore.Tests`, `Smartstore.Core.Tests`, `Smartstore.Web.Tests`, `Smartstore.Test.Common` |
+| `src/BonakMarket` | Base library: caching, collections, IO, routing, engine, utilities |
+| `src/BonakMarket.Core` | Domain layer: catalog, checkout, content, platform. Entry point `CoreStarter.cs` |
+| `src/BonakMarket.Web` | ASP.NET Core front-end app: controllers, views, areas, `wwwroot`, `Program.cs` |
+| `src/BonakMarket.Web.Common` | Shared web infrastructure: bootstrapping, MVC components, Razor helpers, bundling, theming |
+| `src/BonakMarket.Data` | Database provider packages (SQL Server, MySQL, PostgreSQL, SQLite) |
+| `src/BonakMarket.Modules` | Optional feature modules (payment, shipping, auth, export, …) |
+| `src/BonakMarket.Build` | Central MSBuild properties and targets used by all projects |
+| `test` | `BonakMarket.Tests`, `BonakMarket.Core.Tests`, `BonakMarket.Web.Tests`, `BonakMarket.Test.Common` |
 
 Architecture follows Domain-Driven Design. See
 `dev-docs/getting-started/architecture-overview.md` and
@@ -46,7 +46,7 @@ Architecture follows Domain-Driven Design. See
 ## Tech stack
 
 - **.NET 10 / C#**, **ASP.NET Core 10**, **EF Core 10** (`net10.0`, set centrally in
-  `src/Smartstore.Build/Smartstore.Common.props`)
+  `src/BonakMarket.Build/BonakMarket.Common.props`)
 - **Nuke** for build automation (`build.cmd` / `build.ps1` / `build.sh`)
 - Bootstrap (4/5 hybrid), native embedded Dart Sass, jQuery, Select2, Vue.js
 - DotLiquid (Liquid) for email and content templates
@@ -71,8 +71,8 @@ Architecture follows Domain-Driven Design. See
 | Theming & bundling | `dev-docs/compose/theming/`, `dev-docs/compose/theming/asset-bundling.md` |
 | Performance | `dev-docs/advanced/performance-guide.md` |
 | Deployment & build | `dev-docs/getting-started/deployment-and-build.md`, `build/README.md` |
-| Installation seed data | `src/Smartstore.Web/App_Data/Seed/README.md` |
-| Demo catalog (sample data) | `src/Smartstore.Web/App_Data/Seed/CATALOG.md` |
+| Installation seed data | `src/BonakMarket.Web/App_Data/Seed/README.md` |
+| Demo catalog (sample data) | `src/BonakMarket.Web/App_Data/Seed/CATALOG.md` |
 
 ## Coding conventions
 
@@ -104,17 +104,17 @@ Beyond formatting:
 - **Async:** use `async`/`await`, suffix async methods with `Async`, never `.Result`
   or `.Wait()`.
 - **DI:** constructor injection. No service locator.
-- **Logging:** Smartstore property-injects `ILogger`; use `public ILogger Logger { get; set; } = NullLogger.Instance;` instead of adding a logger constructor parameter.
+- **Logging:** BonakMarket property-injects `ILogger`; use `public ILogger Logger { get; set; } = NullLogger.Instance;` instead of adding a logger constructor parameter.
 - **Validation:** guard clauses for arguments; `ArgumentException` family for argument
   errors, domain-specific exceptions for domain errors.
 - **Reuse existing utilities** before writing your own — e.g.
-  `Smartstore.Utilities.HashCodeCombiner` instead of an ad-hoc `GetHashCode`.
+  `BonakMarket.Utilities.HashCodeCombiner` instead of an ad-hoc `GetHashCode`.
 
 ## Data and localization
 
 - Schema changes are **FluentMigrator** migrations. EF Core migrations are not used.
 - New or changed core and platform locale resources go into
-  `src/Smartstore.Core/Migrations/SmartDbContextDataSeeder.cs`.
+  `src/BonakMarket.Core/Migrations/SmartDbContextDataSeeder.cs`.
   - Without hints, use `AddOrUpdate(key, value, deValue)`; omit the hint arguments
     instead of passing `null`. Keep calls with two short EN/DE texts on one line.
   - With hints, use `AddOrUpdate(key, value, deValue, hint, deHint)`. Put the key on
@@ -124,7 +124,7 @@ Beyond formatting:
     The hint overload appends `.Hint` itself, so pass the bare resource key.
 - Plugin locale resources are an exception: add or change them only in the plugin's
   `Localization/resources.<culture>.xml` files under
-  `src/Smartstore.Modules/<Name>/` (including `en-us` and `de-de`). Do not put
+  `src/BonakMarket.Modules/<Name>/` (including `en-us` and `de-de`). Do not put
   plugin resources in `SmartDbContextDataSeeder.cs`. Define labels and `.Hint`
   entries as separate `LocaleResource` nodes in each relevant XML file.
 - Every new admin model property must carry `[LocalizedDisplay]` with a resource key.
@@ -154,7 +154,7 @@ Beyond formatting:
   source directory, including resolved `-sym` targets (see `ModuleDescriptor.SourcePhysicalPath`).
   JavaScript, Sass and Razor source edits normally do not require a module rebuild.
   If changes are missing at runtime, check file-provider resolution and bundle caching
-  before recommending a build. Stale copies under `Smartstore.Web/Modules/` do not
+  before recommending a build. Stale copies under `BonakMarket.Web/Modules/` do not
   establish which files the running application serves.
 
 ### Admin icon kit
@@ -173,17 +173,17 @@ Beyond formatting:
 
 ## Modules
 
-A module lives in `src/Smartstore.Modules/<Name>` and contains at minimum a
+A module lives in `src/BonakMarket.Modules/<Name>` and contains at minimum a
 `module.json`, a `Module.cs`, a `Startup.cs`, and its `Providers`, `Controllers`,
 `Models`, `Views`, `Localization` and `wwwroot` folders. Copy the structure and naming
 of the blueprint rather than inventing a new layout.
 
 | Module type | Must implement | Blueprint |
 |---|---|---|
-| Payment | `IPaymentMethod` | `src/Smartstore.Modules/Smartstore.PayPal` |
-| Shipping | `IShippingRateComputationMethod` | `src/Smartstore.Modules/Smartstore.Shipping` |
-| Authentication | `IExternalAuthenticationMethod` | `src/Smartstore.Modules/Smartstore.Facebook.Auth` |
-| Export | `ExportProviderBase` / `IExportProvider` | `src/Smartstore.Modules/Smartstore.Google.MerchantCenter` |
+| Payment | `IPaymentMethod` | `src/BonakMarket.Modules/BonakMarket.PayPal` |
+| Shipping | `IShippingRateComputationMethod` | `src/BonakMarket.Modules/BonakMarket.Shipping` |
+| Authentication | `IExternalAuthenticationMethod` | `src/BonakMarket.Modules/BonakMarket.Facebook.Auth` |
+| Export | `ExportProviderBase` / `IExportProvider` | `src/BonakMarket.Modules/BonakMarket.Google.MerchantCenter` |
 
 Without the required interface the host will not recognize the assembly as a valid
 module of that type.
@@ -191,21 +191,21 @@ module of that type.
 ## Build and test
 
 ```bash
-dotnet build Smartstore.sln -c Release
-dotnet test  Smartstore.sln -c Release --logger trx
-dotnet publish src/Smartstore.Web/Smartstore.Web.csproj -c Release -o ./publish
+dotnet build BonakMarket.sln -c Release
+dotnet test  BonakMarket.sln -c Release --logger trx
+dotnet publish src/BonakMarket.Web/BonakMarket.Web.csproj -c Release -o ./publish
 ```
 
-Building the solution detects every module in `src/Smartstore.Modules/`, compiles it,
-and copies the result into `src/Smartstore.Web/Modules/` — the directory the runtime
+Building the solution detects every module in `src/BonakMarket.Modules/`, compiles it,
+and copies the result into `src/BonakMarket.Web/Modules/` — the directory the runtime
 loads modules from. It is build output: irrelevant during development, safe to delete at
 any time, and **never** a place to edit files.
 
 ### Nuke
 
 `build.cmd` (Windows) and `build.sh` (Linux/macOS) at the repository root run the Nuke
-build, defined in `src/Smartstore.Build/Smartstore.Build/Build.cs`. Its default solution
-is `Smartstore.sln` (`.nuke/parameters.json`).
+build, defined in `src/BonakMarket.Build/BonakMarket.Build/Build.cs`. Its default solution
+is `BonakMarket.sln` (`.nuke/parameters.json`).
 
 Targets: `Clean`, `Restore`, `Compile`, `Test`, `Deploy`, `Zip`, `GenerateSbom`.
 Configurations: `Debug`, `DebugNoRazorCompile`, `Release`.
@@ -216,7 +216,7 @@ build --target Deploy  --configuration Release --runtime win-x64
 ```
 
 `DebugNoRazorCompile` skips Razor compilation and is noticeably faster for iterating on
-non-view code. `Deploy` publishes a **self-contained** build of `Smartstore.Web` to
+non-view code. `Deploy` publishes a **self-contained** build of `BonakMarket.Web` to
 `build/artifacts/Community.{Version}.{Runtime}/` and triggers `Zip` and `GenerateSbom`.
 
 The ready-made wrappers in `build/` are one-liners around the same command:
@@ -231,8 +231,8 @@ The ready-made wrappers in `build/` are one-liners around the same command:
 Details in `build/README.md`. On CI, set `MSBUILDTERMINALLOGGER=off` to avoid
 `InternalLoggerException` on .NET CI images.
 
-> Working inside the private `Smartstore.Full` workspace? Build
-> `Smartstore.Full-sym.sln` instead, and follow `../AGENTS.md` for the rules that
+> Working inside the private `BonakMarket.Full` workspace? Build
+> `BonakMarket.Full-sym.sln` instead, and follow `../AGENTS.md` for the rules that
 > apply there.
 
 ## Known design decisions

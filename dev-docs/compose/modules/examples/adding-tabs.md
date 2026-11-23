@@ -1,6 +1,6 @@
 # Adding tabs
 
-_Smartstore_ uses tabs in different places in the backend and frontend. The `TabTagHelper` is used for this exact purpose.
+_BonakMarket_ uses tabs in different places in the backend and frontend. The `TabTagHelper` is used for this exact purpose.
 
 The following markup can be used to add tabs in a _Razor_ view.
 
@@ -18,7 +18,7 @@ The following markup can be used to add tabs in a _Razor_ view.
 You can use this _Tag Helper_ in any view. To do this, you must make the tag helper known in the view. Do this by either adding the following line to the view or use the \_`ViewImports.cshtml` file in the root of the views folder.
 
 ```html
-@addTagHelper Smartstore.Web.TagHelpers.Shared.*, Smartstore.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.*, BonakMarket.Web.Common
 ```
 
 ## Adding a tab
@@ -29,9 +29,9 @@ When a tab strip is created, the Tag Helper publishes the `TabStripCreated` even
 
 ```csharp
 using System.Threading.Tasks;
-using Smartstore.Events;
-using Smartstore.Web.Modelling;
-using Smartstore.Web.Rendering.Events;
+using BonakMarket.Events;
+using BonakMarket.Web.Modelling;
+using BonakMarket.Web.Rendering.Events;
 
 namespace MyOrg.HelloWorld
 {
@@ -108,7 +108,7 @@ public HelloWorldAdminController(SmartDbContext db)
 Since the action we just added uses a model that has two simple properties and returns a view, we'll need to create the model and the view next. The `AdminEditTabModel.cs` class belongs in the _Models_ folder.
 
 ```csharp
-using Smartstore.Web.Modelling;
+using BonakMarket.Web.Modelling;
 
 namespace MyOrg.HelloWorld.Models
 {
@@ -188,5 +188,5 @@ To learn more about events, please refer to [events.md](../../../framework/platf
 In this tutorial you added a tab to the product's edit tabstrip using the `TabFactory` and used the `ModelBoundEvent` to save a product specific value.
 
 {% hint style="info" %}
-The code for [this tutorial](https://github.com/smartstore/dev-docs-code-examples/tree/main/src/MyOrg.TabsTutorial) can be found in the examples repository.
+The code for [this tutorial](https://github.com/BonakMarket/dev-docs-code-examples/tree/main/src/MyOrg.TabsTutorial) can be found in the examples repository.
 {% endhint %}

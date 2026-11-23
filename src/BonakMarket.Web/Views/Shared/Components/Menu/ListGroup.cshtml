@@ -1,0 +1,69 @@
+﻿@using BonakMarket.Web.Rendering.Menus
+@using BonakMarket.Core.Content.Menus
+
+@model MenuModel
+
+@{
+    var root = Model.Root;
+    if (root == null)
+    {
+        return;
+    }
+
+    var hasIcons = root.Children.Any(x => (Model.IconOptions == null || x.Value.Visible) && Model.GetIcon(x.Value).HasValue());
+    var hasImages = root.Children.Any(x => (Model.IconOptions == null || x.Value.Visible) && x.Value.ImageUrl.HasValue());
+}
+        
+<nav class="list-group list-group-flush @(Model.IconOptions == null || hasIcons ? "has-icons" : null) cms-menu cms-menu-listgroup" role="menu" aria-orientation="vertical" data-menu-name="@(Model.Name?.ToLower())" aria-label="@Model.PublicName">
+    @foreach (var node in Model.Root.Children.Where(x => x.Value.Visible))
+    {
+        var item = node.Value;
+        var icon = Model.GetIcon(item, allowFallback: hasIcons);
+        var itemState = node.GetNodePathState(Model.Path);
+        var itemText = node.GetItemText(T);
+        var itemUrl = item.GenerateUrl(this.ViewContext);
+        var isSelected = (itemState & NodePathState.Selected) == NodePathState.Selected;
+
+        var attrs = item.GetCombinedAttributes();
+        attrs.PrependCssClass("list-group-item list-group-item-action menu-link");
+        if (isSelected)
+        {
+            attrs.AppendCssClass("active");
+            attrs.Add("aria-current", "page");
+            attrs.Add("tabindex", "-1");
+        }
+
+        <a href="@itemUrl" attrs="attrs" role="menuitem">
+            @if (Model.IconOptions != null && item.ImageUrl.HasValue() && !icon.HasValue())
+            {
+                <img class="icon" src="@Url.Content(item.ImageUrl)" alt="@itemText" aria-hidden="true" />
+            }
+            else if (hasIcons)
+            {
+                <span class="list-group-item-icon" aria-hidden="true">
+                    @if (icon.HasValue())
+                    {
+                        <icon name="@icon" attr-class='@(item.IconClass.HasValue(), item.IconClass)' aria-hidden="true" />
+                    }
+                </span>
+            }
+            else if (hasImages && item.ImageUrl.HasValue())
+            {
+                <img class="icon" src="@Url.Content(item.ImageUrl)" alt="@itemText" aria-hidden="true" />
+            }
+            else if (hasImages && Model.IconOptions?.DisplayIcons != false)
+            {
+                <span class="icon icon-fw" aria-hidden="true"></span>
+            }
+
+            <span sm-language-attributes-for="item">@itemText</span>
+
+            @if (item.BadgeText.HasValue())
+            {
+                <span class="badge-pill badge-counter @BadgeExpression.ToCssClasses(item.BadgeStyle) ml-auto" attrs="item.BadgeHtmlAttributes">
+                    @Html.Raw(item.BadgeText)
+                </span>
+            }
+        </a>
+    }
+</nav>

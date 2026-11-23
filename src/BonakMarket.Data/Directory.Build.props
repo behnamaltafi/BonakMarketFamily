@@ -1,0 +1,6 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Import Project="..\BonakMarket.Build\BonakMarket.Common.props" />
+	<Import Project="..\BonakMarket.Build\BonakMarket.Data.props" />
+	
+</Project>

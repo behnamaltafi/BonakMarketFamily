@@ -1,0 +1,24 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+		<EnableDefaultContentItems>false</EnableDefaultContentItems>
+		<PreserveCompilationContext>false</PreserveCompilationContext>
+		<PreserveCompilationReferences>false</PreserveCompilationReferences>
+	</PropertyGroup>
+
+	<ItemGroup>
+        <ProjectReference Include="..\..\BonakMarket\BonakMarket.csproj">
+            <Private>False</Private>
+            <CopyLocal>False</CopyLocal>
+            <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+        </ProjectReference>
+		<ProjectReference Include="..\..\BonakMarket.Core\BonakMarket.Core.csproj">
+			<Private>False</Private>
+			<CopyLocal>False</CopyLocal>
+			<CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+		</ProjectReference>
+	</ItemGroup>
+	
+</Project>

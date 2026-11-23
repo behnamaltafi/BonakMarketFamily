@@ -1,0 +1,20 @@
+﻿@inherits RazorPage<TModel>
+
+@using System
+@using System.Globalization
+@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Mvc.Razor;
+@using Humanizer
+@using BonakMarket
+@using BonakMarket.Web
+@using BonakMarket.Core.Installation
+
+@removeTagHelper BonakMarket.Web.TagHelpers.*, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.AjaxFormTagHelper, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.ZoneTagHelper, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.HtmlZoneTagHelper, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.WidgetTagHelper, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.HtmlWidgetTagHelper, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.InputPasswordTagHelper, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.IconTagHelper, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.AttributesTagHelper, BonakMarket.Web.Common

@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Loads previews.html once per theme and writes a 1280 x 960 screenshot to
-    src/Smartstore.Web/Themes/<Theme>/wwwroot/images/preview.png, or to -OutDir.
+    src/BonakMarket.Web/Themes/<Theme>/wwwroot/images/preview.png, or to -OutDir.
 
 .EXAMPLE
     ./render.ps1
@@ -20,7 +20,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $toolDir = $PSScriptRoot
-$themesDir = Join-Path $toolDir '..\..\src\Smartstore.Web\Themes' | Resolve-Path
+$themesDir = Join-Path $toolDir '..\..\src\BonakMarket.Web\Themes' | Resolve-Path
 
 if (-not $Browser) {
     $Browser = @(
@@ -36,7 +36,7 @@ if (-not $Browser) {
 }
 
 $page = ([System.Uri](Join-Path $toolDir 'previews.html')).AbsoluteUri
-$profileDir = Join-Path ([System.IO.Path]::GetTempPath()) 'smartstore-theme-previews'
+$profileDir = Join-Path ([System.IO.Path]::GetTempPath()) 'BonakMarket-theme-previews'
 New-Item -ItemType Directory -Force $profileDir | Out-Null
 
 foreach ($theme in $Themes) {

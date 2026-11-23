@@ -1,0 +1,84 @@
+﻿using BonakMarket.Core.Data;
+using BonakMarket.Scheduling;
+
+namespace BonakMarket.Core.Messaging.Tasks;
+
+/// <summary>
+/// A task that periodically sends queued messages.
+/// </summary>
+public partial class QueuedMessagesSendTask : ITask
+{
+    private readonly SmartDbContext _db;
+    private readonly IQueuedEmailService _queuedEmailService;
+    private readonly IEmailRateLimiter _rateLimiter;
+
+    public QueuedMessagesSendTask(
+        SmartDbContext db,
+        IQueuedEmailService queuedEmailService,
+        IEmailRateLimiter rateLimiter)
+    {
+        _db = db;
+        _queuedEmailService = queuedEmailService;
+        _rateLimiter = rateLimiter;
+    }
+
+    public async Task Run(TaskExecutionContext ctx, CancellationToken cancelToken = default)
+    {
+        const int maxPageSize = 500;
+        int pageIndex = 0;
+        int totalProcessed = 0;
+
+        // Recover from interrupted background work without letting abandoned placeholders block delivery indefinitely.
+        var abandonedBeforeUtc = DateTime.UtcNow.AddMinutes(-10);
+        var abandonedAttachments = _db.QueuedEmailAttachments
+            .Where(x => x.IsPending && x.QueuedEmail.CreatedOnUtc < abandonedBeforeUtc);
+
+        var abandonedAttachmentIds = await abandonedAttachments
+            .OrderBy(x => x.Id)
+            .Select(x => x.Id)
+            .Take(maxPageSize)
+            .ToArrayAsync(cancelToken);
+
+        if (abandonedAttachmentIds.Length > 0)
+        {
+            // Recheck IsPending so a completed attachment is preserved if generation finishes during cleanup.
+            await abandonedAttachments
+                .Where(x => abandonedAttachmentIds.Contains(x.Id))
+                .ExecuteDeleteAsync(cancelToken);
+        }
+
+        while (true)
+        {
+            var allowedCount = _rateLimiter.GetAllowedSendCount(maxPageSize);
+            if (allowedCount <= 0)
+            {
+                break;
+            }
+
+            var pageSize = Math.Min(maxPageSize, allowedCount);
+
+            var queuedEmails = await _db.QueuedEmails
+                .Where(x => x.SentTries < 3 && x.SendManually == false)
+                .Where(x => !x.Attachments.Any(a => a.IsPending))
+                .ApplyTimeFilter(null, null, true)
+                .ApplySorting(true)
+                .Include(x => x.Attachments)
+                .ToPagedList(pageIndex, pageSize)
+                .LoadAsync(cancelToken: cancelToken);
+
+            if (queuedEmails.Count > 0)
+            {
+                await _queuedEmailService.SendMailsAsync(queuedEmails, cancelToken);
+                totalProcessed += queuedEmails.Count;
+            }
+
+            if (!queuedEmails.HasNextPage || cancelToken.IsCancellationRequested)
+                break;
+
+            if (totalProcessed >= allowedCount)
+                break;
+
+            pageIndex++;
+        }
+    }
+}

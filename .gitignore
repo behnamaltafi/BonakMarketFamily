@@ -191,13 +191,13 @@ logs/
 *-sym.*
 *-symdir/
 [Ee]xternal[Ff]iles/
-/src/Smartstore.Modules/*-sym
+/src/BonakMarket.Modules/*-sym
 /test/*-sym
-/src/Smartstore.Web/Themes/*-sym
+/src/BonakMarket.Web/Themes/*-sym
 
 
 # =========================
-# Smartstore specific
+# BonakMarket specific
 # =========================
 
 # Backups
@@ -211,41 +211,46 @@ Kopie von*
 
 build/artifacts
 build/packages
-src/Smartstore.Web/Modules/*
-src/Smartstore.Web/App_Data/*
-!src/Smartstore.Web/App_Data/Icons/
+src/BonakMarket.Web/Modules/*
+src/BonakMarket.Web/App_Data/*
+!src/BonakMarket.Web/App_Data/Icons/
 # Licensed local-only Font Awesome Pro assets; only our concept mappings are distributable.
-/src/Smartstore.Web/App_Data/Icons/fontawesome-pro/*
-!/src/Smartstore.Web/App_Data/Icons/fontawesome-pro/mapping.json
+/src/BonakMarket.Web/App_Data/Icons/fontawesome-pro/*
+!/src/BonakMarket.Web/App_Data/Icons/fontawesome-pro/mapping.json
 # Shared runtime cache space; never commit generated component caches.
-src/Smartstore.Web/App_Data/.cache/
-!src/Smartstore.Web/App_Data/EmailTemplates/*
-!src/Smartstore.Web/App_Data/Geo/*
-!src/Smartstore.Web/App_Data/Seed/
-!src/Smartstore.Web/App_Data/widgetzones.json
+src/BonakMarket.Web/App_Data/.cache/
+!src/BonakMarket.Web/App_Data/EmailTemplates/*
+!src/BonakMarket.Web/App_Data/Geo/*
+!src/BonakMarket.Web/App_Data/Seed/
+!src/BonakMarket.Web/App_Data/widgetzones.json
 
 # Themes
-src/Smartstore.Web/Themes/*
-!src/Smartstore.Web/Themes/Flex*/
+src/BonakMarket.Web/Themes/*
+!src/BonakMarket.Web/Themes/Flex*/
 
 # DataProtection
 DataProtection-Keys/
 
 # Import/Export
-src/Smartstore.Web/wwwroot/[Ee]xchange/*
+src/BonakMarket.Web/wwwroot/[Ee]xchange/*
 
 # .well-known
-src/Smartstore.Web/wwwroot/.well-known/*
+src/BonakMarket.Web/wwwroot/.well-known/*
 
 # User settings
-src/Smartstore.Web/Config/usersettings*
+src/BonakMarket.Web/Config/usersettings*
 
 # Tools
-src/Tools/Smartstore.WebApi.Client/packages
-src/Tools/Smartstore.WebApi.Client/Smartstore.WebApi.Client.sln
+src/Tools/BonakMarket.WebApi.Client/packages
+src/Tools/BonakMarket.WebApi.Client/BonakMarket.WebApi.Client.sln
 
-src/Smartstore.Packager.sln
+src/BonakMarket.Packager.sln
 Log.txt
 
 # Local native-package and Docker test scratch space.
 /.temp/
+# ModuleBuilder is built from source (net10.0); never commit its generated runtime files.
+/src/BonakMarket.Build/BonakMarket.ModuleBuilder/*.dll
+/src/BonakMarket.Build/BonakMarket.ModuleBuilder/*.pdb
+/src/BonakMarket.Build/BonakMarket.ModuleBuilder/*.deps.json
+/src/BonakMarket.Build/BonakMarket.ModuleBuilder/*.runtimeconfig.json

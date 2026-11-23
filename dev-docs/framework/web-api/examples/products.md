@@ -23,7 +23,7 @@ POST http://localhost:59318/odata/v1/Products(123)/CalculatePrice
 ```json
 {
     "@odata.context": "http://localhost:59318/odata/v1/$metadata
-    #Smartstore.Web.Api.Models.Catalog.CalculatedProductPrice",
+    #BonakMarket.Web.Api.Models.Catalog.CalculatedProductPrice",
     "ProductId": 123,
     "CurrencyId": 5,
     "CurrencyCode": "EUR",

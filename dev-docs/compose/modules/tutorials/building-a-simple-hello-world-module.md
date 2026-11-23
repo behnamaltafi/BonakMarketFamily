@@ -6,19 +6,19 @@ Before we start, please look at the introduction to [creating modules](../gettin
 
 Start by creating a project file for your modules.
 
-1. Open the Smartstore Solution _Smartstore.sln_
+1. Open the BonakMarket Solution _BonakMarket.sln_
 2. Right click on the _Modules_ Folder in the Solution Explorer
 3. Add a **New Project** of type _Class Library_
 4. Name it _MyOrg.HelloWorld_
-5. Make sure the physical path of the project is _Smartstore/src/Smartstore.Modules_
+5. Make sure the physical path of the project is _BonakMarket/src/BonakMarket.Modules_
 
 Now alter `MyOrg.HelloWorld.csproj` to look like this:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Razor">
     <PropertyGroup>
-        <Product>A Hello World module for Smartstore</Product>
-        <OutputPath>..\..\Smartstore.Web\Modules\MyOrg.HelloWorld</OutputPath>
+        <Product>A Hello World module for BonakMarket</Product>
+        <OutputPath>..\..\BonakMarket.Web\Modules\MyOrg.HelloWorld</OutputPath>
         <OutDir>$(OutputPath)</OutDir>
     </PropertyGroup>
 </Project>
@@ -59,11 +59,11 @@ Add module.json next. For more information, refer to [the manifest](../getting-s
 {% endcode %}
 
 {% hint style="danger" %}
-**Version numbers in module.json must match** the current version of Smartstore.
+**Version numbers in module.json must match** the current version of BonakMarket.
 
 A module is generally compatible if both the app version and the `MinAppVersion` of the module are the same, OR - if the app version is greater - it is _assumed_ to be compatible if there has been no breaking changes in the core since `MinAppVersion`.
 
-Incompatible modules **will not** be loaded by Smartstore.
+Incompatible modules **will not** be loaded by BonakMarket.
 {% endhint %}
 
 ## Creating the module
@@ -73,8 +73,8 @@ Change the name of `Class1.cs` to `Module.cs` and add the following code:
 {% code title="Module.cs" %}
 ```csharp
 using System.Threading.Tasks;
-using Smartstore.Engine.Modularity;
-using Smartstore.Http;
+using BonakMarket.Engine.Modularity;
+using BonakMarket.Http;
 
 internal class Module : ModuleBase, IConfigurable
 {
@@ -111,7 +111,7 @@ internal class Module : ModuleBase, IConfigurable
 ```
 {% endcode %}
 
-After compiling the project, the module is recognized by Smartstore and can be installed via **Admin / Plugins / Manage Plugins / Hello World / Install**.
+After compiling the project, the module is recognized by BonakMarket and can be installed via **Admin / Plugins / Manage Plugins / Hello World / Install**.
 
 There are two things to note here:
 
@@ -128,7 +128,7 @@ For more detailed information on _Settings_ visit the section [configuration.md]
 
 {% code title="Module.cs" %}
 ```csharp
-using Smartstore.Core.Configuration;
+using BonakMarket.Core.Configuration;
 
 namespace MyOrg.HelloWorld.Settings
 {
@@ -153,7 +153,7 @@ public RouteInfo GetConfigurationRoute()
 ```
 {% endcode %}
 
-Using the `RouteInfo`, Smartstore looks for an action called `Configure` in a Controller named `HelloWorldAdminController` in the `Admin` area.
+Using the `RouteInfo`, BonakMarket looks for an action called `Configure` in a Controller named `HelloWorldAdminController` in the `Admin` area.
 
 ## MVC parts
 
@@ -168,12 +168,12 @@ Add the controller:
 {% code title="HelloWorldAdminController.cs" %}
 ```csharp
 using Microsoft.AspNetCore.Mvc;
-using Smartstore.ComponentModel;
-using Smartstore.Core.Security;
+using BonakMarket.ComponentModel;
+using BonakMarket.Core.Security;
 using MyOrg.HelloWorld.Models;
 using MyOrg.HelloWorld.Settings;
-using Smartstore.Web.Controllers;
-using Smartstore.Web.Modelling.Settings;
+using BonakMarket.Web.Controllers;
+using BonakMarket.Web.Modelling.Settings;
 
 namespace MyOrg.HelloWorld.Controllers
 {
@@ -236,7 +236,7 @@ As mentioned above, in this simple use case, the configuration model for the mod
 
 {% code title="ConfigurationModel.cs" %}
 ```csharp
-using Smartstore.Web.Modelling;
+using BonakMarket.Web.Modelling;
 
 namespace MyOrg.HelloWorld.Models
 {
@@ -300,21 +300,21 @@ Now add the view that is rendered by the `GET` action of the controller.
 ```
 {% endcode %}
 
-To reduce the amount of _using directives_ in the view, it is recommended to add a `_ViewImports.cshtml` file directly in the _Views_ directory. Add the most important namespaces and the model namespace. This file includes the built-in Microsoft Tag Helpers as well as the Smartstore Tag Helpers.
+To reduce the amount of _using directives_ in the view, it is recommended to add a `_ViewImports.cshtml` file directly in the _Views_ directory. Add the most important namespaces and the model namespace. This file includes the built-in Microsoft Tag Helpers as well as the BonakMarket Tag Helpers.
 
 {% code title="_ViewImports.cshtml" %}
 ```cshtml
-@inherits Smartstore.Web.Razor.SmartRazorPage<TModel>
+@inherits BonakMarket.Web.Razor.SmartRazorPage<TModel>
 
 @using System
 @using System.Globalization
-@using Smartstore.Web.TagHelpers.Admin
-@using Smartstore.Web.Rendering
+@using BonakMarket.Web.TagHelpers.Admin
+@using BonakMarket.Web.Rendering
 @using MyOrg.HelloWorld.Models
 
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
-@addTagHelper Smartstore.Web.TagHelpers.Shared.*, Smartstore.Web.Common
-@addTagHelper Smartstore.Web.TagHelpers.Admin.*, Smartstore.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.*, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Admin.*, BonakMarket.Web.Common
 ```
 {% endcode %}
 
@@ -372,9 +372,9 @@ Now that you can configure the name of the person to be greeted, add another con
 using Microsoft.AspNetCore.Mvc;
 using MyOrg.HelloWorld.Models;
 using MyOrg.HelloWorld.Settings;
-using Smartstore.ComponentModel;
-using Smartstore.Web.Controllers;
-using Smartstore.Web.Modelling.Settings;
+using BonakMarket.ComponentModel;
+using BonakMarket.Web.Controllers;
+using BonakMarket.Web.Modelling.Settings;
 
 namespace MyOrg.HelloWorld.Controllers
 {
@@ -396,7 +396,7 @@ namespace MyOrg.HelloWorld.Controllers
 
 {% code title="Models/PublicInfoModel.cs" %}
 ```csharp
-using Smartstore.Web.Modelling;
+using BonakMarket.Web.Modelling;
 
 namespace MyOrg.HelloWorld.Models
 {
@@ -442,10 +442,10 @@ Debugging with breakpoints can save you a lot of time and frustration, and is a 
 
 ## Conclusion
 
-Open the project file and remove all `ItemGroup` properties because they are not needed in the _Smartstore_ build process.
+Open the project file and remove all `ItemGroup` properties because they are not needed in the _BonakMarket_ build process.
 
 Now you have built a simple module that stores a setting and renders its value in the frontend, when accessing the route _helloworld / publicinfo_. Of course this is the starting point on the way to build more complex modules by using: Action Filters, own _DataContext_ and _View Components_, which are rendered in Widget Zones.
 
 {% hint style="info" %}
-The code for [this tutorial](https://github.com/smartstore/dev-docs-code-examples/tree/main/src/MyOrg.HelloWorld) can be found in the examples repository.
+The code for [this tutorial](https://github.com/BonakMarket/dev-docs-code-examples/tree/main/src/MyOrg.HelloWorld) can be found in the examples repository.
 {% endhint %}

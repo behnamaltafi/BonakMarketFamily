@@ -2,7 +2,7 @@
 
 ## FluentValidation
 
-Smartstore uses [FluentValidation](https://fluentvalidation.net/) to create strongly-typed validation rules to validate view models on the server-side. This is done by defining rules for properties of the associated view model. When the value of a property is changed via an edit page, it is validated against its rule and, if necessary, an error message is issued if the rule is not fulfilled. Typically, the validation class is located directly below the view model in the same file as the model.
+BonakMarket uses [FluentValidation](https://fluentvalidation.net/) to create strongly-typed validation rules to validate view models on the server-side. This is done by defining rules for properties of the associated view model. When the value of a property is changed via an edit page, it is validated against its rule and, if necessary, an error message is issued if the rule is not fulfilled. Typically, the validation class is located directly below the view model in the same file as the model.
 
 The class of a validator inherits from `AbstractValidator`, to which the view model type is passed as a generic parameter.
 
@@ -70,13 +70,13 @@ public ConfigurationValidator(Localizer T)
 
             return true;
         })
-        .WithMessage(T("Plugins.SmartStore.PostFinance.InvalidIp"));
+        .WithMessage(T("Plugins.BonakMarket.PostFinance.InvalidIp"));
 }
 ```
 
 ### SmartValidator
 
-Typically, the properties of view models have the same names as the corresponding object that is to be modified (e.g. an entity such as a category or a settings class). This way, the values of the properties can be copied from an object to its model and vice versa with a single `MiniMapper` statement. This allows Smartstore to provide additional utilities.
+Typically, the properties of view models have the same names as the corresponding object that is to be modified (e.g. an entity such as a category or a settings class). This way, the values of the properties can be copied from an object to its model and vice versa with a single `MiniMapper` statement. This allows BonakMarket to provide additional utilities.
 
 `SmartValidator.ApplyEntityRules` copies common validation rules from the entity type over to the corresponding view model type. Common rules are `Required` and `MaxLength` rules on string properties (either fluently mapped or annotated). It also adds the `Required` rule to non-nullable intrinsic model property types to bypass MVC's non-localized `RequiredAttributeAdapter`.
 
@@ -154,7 +154,7 @@ public class CreditCardProvider : IonosProviderBase<IonosPaymentCreditCardSettin
 
 ## MVC model validation <a href="#model-validation-in-aspnet-core-mvc-and-razor-pages" id="model-validation-in-aspnet-core-mvc-and-razor-pages"></a>
 
-Since Smartstore is based on ASP.NET Core MVC, the server-side and client-side validations of this framework are also available.
+Since BonakMarket is based on ASP.NET Core MVC, the server-side and client-side validations of this framework are also available.
 
 ### Server-side validation
 

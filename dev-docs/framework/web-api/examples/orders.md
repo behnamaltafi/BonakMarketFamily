@@ -77,7 +77,7 @@ GET http://localhost:1260/odata/v1/Orders/GetShipmentInfo(id=150)
 ```json
 {
     "@odata.context": "http://localhost:59318/odata/v1/$metadata
-    #Smartstore.Web.Api.Models.Checkout.OrderShipmentInfo",
+    #BonakMarket.Web.Api.Models.Checkout.OrderShipmentInfo",
     "HasItemsToDispatch": false,
     "HasItemsToDeliver": false,
     "CanAddItemsToShipment": true

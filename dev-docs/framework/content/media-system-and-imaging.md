@@ -6,7 +6,7 @@ description: Media library, storage providers and IMediaService usage
 
 ## Overview
 
-Smartstore ships with a comprehensive media library for images, videos and downloadable files. Metadata about each file is stored in the `MediaFile` table while the binary data lives in a pluggable storage provider. Files are grouped in folders, tagged and tracked so that unused assets can be cleaned up safely.
+BonakMarket ships with a comprehensive media library for images, videos and downloadable files. Metadata about each file is stored in the `MediaFile` table while the binary data lives in a pluggable storage provider. Files are grouped in folders, tagged and tracked so that unused assets can be cleaned up safely.
 
 `IMediaService` is the central entry point used by both the admin UI and application code. It hides where files are physically stored and exposes helpers for querying, saving and deleting media.
 

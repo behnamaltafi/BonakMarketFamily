@@ -5,7 +5,7 @@ description: Dynamic image processing, resizing and caching
 # Imaging
 
 ## Overview
-Smartstore provides an imaging pipeline backed by [SixLabors ImageSharp](https://docs.sixlabors.com/). Images can be loaded, transformed and re-encoded on the fly. Results are cached under `media/Thumbs` so repeated requests are served quickly.
+BonakMarket provides an imaging pipeline backed by [SixLabors ImageSharp](https://docs.sixlabors.com/). Images can be loaded, transformed and re-encoded on the fly. Results are cached under `media/Thumbs` so repeated requests are served quickly.
 
 ## Processing images
 `IImageProcessor` orchestrates resizing and encoding. Describe the operation with `ProcessImageQuery` and pass it to `ProcessImageAsync`:

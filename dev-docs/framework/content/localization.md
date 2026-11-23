@@ -1,10 +1,10 @@
 # Localization
 
-Smartstore is an application where different languages can be easily downloaded and activated in the admin area. Over 30 languages are available for download in the backend via **Configuration > Regional Settings > Languages**. Activated languages are displayed in the frontend as well as in the backend.
+BonakMarket is an application where different languages can be easily downloaded and activated in the admin area. Over 30 languages are available for download in the backend via **Configuration > Regional Settings > Languages**. Activated languages are displayed in the frontend as well as in the backend.
 Administrators can edit translations in the back office or import and export XML packages.
 
 ## Overview
-Smartstore ships with a database-driven localization system that covers UI strings and entity properties. Each request is assigned a working language determined from the user preference, current store or route culture.
+BonakMarket ships with a database-driven localization system that covers UI strings and entity properties. Each request is assigned a working language determined from the user preference, current store or route culture.
 
 ## Languages
 `ILanguageService` manages configured languages. The current language is available from the work context:

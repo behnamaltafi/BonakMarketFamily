@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <RootNamespace>BonakMarket.Packager.Cli</RootNamespace>
+        <AssemblyName>BonakMarket.Packager.Cli</AssemblyName>
+        <InvariantGlobalization>true</InvariantGlobalization>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\BonakMarket.Packager.Common\BonakMarket.Packager.Common.csproj" />
+    </ItemGroup>
+
+</Project>

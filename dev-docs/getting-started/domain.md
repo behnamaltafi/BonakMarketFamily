@@ -8,13 +8,13 @@ description: Entities and O/R Mapping
 
 The domain tier contains all entity classes that are mapped to database tables. Some of the most used classes are:
 
-* [Product](../../src/Smartstore.Core/Catalog/Products/Domain/Product.cs)
-* [Category](../../src/Smartstore.Core/Catalog/Categories/Domain/Category.cs)
-* [Manufacturer](../../src/Smartstore.Core/Catalog/Brands/Domain/Manufacturer.cs)
-* [Order](../../src/Smartstore.Core/Checkout/Orders/Domain/Order.cs)
-* [ShoppingCart](../../src/Smartstore.Core/Checkout/Cart/Domain/ShoppingCart.cs)
-* [Customer](../../src/Smartstore.Core/Platform/Identity/Domain/Customer.cs)
-* [MediaFile](../../src/Smartstore.Core/Content/Media/Domain/MediaFile.cs)
+* [Product](../../src/BonakMarket.Core/Catalog/Products/Domain/Product.cs)
+* [Category](../../src/BonakMarket.Core/Catalog/Categories/Domain/Category.cs)
+* [Manufacturer](../../src/BonakMarket.Core/Catalog/Brands/Domain/Manufacturer.cs)
+* [Order](../../src/BonakMarket.Core/Checkout/Orders/Domain/Order.cs)
+* [ShoppingCart](../../src/BonakMarket.Core/Checkout/Cart/Domain/ShoppingCart.cs)
+* [Customer](../../src/BonakMarket.Core/Platform/Identity/Domain/Customer.cs)
+* [MediaFile](../../src/BonakMarket.Core/Content/Media/Domain/MediaFile.cs)
 
 An entity class is a "Plain old CLR object" ([POCO](https://en.wikipedia.org/wiki/Plain_old_CLR_object)). It usually represents one database table, with each property typically representing one column in the table.
 
@@ -24,7 +24,7 @@ You can establish any relationship between entities (1:1, 1:n, n:m)
 
 ## BaseEntity
 
-A concrete entity class **must** derive from the abstract class [BaseEntity](../../src/Smartstore/Domain/BaseEntity.cs). By convention:
+A concrete entity class **must** derive from the abstract class [BaseEntity](../../src/BonakMarket/Domain/BaseEntity.cs). By convention:
 
 * `BaseEntity.Id` is used as the primary key.
 * All public properties with a getter and a setter will be included in the database schema.
@@ -42,7 +42,7 @@ Refer to [Entity Framework Core: Creating and configuring a model](https://learn
 It may seem a bit cluttered at first glance, but it is good practice to keep entity class and _Fluent API_ mapping in a single code file.
 {% endhint %}
 
-For performance reasons, Smartstore does not use proxy classes for lazy loading, but the `ILazyLoader` interface instead. Therefore, a protected `LazyLoader` property that allows lazy loading of navigation properties is declared in the `BaseEntity` class. You don't need to inject the `ILazyLoader` service, the property is automatically injected when an entity is attached to the context. If an entity is loaded without being tracked, or if it is manually detached from the context, the `NullLazyLoader` - which does nothing - will be injected instead.
+For performance reasons, BonakMarket does not use proxy classes for lazy loading, but the `ILazyLoader` interface instead. Therefore, a protected `LazyLoader` property that allows lazy loading of navigation properties is declared in the `BaseEntity` class. You don't need to inject the `ILazyLoader` service, the property is automatically injected when an entity is attached to the context. If an entity is loaded without being tracked, or if it is manually detached from the context, the `NullLazyLoader` - which does nothing - will be injected instead.
 
 Lazy loader usage example:
 
@@ -72,7 +72,7 @@ public class MyEntity : BaseEntity
 
 ## Domain assemblies
 
-On app start-up Smartstore scans all application core assemblies for entity types. If you created a new entity class and want to make it accessible, there are different approaches depending on the project type.
+On app start-up BonakMarket scans all application core assemblies for entity types. If you created a new entity class and want to make it accessible, there are different approaches depending on the project type.
 
 In a core project simply extend the partial `SmartDbContext` class.
 

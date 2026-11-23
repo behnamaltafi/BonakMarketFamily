@@ -1,6 +1,6 @@
 # Creating a Domain entity
 
-Domain entities provide a way to add your own tables to the Smartstore database. In this tutorial, you will add a simple notification system to your [Hello World](../tutorials/building-a-simple-hello-world-module.md) module.
+Domain entities provide a way to add your own tables to the BonakMarket database. In this tutorial, you will add a simple notification system to your [Hello World](../tutorials/building-a-simple-hello-world-module.md) module.
 
 {% hint style="info" %}
 This tutorial describes working in _modules_, but domain entities can also be added to the _core_.
@@ -80,7 +80,7 @@ This represents the `Notification` table with the three columns: `AuthorId`, `Pu
 
 ### Create the Migration
 
-To add the `Notification` table to the Smartstore database, you must create a migration. The migration framework creates the table at application startup. In this tutorial, you will only override the `Up` method of the abstract `MigrationBase` class.
+To add the `Notification` table to the BonakMarket database, you must create a migration. The migration framework creates the table at application startup. In this tutorial, you will only override the `Up` method of the abstract `MigrationBase` class.
 
 {% hint style="info" %}
 To learn more, see [Migrations](../../../framework/platform/database-migrations.md).
@@ -240,10 +240,10 @@ There are many other things you can do with this module:
 
 In this tutorial, you learned how to:
 
-* Adding a Table to the Smartstore Database
+* Adding a Table to the BonakMarket Database
 * Create a migration for it
 * Extend `SmartDbContext` with your tables
 
 {% hint style="info" %}
-The code for [this tutorial](https://github.com/smartstore/dev-docs-code-examples/tree/main/src/MyOrg.DomainTutorial) can be found in the examples repository.
+The code for [this tutorial](https://github.com/BonakMarket/dev-docs-code-examples/tree/main/src/MyOrg.DomainTutorial) can be found in the examples repository.
 {% endhint %}

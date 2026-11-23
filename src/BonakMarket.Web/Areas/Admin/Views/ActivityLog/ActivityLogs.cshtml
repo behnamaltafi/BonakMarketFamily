@@ -1,0 +1,22 @@
+﻿@using BonakMarket.Admin.Models.Logging
+
+@model ActivityLogListModel
+
+@{
+    ViewBag.Title = T("Admin.Configuration.ActivityLog.ActivityLog").Value;
+    Assets.BodyAttributes.AppendCssClass("spa-layout");
+}
+
+<div class="section-header">
+    <div class="title">
+        <icon name="fire" />
+        @T("Admin.Configuration.ActivityLog.ActivityLog")
+    </div>
+</div>
+
+@{
+    var gridViewData = new ViewDataDictionary(ViewData);
+    gridViewData["Parent"] = Model;
+}
+
+<partial name="_Grid.ActivityLogs" model="null" view-data="gridViewData" />

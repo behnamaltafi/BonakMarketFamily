@@ -77,7 +77,7 @@ var refNode = modulesNode.Root.SelectNodeById("settings");
 {% hint style="info" %}
 For more menu items:
 
-* Open the Smartstore Admin page
+* Open the BonakMarket Admin page
 * Right-click on the desired menu
 * Select the _Inspector_
 * Search for "**data-id**"
@@ -93,9 +93,9 @@ Now you should see a menu item in the admin configuration menu. Your code should
 
 {% code title="AdminMenu.cs" %}
 ```csharp
-using Smartstore.Collections;
-using Smartstore.Core.Content.Menus;
-using Smartstore.Web.Rendering.Builders;
+using BonakMarket.Collections;
+using BonakMarket.Core.Content.Menus;
+using BonakMarket.Web.Rendering.Builders;
 
 namespace MyOrg.HelloWorld
 {
@@ -169,9 +169,9 @@ secondMenuNode.Append(subMenuNode);
 Your final code should look like this:
 
 ```csharp
-using Smartstore.Collections;
-using Smartstore.Core.Content.Menus;
-using Smartstore.Web.Rendering.Builders;
+using BonakMarket.Collections;
+using BonakMarket.Core.Content.Menus;
+using BonakMarket.Web.Rendering.Builders;
 
 namespace MyOrg.HelloWorld
 {
@@ -212,5 +212,5 @@ namespace MyOrg.HelloWorld
 In this tutorial, you created a menu item, added it to the Admin menu, and added a submenu.
 
 {% hint style="info" %}
-The code for [this tutorial](https://github.com/smartstore/dev-docs-code-examples/tree/main/src/MyOrg.MenuTutorial) can be found in the examples repository.
+The code for [this tutorial](https://github.com/BonakMarket/dev-docs-code-examples/tree/main/src/MyOrg.MenuTutorial) can be found in the examples repository.
 {% endhint %}

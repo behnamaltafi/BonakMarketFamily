@@ -48,7 +48,7 @@ jobs:
         dotnet-version: 10.x
 
     - name: Build
-      # The checked-in ModuleBuilder still targets .NET 9; allow it to run on .NET 10.
+      # ModuleBuilder is compiled from source with .NET 10.
       env:
         DOTNET_ROLL_FORWARD: Major
       run: dotnet build BonakMarket.sln -c Release
@@ -67,8 +67,8 @@ jobs:
       run: | 
         dotnet publish src/BonakMarket.Web/BonakMarket.Web.csproj -c Release -o .temp/windows-image/publish --no-restore --no-build --no-self-contained
         Copy-Item Nano.Dockerfile .temp/windows-image/
-        docker build --build-arg SOURCE=publish -f .temp/windows-image/Nano.Dockerfile -t ghcr.io/BonakMarket/BonakMarket-windows:nightly .temp/windows-image
-        docker push ghcr.io/BonakMarket/BonakMarket-windows:nightly
+        docker build --build-arg SOURCE=publish -f .temp/windows-image/Nano.Dockerfile -t ghcr.io/behnamaltafi/bonakmarket-windows:nightly .temp/windows-image
+        docker push ghcr.io/behnamaltafi/bonakmarket-windows:nightly
 
   cleanup-old-packages:
     name: Delete untagged Windows nightly package versions
@@ -80,17 +80,17 @@ jobs:
       matrix:
         # Linux architecture manifests are untagged but still referenced by the shared tags.
         # Do not delete Linux versions until cleanup follows manifest references.
-        package: [BonakMarket-windows]
+        package: [bonakmarket-windows]
     steps:
     - name: Delete untagged versions of ${{ matrix.package }}
       uses: actions/github-script@v7
       with:
         github-token: ${{ secrets.DELETE_PACKAGES_TOKEN }}
         script: |
-          const versions = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+          const versions = await github.rest.packages.getAllPackageVersionsForPackageOwnedByUser({
             package_type: 'container',
             package_name: '${{ matrix.package }}',
-            org: 'BonakMarket',
+            username: 'behnamaltafi',
             per_page: 100
           });
 
@@ -99,10 +99,10 @@ jobs:
 
           for (const v of untagged) {
             try {
-              await github.rest.packages.deletePackageVersionForOrg({
+              await github.rest.packages.deletePackageVersionForUser({
                 package_type: 'container',
                 package_name: '${{ matrix.package }}',
-                org: 'BonakMarket',
+                username: 'behnamaltafi',
                 package_version_id: v.id
               });
               console.log(`Deleted: ${v.id} (${v.name})`);

@@ -1,0 +1,20 @@
+﻿@using BonakMarket.Admin.Models.UrlRecord
+
+@model UrlRecordListModel
+
+@{
+    ViewBag.Title = T("Admin.System.SeNames").Value;
+    Assets.BodyAttributes.AppendCssClass("spa-layout");
+
+    var gridViewData = new ViewDataDictionary(ViewData);
+    gridViewData["Parent"] = Model;
+}
+
+<div class="section-header">
+    <div class="title">
+        <icon name="seo" />
+        <span>@ViewBag.Title</span>
+    </div>
+</div>
+
+<partial name="_Grid.UrlRecords" model="null" view-data="gridViewData" />

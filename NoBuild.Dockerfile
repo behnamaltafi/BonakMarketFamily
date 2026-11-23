@@ -24,4 +24,4 @@ RUN chmod +x /tmp/install-wkhtmltopdf.sh && \
     /tmp/install-wkhtmltopdf.sh && \
     rm /tmp/install-wkhtmltopdf.sh
 
-ENTRYPOINT ["./Smartstore.Web", "--urls", "http://0.0.0.0:80"]
+ENTRYPOINT ["./BonakMarket.Web", "--urls", "http://0.0.0.0:80"]

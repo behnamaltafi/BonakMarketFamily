@@ -51,10 +51,10 @@ jobs:
       # The checked-in ModuleBuilder still targets .NET 9; allow it to run on .NET 10.
       env:
         DOTNET_ROLL_FORWARD: Major
-      run: dotnet build Smartstore.sln -c Release
+      run: dotnet build BonakMarket.sln -c Release
 
     - name: Test
-      run: dotnet test Smartstore.sln -c Release --no-restore --no-build
+      run: dotnet test BonakMarket.sln -c Release --no-restore --no-build
     
     - name: Log in to the GitHub Container registry
       uses: docker/login-action@v4
@@ -65,10 +65,10 @@ jobs:
 
     - name: Publish and Push for Windows
       run: | 
-        dotnet publish src/Smartstore.Web/Smartstore.Web.csproj -c Release -o .temp/windows-image/publish --no-restore --no-build --no-self-contained
+        dotnet publish src/BonakMarket.Web/BonakMarket.Web.csproj -c Release -o .temp/windows-image/publish --no-restore --no-build --no-self-contained
         Copy-Item Nano.Dockerfile .temp/windows-image/
-        docker build --build-arg SOURCE=publish -f .temp/windows-image/Nano.Dockerfile -t ghcr.io/smartstore/smartstore-windows:nightly .temp/windows-image
-        docker push ghcr.io/smartstore/smartstore-windows:nightly
+        docker build --build-arg SOURCE=publish -f .temp/windows-image/Nano.Dockerfile -t ghcr.io/BonakMarket/BonakMarket-windows:nightly .temp/windows-image
+        docker push ghcr.io/BonakMarket/BonakMarket-windows:nightly
 
   cleanup-old-packages:
     name: Delete untagged Windows nightly package versions
@@ -80,7 +80,7 @@ jobs:
       matrix:
         # Linux architecture manifests are untagged but still referenced by the shared tags.
         # Do not delete Linux versions until cleanup follows manifest references.
-        package: [smartstore-windows]
+        package: [BonakMarket-windows]
     steps:
     - name: Delete untagged versions of ${{ matrix.package }}
       uses: actions/github-script@v7
@@ -90,7 +90,7 @@ jobs:
           const versions = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
             package_type: 'container',
             package_name: '${{ matrix.package }}',
-            org: 'smartstore',
+            org: 'BonakMarket',
             per_page: 100
           });
 
@@ -102,7 +102,7 @@ jobs:
               await github.rest.packages.deletePackageVersionForOrg({
                 package_type: 'container',
                 package_name: '${{ matrix.package }}',
-                org: 'smartstore',
+                org: 'BonakMarket',
                 package_version_id: v.id
               });
               console.log(`Deleted: ${v.id} (${v.name})`);

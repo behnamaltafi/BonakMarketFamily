@@ -1,11 +1,11 @@
 ---
-description: Coding conventions and style rules for Smartstore
+description: Coding conventions and style rules for BonakMarket
 icon: brackets-curly
 ---
 
 # Coding standards
 
-Consistency keeps the Smartstore codebase approachable and maintainable. This guide summarizes the most important rules developers should follow when contributing code.
+Consistency keeps the BonakMarket codebase approachable and maintainable. This guide summarizes the most important rules developers should follow when contributing code.
 
 ## Naming conventions
 
@@ -32,7 +32,7 @@ public interface IEmailSender
 * Enable nullable reference types in every file: `#nullable enable`.
 
 ```csharp
-namespace Smartstore.Shipping;
+namespace BonakMarket.Shipping;
 
 public class RateRequest
 {
@@ -111,4 +111,4 @@ public class ShippingService : IShippingService
 * Write JavaScript with progressive enhancement in mind and keep dependencies minimal.
 * Keep comments short and in **English**.
 
-Following these standards helps ensure that Smartstore remains a clean, predictable, and enjoyable platform to work with.
+Following these standards helps ensure that BonakMarket remains a clean, predictable, and enjoyable platform to work with.

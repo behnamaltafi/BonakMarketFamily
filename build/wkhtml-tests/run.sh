@@ -11,7 +11,7 @@ https_image=$2
 scratch="$repository/.temp/wkhtml-tests"
 mkdir -p "$scratch/packages" "$scratch/results"
 for rid in linux-x64 linux-arm64; do
-    package="Smartstore.wkhtmltopdf.Native.$rid.0.12.6.1.nupkg"
+    package="BonakMarket.wkhtmltopdf.Native.$rid.0.12.6.1.nupkg"
     test -f "$package_source/$rid/$package"
     cp -- "$package_source/$rid/$package" "$scratch/packages/$package"
 done
@@ -20,7 +20,7 @@ docker info --format '{{.Architecture}}' | tee "$scratch/results/docker-host-arc
 for architecture in ${WKHTML_TEST_ARCHES:-amd64 arm64}; do
     case "$architecture" in amd64|arm64) ;; *) exit 1 ;; esac
     for mode in system lazy; do
-        image="smartstore-wkhtml-test:$architecture-$mode"
+        image="BonakMarket-wkhtml-test:$architecture-$mode"
         docker build --platform "linux/$architecture" --build-arg "MODE=$mode" \
             -f build/wkhtml-tests/Tests.Dockerfile -t "$image" . \
             2>&1 | tee "$scratch/results/build-$architecture-$mode.log"

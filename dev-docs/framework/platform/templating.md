@@ -1,7 +1,7 @@
 # Templating
 
 ## Overview
-Smartstore renders dynamic content with the [DotLiquid](https://github.com/dotliquid/dotliquid) engine. Liquid syntax powers email bodies and other text snippets and can be extended with custom filters or tags. Templates are executed against arbitrary models and support localization out of the box.
+BonakMarket renders dynamic content with the [DotLiquid](https://github.com/dotliquid/dotliquid) engine. Liquid syntax powers email bodies and other text snippets and can be extended with custom filters or tags. Templates are executed against arbitrary models and support localization out of the box.
 
 ## Template files
 Liquid templates use the `.liquid` extension. When a path starts with `~/` it is resolved against the application root; otherwise the current template is searched under `Views/Shared/EmailTemplates`.

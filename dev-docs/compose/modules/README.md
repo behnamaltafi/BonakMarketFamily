@@ -1,5 +1,5 @@
 ---
-description: Modules extend the functionality of Smartstore in many ways.
+description: Modules extend the functionality of BonakMarket in many ways.
 icon: puzzle-piece
 ---
 

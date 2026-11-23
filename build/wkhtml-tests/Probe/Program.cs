@@ -5,12 +5,12 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Smartstore.Engine;
-using Smartstore.Engine.Runtimes;
-using Smartstore.IO;
-using Smartstore.Pdf;
-using Smartstore.Pdf.WkHtml;
-using Smartstore.Threading;
+using BonakMarket.Engine;
+using BonakMarket.Engine.Runtimes;
+using BonakMarket.IO;
+using BonakMarket.Pdf;
+using BonakMarket.Pdf.WkHtml;
+using BonakMarket.Threading;
 
 // This probe uses the real manager, installer, command builder and converter.
 // Only web hosting/DI context is substituted; no database or running shop is needed.
@@ -73,7 +73,7 @@ else
         throw new InvalidOperationException("Lazy probe requires a fresh image without an installed tool.");
     }
     using var installer = manager.CreateLibraryInstaller();
-    executable = await installer.InstallFromPackageAsync(new InstallNativePackageRequest("wkhtmltopdf", true, "Smartstore.wkhtmltopdf.Native")
+    executable = await installer.InstallFromPackageAsync(new InstallNativePackageRequest("wkhtmltopdf", true, "BonakMarket.wkhtmltopdf.Native")
     {
         MinVersion = "0.12.6.1",
         MaxVersion = "0.12.6.1"
@@ -105,7 +105,7 @@ foreach (var input in inputs)
         Mock.Of<IHttpClientFactory>(), options, runner, loggerFactory.CreateLogger<WkHtmlToPdfConverter>());
     var settings = new PdfConversionSettings
     {
-        Title = "Smartstore wkhtml integration probe",
+        Title = "BonakMarket wkhtml integration probe",
         Page = converter.CreateHtmlInput(await File.ReadAllTextAsync(Path.Combine(work, input))),
         Header = converter.CreateHtmlInput(await File.ReadAllTextAsync(Path.Combine(work, "header.html"))),
         Footer = converter.CreateHtmlInput(await File.ReadAllTextAsync(Path.Combine(work, "footer.html"))),

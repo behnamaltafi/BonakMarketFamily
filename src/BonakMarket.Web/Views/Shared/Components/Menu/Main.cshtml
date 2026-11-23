@@ -1,0 +1,29 @@
+﻿@using BonakMarket.Web.Rendering.Menus
+@using BonakMarket.Collections
+@using BonakMarket.Core.Content.Menus
+
+@model MenuModel
+
+@{
+    Layout = "";
+
+    if (Model.Root == null)
+    {
+        return;
+    }
+
+    var navbarModel = ViewData["MainMenuNavbarModel"] as MenuModel ?? Model;
+    var dropdownModel = ViewData["MainMenuDropdownModel"] as MenuModel ?? Model;
+}
+
+<div class="megamenu simple">
+    @{ await Html.RenderPartialAsync("Components/Menu/Navbar", navbarModel); }
+</div>
+
+@{ await Html.RenderPartialAsync("Components/Menu/Main.Dropdown", dropdownModel); }
+
+<script>
+    $(function () {
+        $(".megamenu-container").megaMenu();
+    });
+</script>

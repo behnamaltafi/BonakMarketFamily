@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+	<PropertyGroup>
+		<Product>BonakMarket Shipping by weight</Product>
+		<OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.ShippingByWeight</OutputPath>
+		<OutDir>$(OutputPath)</OutDir>
+	</PropertyGroup>
+</Project>

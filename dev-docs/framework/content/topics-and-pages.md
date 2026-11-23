@@ -34,7 +34,7 @@ var aboutUrl = await Url.TopicAsync("AboutUs");
 
 ## Widget mode
 
-When _Render as widget_ is enabled, Smartstore turns the topic into a `TopicWidget` and injects it into each listed [widget zone](widgets.md#zones). Wrapper options (`WidgetWrapContent`, `WidgetShowTitle`, `WidgetBordered`) control presentation, while `Priority` defines sort order within the zone.
+When _Render as widget_ is enabled, BonakMarket turns the topic into a `TopicWidget` and injects it into each listed [widget zone](widgets.md#zones). Wrapper options (`WidgetWrapContent`, `WidgetShowTitle`, `WidgetBordered`) control presentation, while `Priority` defines sort order within the zone.
 
 ## Programmatic access
 

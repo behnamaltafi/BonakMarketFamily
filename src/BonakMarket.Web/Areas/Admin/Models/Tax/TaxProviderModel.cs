@@ -1,0 +1,14 @@
+﻿using BonakMarket.Admin.Models.Modularity;
+
+namespace BonakMarket.Admin.Models.Tax;
+
+public class TaxProviderModel : ProviderModel, IActivatable
+{
+    [LocalizedDisplay("Admin.Configuration.Tax.Providers.Fields.IsPrimaryTaxProvider")]
+    public bool IsPrimaryTaxProvider { get; set; }
+
+    bool IActivatable.IsActive
+    {
+        get => IsPrimaryTaxProvider;
+    }
+}

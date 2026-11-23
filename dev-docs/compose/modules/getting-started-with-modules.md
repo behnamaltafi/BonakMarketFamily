@@ -2,7 +2,7 @@
 
 ## Overview
 
-Modules are designed to extend Smartstore functionality in any way you can imagine. There are no limits to what features they can add.
+Modules are designed to extend BonakMarket functionality in any way you can imagine. There are no limits to what features they can add.
 
 Here are a few examples of what modules can do:
 
@@ -11,12 +11,12 @@ Here are a few examples of what modules can do:
 * modify / extend UI
 * overwrite services
 
-Modules are sets of extensions that compile into a single assembly in order to be re-used in other Smartstore shops. Even though it may use Smartstore APIs, they are no necessity. The only two requirements for a module project are:
+Modules are sets of extensions that compile into a single assembly in order to be re-used in other BonakMarket shops. Even though it may use BonakMarket APIs, they are no necessity. The only two requirements for a module project are:
 
 * `module.json`: A manifest file describing the metadata of a module.
 * `Module.cs`: A class that implements `IModule` and contains (un-)installation routines.
 
-Some special, mostly commerce related features are encapsulated as [_providers_ ](../../framework/platform/modularity-and-providers.md)in the Smartstore ecosystem. A module can expose as many of these providers as needed.
+Some special, mostly commerce related features are encapsulated as [_providers_ ](../../framework/platform/modularity-and-providers.md)in the BonakMarket ecosystem. A module can expose as many of these providers as needed.
 
 Represented by their interfaces, provider types are:
 
@@ -32,10 +32,10 @@ Represented by their interfaces, provider types are:
 
 ## Module structure
 
-A module is a regular **Class Library** project in the solution. It should be placed in the _/src/Smartstore.Modules/_ directory in the root of your solution.
+A module is a regular **Class Library** project in the solution. It should be placed in the _/src/BonakMarket.Modules/_ directory in the root of your solution.
 
 {% hint style="warning" %}
-Do not confuse this with the **/src/Smartstore.Web/Modules/** directory, which is the build target for module. From here the application loads module assemblies into the app-domain dynamically.
+Do not confuse this with the **/src/BonakMarket.Web/Modules/** directory, which is the build target for module. From here the application loads module assemblies into the app-domain dynamically.
 {% endhint %}
 
 If your project directory is located elsewhere, you should create a _symlink_ that links to the actual location.
@@ -51,8 +51,8 @@ If your module is called **MyOrg.MyGreatModule**, the _.csproj_ project file sho
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Razor">
     <PropertyGroup>
-	<Product>A great module for Smartstore</Product>
-	<OutputPath>..\..\Smartstore.Web\Modules\MyOrg.MyGreatModule</OutputPath>
+	<Product>A great module for BonakMarket</Product>
+	<OutputPath>..\..\BonakMarket.Web\Modules\MyOrg.MyGreatModule</OutputPath>
 	<OutDir>$(OutputPath)</OutDir>
     </PropertyGroup>
 </Project>
@@ -60,9 +60,9 @@ If your module is called **MyOrg.MyGreatModule**, the _.csproj_ project file sho
 
 Each time the solution is built, your module will be compiled and copied to the `OutputPath` directory specified here.
 
-### Smartstore.Module.props
+### BonakMarket.Module.props
 
-The file _Smartstore.Build/Smartstore.Module.props_ defines shared properties for modules. It is auto-included into every project located in _Smartstore.Modules/_.
+The file _BonakMarket.Build/BonakMarket.Module.props_ defines shared properties for modules. It is auto-included into every project located in _BonakMarket.Modules/_.
 
 Among other things it specifies files and directories...:
 
@@ -79,14 +79,14 @@ This is important, because the build process would copy the whole dependency gra
 
 ### Project & Package references
 
-All projects located in the _Smartstore.Modules_ directory reference `Smartstore`, `Smartstore.Core` and `Smartstore.Web.Common` projects by default.
+All projects located in the _BonakMarket.Modules_ directory reference `BonakMarket`, `BonakMarket.Core` and `BonakMarket.Web.Common` projects by default.
 
 {% hint style="info" %}
-You can also reference `Smartstore.Web` to access model types declared there. But add the following lines to the project file to prevent your project copying dependent files to your `OutputPath`:
+You can also reference `BonakMarket.Web` to access model types declared there. But add the following lines to the project file to prevent your project copying dependent files to your `OutputPath`:
 
 ```xml
 <ItemGroup>
-    <ProjectReference Include="..\..\Smartstore.Web\Smartstore.Web.csproj">
+    <ProjectReference Include="..\..\BonakMarket.Web\BonakMarket.Web.csproj">
         <Private>False</Private>
         <CopyLocal>False</CopyLocal>
         <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
@@ -112,7 +112,7 @@ Here is an example of a working `module.json` file.
     // Required. Module system name.
     "SystemName": "MyOrg.MyGreatModule",
     // Required. English friendly name.
-    "FriendlyName": "A great module for Smartstore",
+    "FriendlyName": "A great module for BonakMarket",
     "Description": "Lorem ipsum",
     // Required. The current version of module.
     "Version": "5.0",
@@ -172,7 +172,7 @@ name, or omit it for a decorative icon. Size the common wrapper with
 Every module needs an entry class containing the bare minimum of the un- and install methods. To be recognized as such the class must implement the `IModule` interface.
 
 {% hint style="info" %}
-It is also recommended to derive from the abstract [ModuleBase](../../../src/Smartstore.Core/Platform/Modularity/ModuleBase.cs) instead of implementing `IModule`, because it contains some common implementations.
+It is also recommended to derive from the abstract [ModuleBase](../../../src/BonakMarket.Core/Platform/Modularity/ModuleBase.cs) instead of implementing `IModule`, because it contains some common implementations.
 {% endhint %}
 
 The installation method `IModule.InstallAsync()` is called every time the module is installed. Respectively the same goes for the uninstall method `IModule.UninstallAsync()`.

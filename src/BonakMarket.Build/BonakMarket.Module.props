@@ -1,0 +1,62 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<Import Project="BonakMarket.Razor.props" />
+	
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+	</PropertyGroup>
+	
+	<PropertyGroup>
+		<CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+		<GenerateProvideApplicationPartFactoryAttribute>true</GenerateProvideApplicationPartFactoryAttribute>
+		<ProvideApplicationPartFactoryAttributeTypeName>BonakMarket.Engine.Modularity.ApplicationParts.ModuleRazorAssemblyPartFactory, BonakMarket</ProvideApplicationPartFactoryAttributeTypeName>
+		<EnableDefaultContentItems>false</EnableDefaultContentItems>
+		<PreserveCompilationContext>false</PreserveCompilationContext>
+		<PreserveCompilationReferences>false</PreserveCompilationReferences>
+		<MvcRazorExcludeRefAssembliesFromPublish>true</MvcRazorExcludeRefAssembliesFromPublish>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
+
+	<ItemGroup>
+        <Content Include="module.json">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+		<Content Include="wwwroot\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="Localization\*.xml">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="Views\**\*.cshtml">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+        <ProjectReference Include="..\..\BonakMarket\BonakMarket.csproj">
+            <Private>False</Private>
+            <CopyLocal>False</CopyLocal>
+            <CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+        </ProjectReference>
+		<ProjectReference Include="..\..\BonakMarket.Core\BonakMarket.Core.csproj">
+			<Private>False</Private>
+			<CopyLocal>False</CopyLocal>
+			<CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+		</ProjectReference>
+		<ProjectReference Include="..\..\BonakMarket.Web.Common\BonakMarket.Web.Common.csproj">
+			<Private>False</Private>
+			<CopyLocal>False</CopyLocal>
+			<CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+		</ProjectReference>
+	</ItemGroup>
+	
+	<ProjectExtensions>
+		<VisualStudio>
+			<UserProperties module_1json__JsonSchema="..\..\BonakMarket.Web\Properties\module.schema.json#" />
+		</VisualStudio>
+	</ProjectExtensions>
+	
+</Project>

@@ -1,6 +1,6 @@
 # Native libraries
 
-Some Smartstore features rely on OS‑specific binaries such as PDF engines or image processors. To keep the repository lean and platform‑agnostic these native dependencies are downloaded on demand and stored in a runtime‑specific folder.
+Some BonakMarket features rely on OS‑specific binaries such as PDF engines or image processors. To keep the repository lean and platform‑agnostic these native dependencies are downloaded on demand and stored in a runtime‑specific folder.
 
 ## Runtime directory
 
@@ -26,7 +26,7 @@ if (!wkhtml.Exists)
 {
     using var installer = manager.CreateLibraryInstaller();
     wkhtml = await installer.InstallFromPackageAsync(
-        new InstallNativePackageRequest("wkhtmltopdf", isExecutable: true, packageId: "Smartstore.wkhtmltopdf.Native")
+        new InstallNativePackageRequest("wkhtmltopdf", isExecutable: true, packageId: "BonakMarket.wkhtmltopdf.Native")
         {
             MinVersion = "0.12.6"
         });
@@ -40,7 +40,7 @@ if (!wkhtml.Exists)
 Native libraries are distributed as regular NuGet packages. Each RID contains its own `native` folder:
 
 ```
-Smartstore.TinyImage.Png.Native.linux-arm64.nupkg
+BonakMarket.TinyImage.Png.Native.linux-arm64.nupkg
  └─ runtimes/
     └─ linux-arm64/native/pngquant
 ```

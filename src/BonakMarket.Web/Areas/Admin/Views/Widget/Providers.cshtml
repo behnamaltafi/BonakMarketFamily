@@ -1,0 +1,18 @@
+﻿@using BonakMarket.Admin.Models.Modularity
+
+@model IEnumerable<WidgetModel>
+
+@{
+    ViewBag.Title = T("Admin.ContentManagement.Widgets").Value;
+}
+
+<div class="section-header">
+    <div class="title">
+        <icon name="plus-square" />
+        @T("Admin.ContentManagement.Widgets")
+    </div>
+</div>
+
+<div class="provider-list">
+    @(await Html.ProviderList(Model))
+</div>

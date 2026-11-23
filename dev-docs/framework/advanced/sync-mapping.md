@@ -1,12 +1,12 @@
 # Sync mapping
 
-Sync mappings tie Smartstore entities to records in external systems. Each record stores the internal entity identifier together with the external key and a context name that identifies the integration (for example `"ERP"` or `"PIM"`). Mappings are unique per `(EntityId, EntityName, ContextName)` and per `(SourceKey, EntityName, ContextName)` so sync operations stay idempotent.
+Sync mappings tie BonakMarket entities to records in external systems. Each record stores the internal entity identifier together with the external key and a context name that identifies the integration (for example `"ERP"` or `"PIM"`). Mappings are unique per `(EntityId, EntityName, ContextName)` and per `(SourceKey, EntityName, ContextName)` so sync operations stay idempotent.
 
 ## Schema
 
 `SyncMapping` lives in `DbContext.SyncMappings` and is never cached. It contains the following fields:
 
-- `EntityId` – identifier of the Smartstore entity.
+- `EntityId` – identifier of the BonakMarket entity.
 - `EntityName` – entity type, usually `nameof(Product)`, `nameof(Category)` etc.
 - `SourceKey` – primary key of the external record.
 - `ContextName` – name of the remote system.

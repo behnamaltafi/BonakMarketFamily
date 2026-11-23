@@ -1,7 +1,7 @@
 # Distributed locking
 
 Distributed locks coordinate access to shared resources across threads or
-servers. Smartstore exposes a small abstraction consisting of
+servers. BonakMarket exposes a small abstraction consisting of
 `IDistributedLockProvider` and `IDistributedLock` that you can use whenever a
 critical section must not run concurrently on multiple nodes.
 

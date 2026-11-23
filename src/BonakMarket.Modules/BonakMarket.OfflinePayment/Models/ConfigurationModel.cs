@@ -1,0 +1,48 @@
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using BonakMarket.OfflinePayment.Settings;
+using BonakMarket.Web.Models;
+
+namespace BonakMarket.OfflinePayment.Models;
+
+public abstract class ConfigurationModelBase : ModelBase
+{
+    public string PostActionName { get; set; }
+    public string PrimaryStoreCurrencyCode { get; set; }
+
+    [LocalizedDisplay("Admin.Configuration.Payment.Methods.AdditionalFee")]
+    public Amount AdditionalFee { get; set; } = new(unitField: nameof(PaymentSettingsBase.AdditionalFeePercentage));
+
+    [LocalizedDisplay("Plugins.Payments.Manual.Fields.TransactMode")]
+    public TransactMode TransactMode { get; set; }
+}
+
+public class CashOnDeliveryConfigurationModel : ConfigurationModelBase
+{
+}
+
+public class DirectDebitConfigurationModel : ConfigurationModelBase
+{
+}
+
+public class InvoiceConfigurationModel : ConfigurationModelBase
+{
+}
+
+public class ManualConfigurationModel : ConfigurationModelBase
+{
+    [LocalizedDisplay("Plugins.Payments.Manual.ExcludedCreditCards")]
+    public string[] ExcludedCreditCards { get; set; }
+    public List<SelectListItem> AvailableCreditCards { get; set; } = [];
+}
+
+public class PayInStoreConfigurationModel : ConfigurationModelBase
+{
+}
+
+public class PrepaymentConfigurationModel : ConfigurationModelBase
+{
+}
+
+public class PurchaseOrderNumberConfigurationModel : ConfigurationModelBase
+{
+}

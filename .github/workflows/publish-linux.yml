@@ -20,7 +20,7 @@ env:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   MSBUILDTERMINALLOGGER: 'off'
-  IMAGE: ghcr.io/smartstore/smartstore-linux
+  IMAGE: ghcr.io/BonakMarket/BonakMarket-linux
 
 jobs:
   build:
@@ -49,12 +49,12 @@ jobs:
         # The checked-in ModuleBuilder still targets .NET 9; allow it to run on .NET 10.
         env:
           DOTNET_ROLL_FORWARD: Major
-        # Smartstore.Common.props sets the RID per project; --runtime on a solution triggers NETSDK1134.
-        run: dotnet build Smartstore.sln -c Release -p:SmartstoreBuildRuntime=${{ matrix.rid }} --no-self-contained
+        # BonakMarket.Common.props sets the RID per project; --runtime on a solution triggers NETSDK1134.
+        run: dotnet build BonakMarket.sln -c Release -p:BonakMarketBuildRuntime=${{ matrix.rid }} --no-self-contained
 
       - name: Test
         if: inputs.run-tests
-        run: dotnet test Smartstore.sln -c Release -p:SmartstoreBuildRuntime=${{ matrix.rid }} --no-restore --no-build
+        run: dotnet test BonakMarket.sln -c Release -p:BonakMarketBuildRuntime=${{ matrix.rid }} --no-restore --no-build
 
       - name: Publish and stage the Docker context
         env:
@@ -62,8 +62,8 @@ jobs:
         run: |
           mkdir -p .temp/linux-image
           # Match build/test: --runtime alone is stripped from RID-agnostic project references.
-          # SmartstoreBuildRuntime keeps Core reference paths aligned with the existing RID build.
-          dotnet publish src/Smartstore.Web/Smartstore.Web.csproj -c Release -p:SmartstoreBuildRuntime="$RID" \
+          # BonakMarketBuildRuntime keeps Core reference paths aligned with the existing RID build.
+          dotnet publish src/BonakMarket.Web/BonakMarket.Web.csproj -c Release -p:BonakMarketBuildRuntime="$RID" \
             --no-self-contained --no-build --no-restore -o .temp/linux-image/publish
           python3 .github/verify-linux-publish.py .temp/linux-image/publish "$RID"
           # A minimal context keeps .temp ignored in normal repository-root Docker builds.
@@ -81,33 +81,33 @@ jobs:
           build-args: |
             SOURCE=publish
             RUNTIME=${{ matrix.rid }}
-          tags: smartstore-linux:test
+          tags: BonakMarket-linux:test
           load: true
           provenance: false
 
       - name: Smoke-test the production image
         timeout-minutes: 10
-        run: bash .github/verify-linux-image.sh smartstore-linux:test ${{ matrix.platform }}
+        run: bash .github/verify-linux-image.sh BonakMarket-linux:test ${{ matrix.platform }}
 
-      - name: Build the real Smartstore PDF probe
+      - name: Build the real BonakMarket PDF probe
         run: |
           dotnet publish build/wkhtml-tests/Probe/Probe.csproj -c Release --runtime ${{ matrix.rid }} \
             --no-self-contained -p:UseAppHost=false -o .temp/linux-image/probe
           mkdir -p .temp/linux-image/tests .temp/wkhtml-tests/results
           cp build/wkhtml-tests/verify.py .temp/linux-image/tests/
-          cp src/Smartstore.Web/wwwroot/admin/images/bg-mobile.jpg .temp/linux-image/tests/fixture.jpg
+          cp src/BonakMarket.Web/wwwroot/admin/images/bg-mobile.jpg .temp/linux-image/tests/fixture.jpg
 
       - name: Test PDF rendering against the published image
         timeout-minutes: 15
         env:
-          WKHTML_HTTPS_IMAGE_URL: https://smartstore.com/media/8761/pagebuilder/Startseite-CMS-1.png
+          WKHTML_HTTPS_IMAGE_URL: https://BonakMarket.com/media/8761/pagebuilder/Startseite-CMS-1.png
         run: |
           # Only the disposable probe image receives Python/Poppler, never the shipped image.
-          docker build --platform ${{ matrix.platform }} --build-arg IMAGE=smartstore-linux:test \
-            -f build/wkhtml-tests/PublishedImage.Dockerfile -t smartstore-linux:probe .temp/linux-image
+          docker build --platform ${{ matrix.platform }} --build-arg IMAGE=BonakMarket-linux:test \
+            -f build/wkhtml-tests/PublishedImage.Dockerfile -t BonakMarket-linux:probe .temp/linux-image
           docker run --rm --platform ${{ matrix.platform }} \
             --mount "type=bind,source=$PWD/.temp/wkhtml-tests/results,target=/work/.temp/results" \
-            -e WKHTML_HTTPS_IMAGE_URL smartstore-linux:probe
+            -e WKHTML_HTTPS_IMAGE_URL BonakMarket-linux:probe
 
       - name: Retain PDF reports and visual-review artifacts
         if: always()

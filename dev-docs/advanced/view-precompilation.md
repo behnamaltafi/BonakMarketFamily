@@ -4,7 +4,7 @@ Razor views are compiled at runtime by default. The first request after deployme
 
 ## Default configuration
 
-Smartstore ships with [`Smartstore.Razor.props`](../../src/Smartstore.Build/Smartstore.Razor.props) which enables build- and publish-time compilation for all projects referencing it. The props file turns on the modern Razor SDK switches and disables the build server:
+BonakMarket ships with [`BonakMarket.Razor.props`](../../src/BonakMarket.Build/BonakMarket.Razor.props) which enables build- and publish-time compilation for all projects referencing it. The props file turns on the modern Razor SDK switches and disables the build server:
 
 ```xml
 <PropertyGroup>
@@ -24,17 +24,17 @@ With these settings every `dotnet build` or `dotnet publish` creates a `<project
 To produce precompiled views for the web host simply run:
 
 ```bash
-dotnet publish src/Smartstore.Web/Smartstore.Web.csproj -c Release
+dotnet publish src/BonakMarket.Web/BonakMarket.Web.csproj -c Release
 ```
 
-The publish output contains `Smartstore.Web.dll` and `Smartstore.Web.Views.dll` which ASP.NET Core loads automatically at startup.
+The publish output contains `BonakMarket.Web.dll` and `BonakMarket.Web.Views.dll` which ASP.NET Core loads automatically at startup.
 
 ## Skipping compilation in development
 
 During rapid prototyping you can skip view compilation by building the special `DebugNoRazorCompile` configuration:
 
 ```bash
-dotnet build src/Smartstore.Web/Smartstore.Web.csproj -c DebugNoRazorCompile
+dotnet build src/BonakMarket.Web/BonakMarket.Web.csproj -c DebugNoRazorCompile
 ```
 
 This configuration sets `RazorCompileOnBuild` to `false`, shortening build time at the cost of a slower first request.

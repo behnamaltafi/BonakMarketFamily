@@ -1,0 +1,107 @@
+﻿@using BonakMarket.Web.Rendering.Menus
+@using BonakMarket.Collections
+@using BonakMarket.Core.Content.Menus
+
+@model MenuModel
+
+@{
+    var root = Model.Root;
+    if (root == null)
+    {
+        return;
+    }
+
+    // Support both cases: the dropdown-link is Model.Root or the first item if it has children.
+    if (root.HasChildren && root.Children.Count == 1 && root.FirstChild.HasChildren)
+    {
+        root = root.FirstChild;
+    }
+
+    var item = root.Value;
+    var menuName = Model.Name.HasValue() ? Model.Name.ToLower() : root.Id.ToString();
+}
+
+<div class="cms-menu cms-menu-dropdown" data-menu-name="@menuName">
+    <div class="dropdown">
+        <a id="@(menuName)-opener" data-toggle="dropdown" aria-haspopup="listbox" aria-expanded="false" href="#" rel="nofollow" attrs="@item.GetCombinedAttributes().PrependCssClass("menubar-link")">
+            <span sm-language-attributes-for="item">@root.GetItemText(T)</span>
+            <icon name="chevron-down" class="menubar-caret" />
+        </a>
+        @{ await CreateDropdown(root.Children); }
+    </div>
+</div>
+
+@{
+    async Task CreateDropdown(IEnumerable<TreeNode<MenuItem>> nodes)
+    {
+        if (!nodes.Any())
+        {
+            return;
+        }
+
+        var isFirst = true;
+        var iconSize = Model.GetIconSize();
+        var hasIcons = nodes.Any(x => (Model.IconOptions == null || (x.Value.Visible && !x.Value.IsGroupHeader)) && Model.GetIcon(x.Value).HasValue());
+        var hasImages = nodes.Any(x => (Model.IconOptions == null || (x.Value.Visible && !x.Value.IsGroupHeader)) && x.Value.ImageUrl.HasValue());
+
+        <div class="dropdown-menu" aria-labelledby="@(menuName)-opener" role="listbox">
+            @foreach (var node in nodes)
+            {
+                var item = node.Value;
+                if (!item.Visible)
+                {
+                    continue;
+                }
+
+                var itemText = node.GetItemText(T);
+                var itemUrl = item.GenerateUrl(this.ViewContext);
+                var icon = Model.GetIcon(item, allowFallback: hasIcons);
+
+                if (item.IsGroupHeader)
+                {
+                    if (!isFirst)
+                    {
+                        <div class="dropdown-divider"></div>
+                    }
+                    if (itemText.HasValue() && item.Text != "[SKIP]")
+                    {
+                        <div class="dropdown-header menu-header h6">@itemText</div>
+                    }
+                    isFirst = false;
+                    continue;
+                }
+
+                var attrs = item.GetCombinedAttributes().PrependCssClass("dropdown-item menu-link");
+
+                <a href="@itemUrl" attrs="attrs" role="option">
+                    @if (Model.IconOptions != null && item.ImageUrl.HasValue() && !icon.HasValue())
+                    {
+                        <img class="icon" src="@Url.Content(item.ImageUrl)" alt="@itemText" />
+                    }
+                    else if (hasIcons)
+                    {
+                        @if (icon.HasValue())
+                        {
+                            <icon name="@icon" class="icon-fw" attr-class='@(item.IconClass.HasValue(), item.IconClass)' />
+                        }
+                        else
+                        {
+                            <span class="icon icon-fw" attr-class='@(iconSize.HasValue(), "icon-" + iconSize)' aria-hidden="true"></span>
+                        }
+                    }
+                    else if (hasImages && item.ImageUrl.HasValue())
+                    {
+                        <img class="icon" src="@Url.Content(item.ImageUrl)" alt="@itemText" />
+                    }
+                    else if (hasImages && Model.IconOptions?.DisplayIcons != false)
+                    {
+                        <span class="icon icon-fw" aria-hidden="true"></span>
+                    }
+                    <span sm-language-attributes-for="item">@itemText</span>
+                </a>
+
+                isFirst = false;
+            }
+        </div>
+    }
+}

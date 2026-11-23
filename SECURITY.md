@@ -10,8 +10,8 @@ A new release version of the library will be published, _if required_, to addres
 
 ## Reporting a Vulnerability
 
-Please report any _sensitive_, _critical_, or _urgent_ vulnerablities by using <a href="https://smartstore.com/en/contact">our contact form</a> saying 
+Please report any _sensitive_, _critical_, or _urgent_ vulnerablities by using <a href="https://BonakMarket.com/en/contact">our contact form</a> saying 
 you need to communicate an important security issue.
 
 After assessing the issue, we will work out how we will handle the matter and let you know how to proceed. If the vulnerablity is neither _sensitive_, _critical_, or _urgent_, 
-please just create a <a href="https://github.com/smartstore/Smartstore/issues/new/choose">new issue</a> as per normal.
+please just create a <a href="https://github.com/BonakMarket/BonakMarket/issues/new/choose">new issue</a> as per normal.

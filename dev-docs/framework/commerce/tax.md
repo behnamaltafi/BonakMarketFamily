@@ -2,7 +2,7 @@
 
 ## Overview
 
-Smartstore abstracts tax calculation into two parts: a _provider_ resolves the tax rate and a _calculator_ applies that rate to prices. Everything is driven by `TaxSettings` which determine whether amounts are entered and displayed inclusive or exclusive of tax.
+BonakMarket abstracts tax calculation into two parts: a _provider_ resolves the tax rate and a _calculator_ applies that rate to prices. Everything is driven by `TaxSettings` which determine whether amounts are entered and displayed inclusive or exclusive of tax.
 
 ### Tax categories
 
@@ -10,7 +10,7 @@ Every product is assigned to a **tax category** so the system knows which rate t
 
 ### Tax providers
 
-The active provider is selected via `ITaxService` and returns a `TaxRate` for a given `TaxRateRequest`. Smartstore ships with a fixed rate provider and a region‑based provider in the _Smartstore.Tax_ module, but you can implement your own by registering an `ITaxProvider`.
+The active provider is selected via `ITaxService` and returns a `TaxRate` for a given `TaxRateRequest`. BonakMarket ships with a fixed rate provider and a region‑based provider in the _BonakMarket.Tax_ module, but you can implement your own by registering an `ITaxProvider`.
 
 ```csharp
 public class CustomTaxProvider : ITaxProvider

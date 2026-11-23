@@ -3,10 +3,10 @@
 ## Tenants-Folder
 
 {% hint style="info" %}
-Most changes made here require you to restart your Smartstore instance.
+Most changes made here require you to restart your BonakMarket instance.
 {% endhint %}
 
-Contains at least one Tenant-Folder, usually named `Default`. Every directory inside the Tenants-Folder acts as an instance-profile. The folder is located at \src\Smartstore.Web\App\_Data\\**Tenants**\\.
+Contains at least one Tenant-Folder, usually named `Default`. Every directory inside the Tenants-Folder acts as an instance-profile. The folder is located at \src\BonakMarket.Web\App\_Data\\**Tenants**\\.
 
 {% hint style="info" %}
 If you have multiple workspaces and want the ability to switch between them quickly, create a file `Current.txt` containing the desired workspace name.
@@ -24,13 +24,13 @@ The Tenant-Folder contains information about store-workspaces, including:
 * Data protection keys
 * Temporary files
 
-The folder is located at \src\Smartstore.Web\App\_Data\Tenants\\**YourInstanceName**\\
+The folder is located at \src\BonakMarket.Web\App\_Data\Tenants\\**YourInstanceName**\\
 
 ### Settings.txt
 
 This file contains the following information:
 
-<table><thead><tr><th width="214">Key</th><th width="179">Desciption</th><th>Sample value</th></tr></thead><tbody><tr><td>AppVersion</td><td>The current Smartstore version</td><td><code>5.1.0.0</code></td></tr><tr><td>DataProvider</td><td>The database provider</td><td><code>SqlServer</code></td></tr><tr><td>DataConnectionString</td><td>Database connection-string</td><td><code>Data Source=your_host;Initial Catalog=</code><mark style="color:green;"><code>your_database</code></mark><code>;Integrated Security=False;User ID=</code><mark style="color:green;"><code>your_username</code></mark><code>;Password=</code><mark style="color:green;"><code>your_password</code></mark><code>;Enlist=False;Pooling=True;Min Pool Size=1;Max Pool Size=1024;Multiple Active Result Sets=True;Encrypt=False;User Instance=False;MultipleActiveResultSets=True</code></td></tr></tbody></table>
+<table><thead><tr><th width="214">Key</th><th width="179">Desciption</th><th>Sample value</th></tr></thead><tbody><tr><td>AppVersion</td><td>The current BonakMarket version</td><td><code>5.1.0.0</code></td></tr><tr><td>DataProvider</td><td>The database provider</td><td><code>SqlServer</code></td></tr><tr><td>DataConnectionString</td><td>Database connection-string</td><td><code>Data Source=your_host;Initial Catalog=</code><mark style="color:green;"><code>your_database</code></mark><code>;Integrated Security=False;User ID=</code><mark style="color:green;"><code>your_username</code></mark><code>;Password=</code><mark style="color:green;"><code>your_password</code></mark><code>;Enlist=False;Pooling=True;Min Pool Size=1;Max Pool Size=1024;Multiple Active Result Sets=True;Encrypt=False;User Instance=False;MultipleActiveResultSets=True</code></td></tr></tbody></table>
 
 {% hint style="info" %}
 Change the database information of your store using `DataConnectionString`.
@@ -42,17 +42,17 @@ This file contains all of your store's installed modules. The names are separate
 
 {% code title="InstalledModules.txt" %}
 ```
-Smartstore.ShippingByWeight
-Smartstore.Shipping
-Smartstore.Tax
-Smartstore.OfflinePayment
+BonakMarket.ShippingByWeight
+BonakMarket.Shipping
+BonakMarket.Tax
+BonakMarket.OfflinePayment
 ```
 {% endcode %}
 
 {% hint style="info" %}
 If a module is interrupting your development, but you don't want to deinstall it, simply remove it from this file.
 
-After a restart, Smartstore will be loaded without the module.
+After a restart, BonakMarket will be loaded without the module.
 {% endhint %}
 
 ### \_temp

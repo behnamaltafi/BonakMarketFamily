@@ -4,7 +4,7 @@
 
 A payment provider represents a payment method with which an order can be paid in the frontend. Furthermore, it contains other optional methods, e.g. capturing the payment amount later, when the goods are shipped or to perform a refund. It is recommended to learn about the general functioning of a [provider](../platform/modularity-and-providers.md#providers) before going on.
 
-If no SDK is provided for a payment gateway or you do not want to use it for whatever reason, it is recommended to write your own HTTP client to communicate with the gateway. See the [PayPal HTTP client](../../../src/Smartstore.Modules/Smartstore.PayPal/Client/PayPalHttpClient.cs) as an example.
+If no SDK is provided for a payment gateway or you do not want to use it for whatever reason, it is recommended to write your own HTTP client to communicate with the gateway. See the [PayPal HTTP client](../../../src/BonakMarket.Modules/BonakMarket.PayPal/Client/PayPalHttpClient.cs) as an example.
 
 ## Payment provider
 
@@ -67,7 +67,7 @@ For details about `SystemName` etc. see [providers](../platform/modularity-and-p
 
 ## Payment method filter
 
-Payment methods can be filtered using [IPaymentMethodFilter](../../../src/Smartstore.Core/Checkout/Payment/Service/IPaymentMethodFilter.cs). Such an implementation can be useful when a payment method should only be offered if a certain shopping cart amount is exceeded.
+Payment methods can be filtered using [IPaymentMethodFilter](../../../src/BonakMarket.Core/Checkout/Payment/Service/IPaymentMethodFilter.cs). Such an implementation can be useful when a payment method should only be offered if a certain shopping cart amount is exceeded.
 
 {% code title="Example of a payment filter" %}
 ```csharp
@@ -148,7 +148,7 @@ public partial class MyCustomPaymentFilter : IPaymentMethodFilter
 
 ## Custom checkout state
 
-In most cases, session-based data must be stored during checkout in order to communicate with the payment provider's API. This includes the ID of the payment transaction or session. Use the `CheckoutState` property of [ICheckoutStateAccessor](../../../src/Smartstore.Core/Checkout/Orders/Services/ICheckoutStateAccessor.cs) to store any custom session data during checkout. Your state object must inherit from `ObservableObject`.
+In most cases, session-based data must be stored during checkout in order to communicate with the payment provider's API. This includes the ID of the payment transaction or session. Use the `CheckoutState` property of [ICheckoutStateAccessor](../../../src/BonakMarket.Core/Checkout/Orders/Services/ICheckoutStateAccessor.cs) to store any custom session data during checkout. Your state object must inherit from `ObservableObject`.
 
 {% code title="Custom checkout state object example" %}
 ```csharp
@@ -213,9 +213,9 @@ The checkout state has a limited scope by design, starting with the shopping car
 
 The payment module provides current payment data via result objects, such as `ProcessPaymentResult`. They are stored by the core directly on the related order entity. Their most important properties are listed in the following table.
 
-<table><thead><tr><th width="304">Property</th><th>Description</th></tr></thead><tbody><tr><td><strong>AuthorizationTransactionId</strong></td><td>The ID of a payment authorization. Usually this comes from a payment gateway.</td></tr><tr><td><strong>AuthorizationTransactionCode</strong></td><td>A payment transaction code. Not used by Smartstore. This can be any data that the payment provider needs for later processing.</td></tr><tr><td><strong>AuthorizationTransactionResult</strong></td><td>Short result information about the payment authorization.</td></tr><tr><td><strong>CaptureTransactionId</strong></td><td>The ID of a payment capture. Usually this comes from a payment gateway. Can be equal to <code>AuthorizationTransactionId</code>.</td></tr><tr><td><strong>CaptureTransactionResult</strong></td><td>Short result information about the payment capture.</td></tr><tr><td><strong>SubscriptionTransactionId</strong></td><td>The ID for payment subscription. Usually used for recurring payment.</td></tr></tbody></table>
+<table><thead><tr><th width="304">Property</th><th>Description</th></tr></thead><tbody><tr><td><strong>AuthorizationTransactionId</strong></td><td>The ID of a payment authorization. Usually this comes from a payment gateway.</td></tr><tr><td><strong>AuthorizationTransactionCode</strong></td><td>A payment transaction code. Not used by BonakMarket. This can be any data that the payment provider needs for later processing.</td></tr><tr><td><strong>AuthorizationTransactionResult</strong></td><td>Short result information about the payment authorization.</td></tr><tr><td><strong>CaptureTransactionId</strong></td><td>The ID of a payment capture. Usually this comes from a payment gateway. Can be equal to <code>AuthorizationTransactionId</code>.</td></tr><tr><td><strong>CaptureTransactionResult</strong></td><td>Short result information about the payment capture.</td></tr><tr><td><strong>SubscriptionTransactionId</strong></td><td>The ID for payment subscription. Usually used for recurring payment.</td></tr></tbody></table>
 
-Except for `AuthorizationTransactionCode` and `SubscriptionTransactionId`, this information is displayed on the order page in the admin backend, but they are not processed any further or used in any other way by Smartstore.
+Except for `AuthorizationTransactionCode` and `SubscriptionTransactionId`, this information is displayed on the order page in the admin backend, but they are not processed any further or used in any other way by BonakMarket.
 
 If more payment data needs to be stored in the database for an order, this should be done using the `GenericAttribute` entity. Suppose you have a provider for installment payments. Then the following code saves the interest and the order total including interest for a certain order.
 

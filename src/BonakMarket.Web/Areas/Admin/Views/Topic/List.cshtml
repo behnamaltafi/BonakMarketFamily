@@ -1,0 +1,22 @@
+﻿@using BonakMarket.Admin.Models.Topics
+
+@model TopicListModel
+
+@{
+    ViewBag.Title = T("Admin.ContentManagement.Topics").Value;
+    Assets.BodyAttributes.AppendCssClass("spa-layout");
+}
+
+@{
+    var gridViewData = new ViewDataDictionary(this.ViewData);
+    gridViewData["Parent"] = Model;
+}
+
+<div class="section-header">
+    <div class="title">
+        <icon name="file" />
+        @T("Admin.ContentManagement.Topics")
+    </div>
+</div>
+
+<partial name="_Grid.Topics" model="null" view-data="gridViewData" />

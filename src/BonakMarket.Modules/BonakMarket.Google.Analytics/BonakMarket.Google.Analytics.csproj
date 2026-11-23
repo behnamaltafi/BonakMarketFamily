@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+    <PropertyGroup>
+        <Product>BonakMarket Google Analytics</Product>
+        <OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.Google.Analytics</OutputPath>
+        <OutDir>$(OutputPath)</OutDir>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="DouglasCrockford.JsMin" Version="2.2.0" />
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\BonakMarket.Web\BonakMarket.Web.csproj">
+            <Private>False</Private>
+            <CopyLocal>False</CopyLocal>
+            <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
+        </ProjectReference>
+    </ItemGroup>
+</Project>

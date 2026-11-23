@@ -1,0 +1,118 @@
+﻿@using BonakMarket.Web.Rendering.Menus
+@using BonakMarket.Collections
+@using BonakMarket.Core.Content.Menus
+
+@model MenuModel
+
+@{
+    var root = Model.Root;
+    if (root == null)
+    {
+        return;
+    }
+}
+
+<ul class="navbar-nav">
+    @{
+        foreach (var node in Model.Root.Children)
+        {
+            var item = node.Value;
+
+            if (!item.Visible)
+            {
+                continue;
+            }
+
+            var imageUrl = item.ImageUrl;
+            if (!imageUrl.HasValue())
+            {
+                imageUrl = "~/admin/images/ap-default-white.png";
+            }
+
+            var itemText = node.GetItemText(T);
+            var itemUrl = GetNodeLink(node);
+
+        <li data-id="nav-@item.Id" class="nav-item@(node.HasChildren ? " dropdown" : "")">
+            <a class="nav-link@(node.HasChildren ? " dropdown-toggle" : "")" href="@itemUrl" title="@itemText" aria-label="@itemText" attr-aria-haspopup='(node.HasChildren, "true")' attr-aria-expanded='(node.HasChildren, "false")' attr-data-toggle='(node.HasChildren, "dropdown")'>
+                @if (item.Icon.HasValue())
+                {
+                    <icon name="@item.Icon" class="navbar-icon" attr-class='@(item.IconClass.HasValue(), item.IconClass)' />
+                }
+                else
+                {
+                    <img class="icon" src="@Url.Content(imageUrl)" alt="" />
+                }
+                <span class="navbar-label" aria-hidden="true">@itemText</span>
+            </a>
+            @if (node.HasChildren)
+            {
+                await CreateDropdown(node.Children);
+                <span class="sidebar-menu-arrow" aria-hidden="true"></span>
+            }
+        </li>
+        }
+    }
+</ul>
+
+@{
+    string GetNodeLink(TreeNode<MenuItem> node)
+    {
+        if (node.HasChildren)
+        {
+            return "javascript:void(0)";
+        }
+
+        return node.Value.GenerateUrl(this.ViewContext);
+    }
+
+    async Task CreateDropdown(IEnumerable<TreeNode<MenuItem>> nodes)
+    {
+        var isFirst = true;
+        var hasIcons = nodes.Any(x => x.Value.Icon.HasValue());
+
+        <ul class="dropdown-menu dropdown-menu-light-icons">
+            @foreach (var node in nodes)
+            {
+                var item = node.Value;
+
+                if (!item.Visible)
+                {
+                    continue;
+                }
+
+                var itemText = node.GetItemText(T);
+
+                if (item.IsGroupHeader)
+                {
+                    <li sm-if="!isFirst" class="dropdown-divider"></li>
+                    <li sm-if="@(item.Text.HasValue() && item.Text != "[SKIP]")" data-id="@item.Id" class="dropdown-header h6">@itemText</li>
+                    isFirst = false;
+                    continue;
+                }
+
+                <li data-id="@item.Id" attr-class='(node.HasChildren, "dropdown-group")'>
+                    <a class="dropdown-item" href="@GetNodeLink(node)" attrs="item.LinkHtmlAttributes">
+                        @if (hasIcons)
+                        {
+                            if (item.Icon.HasValue())
+                            {
+                                <icon name="@item.Icon" class="dropdown-icon icon-fw" attr-class='@(item.IconClass.HasValue(), item.IconClass)' />
+                            }
+                            else
+                            {
+                                <span class="icon icon-fw" aria-hidden="true"></span>
+                            }
+                        }
+                        @itemText
+                    </a>
+                    @if (node.HasChildren)
+                    {
+                        await CreateDropdown(node.Children);
+                    }
+                </li>
+
+                isFirst = false;
+            }
+        </ul>
+    }
+}

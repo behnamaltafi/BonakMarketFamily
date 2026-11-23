@@ -1,0 +1,7 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+		<Product>BonakMarket OfflinePayment</Product>
+		<OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.OfflinePayment</OutputPath>
+		<OutDir>$(OutputPath)</OutDir>
+  </PropertyGroup>
+</Project>

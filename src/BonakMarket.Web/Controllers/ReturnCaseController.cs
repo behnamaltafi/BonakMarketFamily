@@ -1,0 +1,177 @@
+﻿using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using BonakMarket.Core.Checkout.Orders;
+using BonakMarket.Core.Localization;
+using BonakMarket.Core.Messaging;
+using BonakMarket.Core.Seo.Routing;
+using BonakMarket.Json;
+using BonakMarket.Web.Models.Customers;
+using BonakMarket.Web.Models.Orders;
+
+namespace BonakMarket.Web.Controllers;
+
+public class ReturnCaseController : PublicController
+{
+    private readonly SmartDbContext _db;
+    private readonly IOrderProcessingService _orderProcessingService;
+    private readonly IMessageFactory _messageFactory;
+    private readonly OrderSettings _orderSettings;
+    private readonly LocalizationSettings _localizationSettings;
+
+    public ReturnCaseController(
+        SmartDbContext db,
+        IOrderProcessingService orderProcessingService,
+        IMessageFactory messageFactory,
+        OrderSettings orderSettings,
+        LocalizationSettings localizationSettings)
+    {
+        _db = db;
+        _orderProcessingService = orderProcessingService;
+        _messageFactory = messageFactory;
+        _orderSettings = orderSettings;
+        _localizationSettings = localizationSettings;
+    }
+
+    [DisallowRobot]
+    public async Task<IActionResult> ReturnCase(int id /* orderId */)
+    {
+        var order = await _db.Orders
+            .IncludeCustomer()
+            .IncludeOrderItems()
+            .Include(x => x.Customer.ReturnCases)
+            .FindByIdAsync(id);
+
+        if (order == null)
+        {
+            return NotFound();
+        }
+
+        if (order.CustomerId != Services.WorkContext.CurrentCustomer.Id)
+        {
+            return ChallengeOrForbid();
+        }
+
+        if (!_orderProcessingService.CanReturnItems(order))
+        {
+            return RedirectToRoute("Homepage");
+        }
+
+        var model = new AddReturnCaseModel();
+        await PrepareReturnCaseModel(model, order);
+
+        return View(model);
+    }
+
+    [HttpPost, ActionName("ReturnCase")]
+    public async Task<IActionResult> ReturnCaseSubmit(int id /* orderId */, AddReturnCaseModel model)
+    {
+        var form = Request.Form;
+        var order = await _db.Orders
+            .IncludeCustomer(false, true)
+            .IncludeOrderItems()
+            .FindByIdAsync(id);
+
+        if (order == null)
+        {
+            return NotFound();
+        }
+
+        if (order.CustomerId != Services.WorkContext.CurrentCustomer.Id)
+        {
+            return ChallengeOrForbid();
+        }
+
+        if (!_orderProcessingService.CanReturnItems(order))
+        {
+            return RedirectToRoute("Homepage");
+        }
+
+        var items = order.OrderItems
+            .Select(oi =>
+            {
+                var quantity = 0;
+                if (model.Items.ReturnAllItems)
+                {
+                    quantity = oi.Quantity;
+                }
+                else if (form.TryGetValue($"orderitem-select{oi.Id}", out var selectedVal) && selectedVal.ToString().ToBool())
+                {
+                    quantity = form.TryGetValue($"orderitem-quantity{oi.Id}", out var qtyVal) ? qtyVal.ToString().ToInt() : 0;
+                }
+
+                if (quantity > 0)
+                {
+                    quantity = oi.GetMaxReturnQuantity(quantity);
+                }
+                if (quantity == 0)
+                {
+                    return null;
+                }
+
+                return new ReturnItem
+                {
+                    OrderItem = oi,
+                    ReturnCase = new ReturnCase
+                    {
+                        Kind = ReturnCaseKind.Return,
+                        StoreId = order.StoreId,
+                        OrderItemId = oi.Id,
+                        Quantity = quantity,
+                        CustomerId = order.CustomerId,
+                        ReasonForReturn = model.ReturnReason,
+                        RequestedAction = model.ReturnAction,
+                        CustomerComments = model.Comments,
+                        StaffNotes = string.Empty,
+                        ReturnCaseStatus = ReturnCaseStatus.Pending
+                    }
+                };
+            })
+            .Where(x => x != null)
+            .ToList();
+
+        if (items.Count > 0)
+        {
+            _db.ReturnCases.AddRange(items.Select(x => x.ReturnCase));
+            await _db.SaveChangesAsync();
+
+            foreach (var item in items)
+            {
+                await _messageFactory.SendNewReturnCaseStoreOwnerNotificationAsync(item.ReturnCase, item.OrderItem, _localizationSettings.DefaultAdminLanguageId);
+            }
+
+            NotifySuccess(T("ReturnRequests.Submitted"));
+            return RedirectToAction(nameof(OrderController.Details), "Order", new { id });
+        }
+
+        ModelState.AddModelError(string.Empty, T("ReturnRequests.NoItemsSubmitted"));
+        await PrepareReturnCaseModel(model, order);
+
+        return View(model);
+    }
+
+    private async Task PrepareReturnCaseModel(AddReturnCaseModel model, Order order)
+    {
+        Guard.NotNull(order);
+        Guard.NotNull(model);
+
+        model.OrderId = order.Id;
+        model.Items = await order.MapAsync(true, model.Items?.ReturnAllItems ?? true);
+
+        string returnReasons = _orderSettings.GetLocalizedSetting(x => x.ReturnRequestReasons, order.CustomerLanguageId, order.StoreId, true, false);
+        string returnActions = _orderSettings.GetLocalizedSetting(x => x.ReturnRequestActions, order.CustomerLanguageId, order.StoreId, true, false);
+
+        ViewBag.AvailableReturnReasons = (returnReasons.HasValue() ? JsonSerializer.Deserialize<string[]>(returnReasons, SmartJsonOptions.Default) ?? [] : [])
+            .Select(x => new SelectListItem { Text = x, Value = x })
+            .ToList();
+
+        ViewBag.AvailableReturnActions = (returnActions.HasValue() ? JsonSerializer.Deserialize<string[]>(returnActions, SmartJsonOptions.Default) ?? [] : [])
+            .Select(x => new SelectListItem { Text = x, Value = x })
+            .ToList();
+    }
+
+    record ReturnItem
+    {
+        public OrderItem OrderItem { get; init; }
+        public ReturnCase ReturnCase { get; init; }
+    }
+}

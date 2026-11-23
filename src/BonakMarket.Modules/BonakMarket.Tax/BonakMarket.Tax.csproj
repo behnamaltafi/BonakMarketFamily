@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+    <PropertyGroup>
+        <Product>BonakMarket Tax</Product>
+        <OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.Tax</OutputPath>
+        <OutDir>$(OutputPath)</OutDir>
+    </PropertyGroup>
+    <ItemGroup>
+        <Content Include="App_Data\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+</Project>

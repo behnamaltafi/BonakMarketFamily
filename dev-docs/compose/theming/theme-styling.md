@@ -20,7 +20,7 @@ For example, it's possible to use the mixins provided by Bootstrap for responsiv
 
 ## CSS transpilation
 
-Smartstore uses Lightning CSS to transpile style bundles for the browsers configured in `Bundling:CssTranspiler:Targets`. This includes vendor prefixes and syntax fallbacks where needed. Transpilation can be controlled independently of minification with `Bundling:EnableCssTranspilation`.
+BonakMarket uses Lightning CSS to transpile style bundles for the browsers configured in `Bundling:CssTranspiler:Targets`. This includes vendor prefixes and syntax fallbacks where needed. Transpilation can be controlled independently of minification with `Bundling:EnableCssTranspilation`.
 
 ## All `.scss` files in Flex
 
@@ -28,7 +28,7 @@ Smartstore uses Lightning CSS to transpile style bundles for the browsers config
 
 ### Bootstrap 4 + variables reset
 
-<table><thead><tr><th width="321">File</th><th>Description</th></tr></thead><tbody><tr><td>/lib/bs4/scss/bootstrap-head.scss</td><td>Custom Smartstore file that contains only the import of Bootstrap functions and variables.</td></tr><tr><td>_variables-reset.scss</td><td>Used to omit, reset, or redefine imported bootstrap variables with custom values before importing Bootstrap main.</td></tr><tr><td>/lib/bs4/scss/bootstrap-main.scss</td><td>Main file to include Bootstrap Sass files.</td></tr></tbody></table>
+<table><thead><tr><th width="321">File</th><th>Description</th></tr></thead><tbody><tr><td>/lib/bs4/scss/bootstrap-head.scss</td><td>Custom BonakMarket file that contains only the import of Bootstrap functions and variables.</td></tr><tr><td>_variables-reset.scss</td><td>Used to omit, reset, or redefine imported bootstrap variables with custom values before importing Bootstrap main.</td></tr><tr><td>/lib/bs4/scss/bootstrap-main.scss</td><td>Main file to include Bootstrap Sass files.</td></tr></tbody></table>
 
 ### Vendor components (neutral)
 

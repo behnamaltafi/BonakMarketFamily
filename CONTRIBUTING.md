@@ -2,15 +2,15 @@
 One of the easiest ways to contribute is to participate in discussions on GitHub issues. You can also contribute by submitting pull requests with code changes.
 
 ## Watch us
-To stay informed about the latest news and receive updates from Smartstore, just click on the _Watch_ button at the top of this page.
+To stay informed about the latest news and receive updates from BonakMarket, just click on the _Watch_ button at the top of this page.
 
 ## Reporting a security issue
-Please report any _sensitive_, _critical_, or _urgent_ vulnerabilities by using our [contact form](https://smartstore.com/en/contact) saying 
+Please report any _sensitive_, _critical_, or _urgent_ vulnerabilities by using our [contact form](https://BonakMarket.com/en/contact) saying 
 you need to communicate an important security issue.
 
 After assessing the issue, we will work out how we will handle the matter and let you know how to proceed. 
 If the vulnerability is neither _sensitive_, _critical_, or _urgent_, 
-please just create a <a href="https://github.com/smartstore/Smartstore/issues/new/choose">new issue</a> as per normal.
+please just create a <a href="https://github.com/BonakMarket/BonakMarket/issues/new/choose">new issue</a> as per normal.
 
 ## Create an issue
 If you stumble across an error, have an improvement suggestion or a feature request, feel free to write an issue to let us know what's on your mind.
@@ -30,19 +30,19 @@ Don't be afraid to add any supporting photos which could help us understand the 
 ## Participate in discussions
 Please keep in mind that issues are only meant to inform us about aspects we need to know. 
 If you have questions or problems and aren't sure where they belong, 
-please start a discussion [in our forum](http://community.smartstore.com/index.php?/forum/85-smartstore-english/) rather than open a new issue. 
+please start a discussion [in our forum](http://community.BonakMarket.com/index.php?/forum/85-BonakMarket-english/) rather than open a new issue. 
 If we consider it to be an issue, we will create an issue or advise you to create one.
 
 ## Contribute
 If you are a developer who wants to keep up to date with the latest source code, we recommend downloading the current develop branch. 
-Smartstore uses GIT for revision control and source code management. You can work with any GIT client, e.g. TortoiseGit, 
+BonakMarket uses GIT for revision control and source code management. You can work with any GIT client, e.g. TortoiseGit, 
 Git for Visual Studio or SourceTree. Personally, we've had excellent experience with SourceTree while working with open source projects, 
-including, of course, Smartstore.
+including, of course, BonakMarket.
 
-When working with Smartstore as a developer, you will benefit substantially by forking the software before creating some 
+When working with BonakMarket as a developer, you will benefit substantially by forking the software before creating some 
 of the adaptations you need. This way, we can, for instance, pull your fork if there's a problem with a feature you're implementing, 
-allowing us to help you. Also, when you have developed a feature or perhaps improvements that you want to contribute to Smartstore, 
-you can very easily make a pull request so we can evaluate your code and determine whether it is relevant to the Smartstore core.
+allowing us to help you. Also, when you have developed a feature or perhaps improvements that you want to contribute to BonakMarket, 
+you can very easily make a pull request so we can evaluate your code and determine whether it is relevant to the BonakMarket core.
 
 ### Submitting a pull request
 If you don't know what a pull request is read this article: https://help.github.com/articles/using-pull-requests. 

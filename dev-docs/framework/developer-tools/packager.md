@@ -1,13 +1,13 @@
-# Smartstore Packager
+# BonakMarket Packager
 
-The Smartstore Packager creates deployable ZIP packages for compiled Smartstore modules and themes. These packages can be uploaded and installed through the plugin manager in the Smartstore backend.
+The BonakMarket Packager creates deployable ZIP packages for compiled BonakMarket modules and themes. These packages can be uploaded and installed through the plugin manager in the BonakMarket backend.
 
-The source code is available on GitHub for the [desktop application](https://github.com/smartstore/Smartstore/tree/main/tools/Smartstore.Packager), the [command-line application](https://github.com/smartstore/Smartstore/tree/main/tools/Smartstore.Packager.Cli), and the [shared packaging library](https://github.com/smartstore/Smartstore/tree/main/tools/Smartstore.Packager.Common).
+The source code is available on GitHub for the [desktop application](https://github.com/BonakMarket/BonakMarket/tree/main/tools/BonakMarket.Packager), the [command-line application](https://github.com/BonakMarket/BonakMarket/tree/main/tools/BonakMarket.Packager.Cli), and the [shared packaging library](https://github.com/BonakMarket/BonakMarket/tree/main/tools/BonakMarket.Packager.Common).
 
 The Packager is available as:
 
-* `Smartstore.Packager`: a Windows desktop application for interactive use.
-* `Smartstore.Packager.Cli`: a command-line application for scripts and automated builds.
+* `BonakMarket.Packager`: a Windows desktop application for interactive use.
+* `BonakMarket.Packager.Cli`: a command-line application for scripts and automated builds.
 
 Both applications use the same discovery and packaging logic and produce identical packages.
 
@@ -17,14 +17,14 @@ Always package extensions from a compiled build artifact. Do not point the Packa
 
 ## Prepare the build artifact
 
-Build the extension in **Release** configuration before packaging it. A complete Smartstore build artifact normally has this structure:
+Build the extension in **Release** configuration before packaging it. A complete BonakMarket build artifact normally has this structure:
 
 ```text
 Community.<version>.<runtime>/
 ├── Modules/
-│   ├── Smartstore.PayPal/
+│   ├── BonakMarket.PayPal/
 │   │   ├── module.json
-│   │   ├── Smartstore.PayPal.dll
+│   │   ├── BonakMarket.PayPal.dll
 │   │   ├── Views/
 │   │   └── wwwroot/
 │   └── ...
@@ -45,7 +45,7 @@ Use the build artifact's web root as the Packager's root path. This is the direc
 
 ## Use the desktop application
 
-Build the `Smartstore.Packager` project from `Smartstore.Tools.sln`, then start `Smartstore.Packager.exe`.
+Build the `BonakMarket.Packager` project from `BonakMarket.Tools.sln`, then start `BonakMarket.Packager.exe`.
 
 The application remembers the last root and output paths. For a regular community build, the initial paths default to locations similar to:
 
@@ -56,7 +56,7 @@ Output path: build\packages
 
 To create packages:
 
-1. Enter the root path of the compiled Smartstore artifact or select it with **Browse**.
+1. Enter the root path of the compiled BonakMarket artifact or select it with **Browse**.
 2. Enter the directory in which the packages should be created.
 3. Select **Read Extensions**.
 4. Open the **Plugins** or **Themes** tab.
@@ -67,12 +67,12 @@ The output directory is created automatically if it does not exist.
 
 ## Use the command-line application
 
-Use `Smartstore.Packager.Cli` for scripts and automated builds. Build the `Smartstore.Packager.Cli` project from `Smartstore.Tools.sln`, then call the resulting executable with the `pack` command.
+Use `BonakMarket.Packager.Cli` for scripts and automated builds. Build the `BonakMarket.Packager.Cli` project from `BonakMarket.Tools.sln`, then call the resulting executable with the `pack` command.
 
 ```text
-Smartstore.Packager.Cli pack --root <path> --output <path> --extension <name>
-Smartstore.Packager.Cli pack --root <path> --output <path> --all
-Smartstore.Packager.Cli --help
+BonakMarket.Packager.Cli pack --root <path> --output <path> --extension <name>
+BonakMarket.Packager.Cli pack --root <path> --output <path> --all
+BonakMarket.Packager.Cli --help
 ```
 
 ### Command options
@@ -87,15 +87,15 @@ Smartstore.Packager.Cli --help
 
 Exactly one of `--extension` and `--all` must be specified.
 
-Extension names are matched case-insensitively against their directory names. For example, `smartstore.paypal` matches the `Smartstore.PayPal` directory.
+Extension names are matched case-insensitively against their directory names. For example, `BonakMarket.paypal` matches the `BonakMarket.PayPal` directory.
 
 ### Package one extension
 
 ```powershell
-Smartstore.Packager.Cli.exe pack `
+BonakMarket.Packager.Cli.exe pack `
   --root "D:\Build\Community.6.5.0.win-x64" `
   --output "D:\Build\packages" `
-  --extension "Smartstore.PayPal"
+  --extension "BonakMarket.PayPal"
 ```
 
 ### Package several extensions
@@ -103,11 +103,11 @@ Smartstore.Packager.Cli.exe pack `
 Repeat `--extension` for each module or theme:
 
 ```powershell
-Smartstore.Packager.Cli.exe pack `
+BonakMarket.Packager.Cli.exe pack `
   --root "D:\Build\Community.6.5.0.win-x64" `
   --output "D:\Build\packages" `
-  --extension "Smartstore.PayPal" `
-  --extension "Smartstore.Stripe" `
+  --extension "BonakMarket.PayPal" `
+  --extension "BonakMarket.Stripe" `
   --extension "Flex"
 ```
 
@@ -116,7 +116,7 @@ Duplicate extension arguments are ignored.
 ### Package all extensions
 
 ```powershell
-Smartstore.Packager.Cli.exe pack `
+BonakMarket.Packager.Cli.exe pack `
   --root "D:\Build\Community.6.5.0.win-x64" `
   --output "D:\Build\packages" `
   --all
@@ -127,8 +127,8 @@ Smartstore.Packager.Cli.exe pack `
 For every successfully created package, the CLI writes its absolute path to standard output:
 
 ```text
-D:\Build\packages\Smartstore.Module.Smartstore.PayPal.6.5.0.zip
-D:\Build\packages\Smartstore.Theme.Flex.6.5.0.zip
+D:\Build\packages\BonakMarket.Module.BonakMarket.PayPal.6.5.0.zip
+D:\Build\packages\BonakMarket.Theme.Flex.6.5.0.zip
 ```
 
 Warnings and errors are written to standard error. This allows scripts to process successful package paths independently from diagnostic messages.
@@ -146,7 +146,7 @@ When several extensions are requested, a failure does not stop the remaining ext
 A script should check both the exit code and the package paths written to standard output.
 
 ```powershell
-& .\Smartstore.Packager.Cli.exe pack `
+& .\BonakMarket.Packager.Cli.exe pack `
   --root $artifactPath `
   --output $packagePath `
   --all
@@ -158,8 +158,8 @@ if ($LASTEXITCODE -ne 0) {
 
 ## Install a generated package
 
-Open the plugin manager in the Smartstore backend and upload the generated ZIP file. Smartstore reads the embedded manifest and installs the module or theme into the appropriate directory.
+Open the plugin manager in the BonakMarket backend and upload the generated ZIP file. BonakMarket reads the embedded manifest and installs the module or theme into the appropriate directory.
 
-The package installer checks the extension's minimum supported Smartstore version before installation. When updating an existing extension, Smartstore backs up the installed files before applying the package.
+The package installer checks the extension's minimum supported BonakMarket version before installation. When updating an existing extension, BonakMarket backs up the installed files before applying the package.
 
-Unlike a manual FTP or RDP deployment, package installation does not require stopping the application pool. Smartstore handles the extension update and application restart.
+Unlike a manual FTP or RDP deployment, package installation does not require stopping the application pool. BonakMarket handles the extension update and application restart.

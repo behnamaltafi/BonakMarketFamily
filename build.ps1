@@ -13,7 +13,7 @@ $PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 # CONFIGURATION
 ###########################################################################
 
-$BuildProjectFile = "$PSScriptRoot\src\Smartstore.Build\Smartstore.Build\Smartstore.Build.csproj"
+$BuildProjectFile = "$PSScriptRoot\src\BonakMarket.Build\BonakMarket.Build\BonakMarket.Build.csproj"
 $TempDirectory = "$PSScriptRoot\\.nuke\temp"
 
 $DotNetGlobalFile = "$PSScriptRoot\\global.json"

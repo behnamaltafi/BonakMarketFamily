@@ -1,20 +1,20 @@
 # Tag Helpers
 
-Tag Helpers are extensions of existing HTML tags. They can extend the functionality of a tag or even create completely new tags. Smartstore has created a lot of Tag Helpers to write simple and clear code and for better productivity.
+Tag Helpers are extensions of existing HTML tags. They can extend the functionality of a tag or even create completely new tags. BonakMarket has created a lot of Tag Helpers to write simple and clear code and for better productivity.
 
 ## How To Use Tag Helpers
 
-To use the Smartstore Tag Helpers in your Views, you'll need to reference specific libraries. You can do this either in your View file or by using `_ViewImports.cshtml` (recommended). Add the following lines and IntelliSense should recognise the Tag Helpers.
+To use the BonakMarket Tag Helpers in your Views, you'll need to reference specific libraries. You can do this either in your View file or by using `_ViewImports.cshtml` (recommended). Add the following lines and IntelliSense should recognise the Tag Helpers.
 
 ```
 //for public Tag Helpers
-@addTagHelper Smartstore.Web.TagHelpers.Public.*, Smartstore.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Public.*, BonakMarket.Web.Common
 
 //for shared Tag Helpers
-@addTagHelper Smartstore.Web.TagHelpers.Shared.*, Smartstore.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.*, BonakMarket.Web.Common
 
 //for admin Tag Helpers
-@addTagHelper Smartstore.Web.TagHelpers.Admin.*, Smartstore.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Admin.*, BonakMarket.Web.Common
 ```
 
 {% hint style="info" %}
@@ -24,7 +24,7 @@ To learn more about \_ViewImports.cshtml, check out this [tutorial](https://lear
 {% hint style="info" %}
 Try it out!
 
-Type: <mark style="color:green;">`<span s`</mark> You should see a suggestion for `sm-if`, which is part of Smartstore's `IfTagHelper`.
+Type: <mark style="color:green;">`<span s`</mark> You should see a suggestion for `sm-if`, which is part of BonakMarket's `IfTagHelper`.
 {% endhint %}
 
 A quick example:
@@ -33,15 +33,15 @@ A quick example:
 <span sm-if="@Model.visible">Here I am!</span>
 ```
 
-## Smartstore Tag Helpers
+## BonakMarket Tag Helpers
 
-Smartstore differentiates between three kinds of Tag Helpers.
+BonakMarket differentiates between three kinds of Tag Helpers.
 
 * Public: Used in frontend
 * Shared: Used in both front- and backend
 * Admin: Used in backend
 
-You can find the code to Smartstore Tag Helpers in _Smartstore.Web.Common/TagHelpers/_.
+You can find the code to BonakMarket Tag Helpers in _BonakMarket.Web.Common/TagHelpers/_.
 
 ### Public
 
@@ -77,7 +77,7 @@ The `ConsentScriptTagHelper` allows a script to be loaded immediately after cook
 
 <summary>Honeypot Tag Helper</summary>
 
-The `HoneypotTagHelper` is Smartstore's cyber-security implementation of the [Honeypot](https://en.wikipedia.org/wiki/Honeypot_\(computing\)) mechanism.
+The `HoneypotTagHelper` is BonakMarket's cyber-security implementation of the [Honeypot](https://en.wikipedia.org/wiki/Honeypot_\(computing\)) mechanism.
 
 ```cshtml
 <honeypot />
@@ -198,7 +198,7 @@ It also supports these attributes:
 
 The `FileUploaderTagHelper` adds a highly customisable way to upload files.
 
-Here is an excerpt from _Smartstore.Web/Views/Customer/Avatar.cshtml_ to show this.
+Here is an excerpt from _BonakMarket.Web/Views/Customer/Avatar.cshtml_ to show this.
 
 {% code title="Avatar.cshtml" %}
 ```cshtml
@@ -286,7 +286,7 @@ The `SuppressIfEmptyTagHelper` adds a conditional attribute to the element. The 
 
 The `SuppressIfEmptyZoneTagHelper` suppresses the output, if the targeted zone is empty or only contains whitespaces.
 
-Here is an excerpt from _Smartstore.Web/Views/ShoppingCart/Partials/OffCanvasShoppingCart.cshtml_ to show this.
+Here is an excerpt from _BonakMarket.Web/Views/ShoppingCart/Partials/OffCanvasShoppingCart.cshtml_ to show this.
 
 {% code title="" %}
 ```cshtml
@@ -409,7 +409,7 @@ The `ModalTagHelper` adds a customisable modal dialog. It works in combination w
 * `ModalBodyTagHelper`
 * `ModalFooterTagHelper`
 
-Here is an excerpt from _Smartstore.Web/Areas/Admin/Views/Theme/Configure.cshtml_ to show this.
+Here is an excerpt from _BonakMarket.Web/Areas/Admin/Views/Theme/Configure.cshtml_ to show this.
 
 {% code title="Configure.cshtml" %}
 ```cshtml
@@ -756,7 +756,7 @@ The `BackToTagHelper` adds a left arrow icon to a link.
 
 There are different types of DataGrid Tag Helpers. They all work together to extend the functionality of the Grid Tag Helper.
 
-Here is an excerpt from _Smartstore.Web/Areas/Admin/Views/ActivityLog\_Grid.ActivityLogs.cshtml_ to show this.
+Here is an excerpt from _BonakMarket.Web/Areas/Admin/Views/ActivityLog\_Grid.ActivityLogs.cshtml_ to show this.
 
 {% code title="_Grid.ActivityLogs.cshtml" %}
 ```cshtml

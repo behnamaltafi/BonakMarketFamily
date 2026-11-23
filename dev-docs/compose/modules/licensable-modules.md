@@ -2,10 +2,10 @@
 
 ## Overview
 
-If you are offering your module on the [SmartStore Community Marketplace](http://community.smartstore.com/index.php?/files/), you can easily make it licensable. A licensed module behaves as follows:
+If you are offering your module on the [BonakMarket Community Marketplace](http://community.BonakMarket.com/index.php?/files/), you can easily make it licensable. A licensed module behaves as follows:
 
 * The module can be used for free for 30 days (demonstration mode). After this period, it has to be licensed.
-* A shop administrator receives a license key after purchasing the module on the [SmartStore Marketplace](http://community.smartstore.com/index.php?/files/). To activate the license key, it has to be entered in the administration backend (_Plugins > Manage Plugins_).
+* A shop administrator receives a license key after purchasing the module on the [BonakMarket Marketplace](http://community.BonakMarket.com/index.php?/files/). To activate the license key, it has to be entered in the administration backend (_Plugins > Manage Plugins_).
 * The license status is periodically checked to ensure that nobody is misusing your module.
 
 {% hint style="info" %}
@@ -17,7 +17,7 @@ A license key is only valid for the IP address that activated the key.
 A module can be marked as a licensable piece of code by decorating the module class (inherited from `ModuleBase`) with the `LicensableModuleAttribute`.
 
 {% hint style="info" %}
-There must be a dependency on the _Smartstore.Web.Common_ project for the module to use the licensing component.
+There must be a dependency on the _BonakMarket.Web.Common_ project for the module to use the licensing component.
 {% endhint %}
 
 `LicensableModuleAttribute` has a `HasSingleLicenseForAllStores` option related to multi-stores. If set to _True_, the license key has no domain binding and is therefore valid for all stores. Recommended is the default value _False_, i.e. a new license key is required for each store.
@@ -67,7 +67,7 @@ The license check is always performed against the current request URL or as a fa
 
 ### License Checker
 
-The license checker is a set of static methods for license validation within `Smartstore.Licensing.dll`.
+The license checker is a set of static methods for license validation within `BonakMarket.Licensing.dll`.
 
 <table><thead><tr><th width="232">Method</th><th>Description</th></tr></thead><tbody><tr><td><strong>IsLicensableModule</strong></td><td>Gets a value indicating whether a module is a licensed piece of code where the user has to enter a license key that has to be activated.</td></tr><tr><td><strong>GetLicense</strong></td><td>Gets information about a license for a given module system name such as the remaining demo days.</td></tr><tr><td><strong>Activate</strong></td><td>Activates a license key. This is done when the user enters their license key in the administration backend.</td></tr><tr><td><strong>Check</strong></td><td>Checks the state of a license for a given module system name and returns various information about the license. If you need a stringified version of the result (German and English localization supported), call the <code>ToString()</code> method of the returned object.</td></tr><tr><td><strong>CheckState</strong></td><td>Same as <em>Check</em> or <em>CheckAsync</em> but just returns the license state.</td></tr><tr><td><strong>ResetState</strong></td><td>The license status is cached internally. Only after a certain period a live check against the server is made. With this method, the cached status is reset and immediately checked again live.</td></tr></tbody></table>
 

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <Product>BonakMarket Multi-Provider SMS Gateway</Product>
+    <OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.MultiSms</OutputPath>
+    <OutDir>$(OutputPath)</OutDir>
+  </PropertyGroup>
+</Project>

@@ -1,7 +1,7 @@
 # Menus
 
 ## Overview
-Smartstore's menu system builds navigation trees for frontend and backend. Menus consist of hierarchical `MenuItem` nodes resolved to final URLs. Items can originate from the database or be generated in code through menu providers.
+BonakMarket's menu system builds navigation trees for frontend and backend. Menus consist of hierarchical `MenuItem` nodes resolved to final URLs. Items can originate from the database or be generated in code through menu providers.
 
 ## Loading and rendering
 Use `IMenuService` to retrieve a menu and feed it to the built-in view component or tag helper:
@@ -34,9 +34,9 @@ In Razor you can also render a menu directly:
 Modules can contribute items by implementing `IMenuProvider`. The following example appends an entry to the Admin menu:
 
 ```csharp
-using Smartstore.Collections;
-using Smartstore.Core.Content.Menus;
-using Smartstore.Web.Rendering.Builders;
+using BonakMarket.Collections;
+using BonakMarket.Core.Content.Menus;
+using BonakMarket.Web.Rendering.Builders;
 
 public class AdminMenu : AdminMenuProvider
 {

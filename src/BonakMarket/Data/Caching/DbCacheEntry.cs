@@ -1,0 +1,24 @@
+﻿using BonakMarket.ComponentModel;
+using BonakMarket.Json;
+
+namespace BonakMarket.Data.Caching;
+
+/// <summary>
+/// Represents a database query result cache entry.
+/// </summary>
+public class DbCacheEntry : IObjectContainer
+{
+    public DbCacheKey Key { get; set; }
+
+    /// <summary>
+    /// Gets the type of the cache entry value.
+    /// <para>Might be useful for (de)serialization.</para>
+    /// </summary>
+    public Type ValueType { get; set; }
+
+    /// <summary>
+    /// The cached value, either a single entity or a list of entities.
+    /// </summary>
+    [Polymorphic(WrapArrays = true)]
+    public object Value { get; set; }
+}

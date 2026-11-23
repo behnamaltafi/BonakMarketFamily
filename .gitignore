@@ -249,3 +249,8 @@ Log.txt
 
 # Local native-package and Docker test scratch space.
 /.temp/
+# ModuleBuilder is built from source (net10.0); never commit its generated runtime files.
+/src/BonakMarket.Build/BonakMarket.ModuleBuilder/*.dll
+/src/BonakMarket.Build/BonakMarket.ModuleBuilder/*.pdb
+/src/BonakMarket.Build/BonakMarket.ModuleBuilder/*.deps.json
+/src/BonakMarket.Build/BonakMarket.ModuleBuilder/*.runtimeconfig.json

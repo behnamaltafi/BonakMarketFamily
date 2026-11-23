@@ -15,14 +15,14 @@
 
     <PropertyGroup>
 		<Product>BonakMarket</Product>
-		<Copyright>Copyright © BonakMarket AG</Copyright>
-		<Company>BonakMarket AG</Company>
-		<Authors>BonakMarket AG</Authors>
+		<Copyright>Copyright © Smartstore AG; modifications © BonakMarket contributors</Copyright>
+		<Company>BonakMarket</Company>
+		<Authors>Smartstore AG; BonakMarket contributors</Authors>
 		<Version>6.4.0.0</Version>
 		<FileVersion>6.4.0.0</FileVersion>
 		<InformationalVersion>6.4.0.0</InformationalVersion>
-		<PackageProjectUrl>https://BonakMarket.com/</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/BonakMarket/BonakMarket</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/behnamaltafi/BonakMarketFamily</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/behnamaltafi/BonakMarketFamily</RepositoryUrl>
 		<RepositoryType>Git</RepositoryType>
 	</PropertyGroup>
 

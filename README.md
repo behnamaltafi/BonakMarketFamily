@@ -1,27 +1,25 @@
 ﻿<p align="center">
-<a href="https://www.BonakMarket.com" target="_blank" rel="noopener noreferrer">
-<img src="assets/BonakMarket-icon-whitebg.png" alt="BonakMarket" width="120">
+<a href="https://github.com/behnamaltafi/BonakMarketFamily" target="_blank" rel="noopener noreferrer">
+<img src="assets/bonakmarket-icon-whitebg.png" alt="BonakMarket" width="120">
 </a>
 </p>
 <h3 align="center">
-<img src="assets/BonakMarket-text.png" alt="BonakMarket" width="250">
+<img src="assets/bonakmarket-text.png" alt="BonakMarket" width="250">
 </h3>
 <h3 align="center"><strong>Ready. Sell. Grow.</strong></h3>
 <p align="center">
     A modular, scalable, and ultra-fast open-source all-in-one eCommerce platform built on ASP.NET Core 10.
 </p>
 <p align="center">
-<a href="#try-it-online">Try Online</a> &#8729;
-<a href="https://docs.BonakMarket.com/developer">Developer Guide</a> &#8729;
-<a href="http://community.BonakMarket.com">Forum</a> &#8729;
-<a href="http://community.BonakMarket.com/marketplace">Marketplace</a> &#8729;
-<a href="http://translate.BonakMarket.com/">Translations</a>
+<a href="https://github.com/behnamaltafi/BonakMarketFamily">Repository</a> &#8729;
+<a href="https://dev.smartstore.com">Upstream developer guide</a> &#8729;
+<a href="dev-docs/rename-safety.md">Rename &amp; deployment safety</a>
 </p>
 
 <br/>
 
 <p align="center">
-  <img src="assets//sm6-devices.png" alt="BonakMarket Demo Shop" />
+  <img src="assets/sm6-devices.png" alt="BonakMarket Demo Shop" />
 </p>
 
 <br/>
@@ -36,13 +34,9 @@ A comprehensive set of tools for CRM & CMS, sales, marketing, payment, and shipp
 
 The state-of-the-art architecture — with `ASP.NET Core 10`, `Entity Framework Core 10`, and a domain-driven design approach — makes BonakMarket easy to extend, extremely flexible, and a pleasure to work with.
 
-* :house: **Website:** [https://www.BonakMarket.com](https://www.BonakMarket.com)
-* :orange_book: **Developer Guide:** [BonakMarket Developer Guide](https://docs.BonakMarket.com/developer)
-* :blue_book: **User Guide:** [BonakMarket User Guide](https://docs.BonakMarket.com)
-* :speech_balloon: **Forum:** [https://community.BonakMarket.com](http://community.BonakMarket.com)
-* :mega: **Marketplace:** [https://community.BonakMarket.com/marketplace](http://community.BonakMarket.com/marketplace)
-* :earth_americas: **Translations:** [https://translate.BonakMarket.com](http://translate.BonakMarket.com/)
-* &#9654;&#65039; **Azure Marketplace:** [BonakMarket on Azure Marketplace](https://azuremarketplace.microsoft.com/marketplace/apps/BonakMarket-ag.BonakMarketnet?tab=Overview)
+* **Repository:** [BonakMarketFamily](https://github.com/behnamaltafi/BonakMarketFamily)
+* **Upstream:** [Smartstore](https://github.com/smartstore/Smartstore)
+* **Upstream developer guide:** [dev.smartstore.com](https://dev.smartstore.com)
 
 <p>&nbsp;</p>
 
@@ -65,7 +59,7 @@ The state-of-the-art architecture — with `ASP.NET Core 10`, `Entity Framework 
 ## Key Features
 
 <p>
-  <img src="https://BonakMarket.com/media/7936/catalog/BonakMarket-6-details-small.png" alt="BonakMarket Screenshots" />
+  <img src="assets/sm6-devices.png" alt="BonakMarket Screenshots" />
 </p>
 
 - Multi-store support
@@ -142,15 +136,13 @@ BonakMarket integrates with all major AI providers through a unified, provider-a
 - PostgreSQL 11+
 - SQLite 3.31+
 
-### Upgrading from BonakMarket.NET 4.2
+### Existing Smartstore installations
 
-BonakMarket 5+ is a port of [BonakMarket.NET 4](https://github.com/BonakMarket/BonakMarketNET) — based on the classic .NET Framework 4.7.2 — to the modern `ASP.NET Core 10` platform. Existing instances based on classic `ASP.NET MVC` can be upgraded seamlessly. To [upgrade](https://BonakMarket.atlassian.net/wiki/spaces/SMNET50/pages/1956118609/Updating+from+Previous+Versions), simply replace the application files on your server (keep the `App_Data` directory intact) and **all your data will be migrated to the new system automatically**. [See the documentation for detailed installation and upgrade instructions](https://BonakMarket.atlassian.net/wiki/spaces/SMNET50/pages/1956118822/Installing+BonakMarket).
-
-> :information_source: Upgrading from versions earlier than 4.2 is not supported. Please migrate to BonakMarket.NET 4.2 first, then upgrade to BonakMarket 5+.
+This is a renamed and customized fork, not an in-place, automatically compatible upgrade. Before using it with an existing database, read [rename and deployment safety](dev-docs/rename-safety.md). Back up the **SQL Server database** and **App_Data/Tenants** first. Do not delete installation markers, replace tenant settings blindly, or run migrations on the production database before validating them against a backup.
 
 ### Visual Studio
 
-1. Clone the repository: `git clone https://github.com/BonakMarket/BonakMarket.git` and check out the `main` branch.
+1. Clone the repository: `git clone https://github.com/behnamaltafi/BonakMarketFamily.git` and check out the `feature/change-name-of-project` branch.
 2. Download [Visual Studio 2026](https://www.visualstudio.com/downloads/) (any edition).
 3. Open `BonakMarket.sln` and wait for Visual Studio to restore all NuGet packages.
 4. Set `BonakMarket.Web` as the startup project and run it.
@@ -159,12 +151,12 @@ BonakMarket 5+ is a port of [BonakMarket.NET 4](https://github.com/BonakMarket/B
 
 | Project | Description |
 |---|---|
-| [`BonakMarket`](https://github.com/BonakMarket/BonakMarket/tree/main/src/BonakMarket) | Common low-level, application-agnostic infrastructure: bootstrapper, modularity engine, caching, pub/sub, imaging, type conversion, I/O, templating, scheduling, utilities, and extension methods |
-| [`BonakMarket.Data`](https://github.com/BonakMarket/BonakMarket/tree/main/src/BonakMarket.Data) | Database providers |
-| [`BonakMarket.Core`](https://github.com/BonakMarket/BonakMarket/tree/main/src/BonakMarket.Core) | Application-specific modules: catalog, checkout, identity, security, localization, logging, messaging, rules engine, search engine, theme engine, migrations, and more |
-| [`BonakMarket.Web.Common`](https://github.com/BonakMarket/BonakMarket/tree/main/src/BonakMarket.Web.Common) | Common web features: custom MVC infrastructure, bundling, Tag Helpers, HTML helpers, and more |
-| [`BonakMarket.Modules`](https://github.com/BonakMarket/BonakMarket/tree/main/src/BonakMarket.Modules) | All module and plugin projects |
-| [`BonakMarket.Web`](https://github.com/BonakMarket/BonakMarket/tree/main/src/BonakMarket.Web) | Entry host project: controllers, model classes, themes, and static assets |
+| [`BonakMarket`](src/BonakMarket) | Common low-level, application-agnostic infrastructure: bootstrapper, modularity engine, caching, pub/sub, imaging, type conversion, I/O, templating, scheduling, utilities, and extension methods |
+| [`BonakMarket.Data`](src/BonakMarket.Data) | Database providers |
+| [`BonakMarket.Core`](src/BonakMarket.Core) | Application-specific modules: catalog, checkout, identity, security, localization, logging, messaging, rules engine, search engine, theme engine, migrations, and more |
+| [`BonakMarket.Web.Common`](src/BonakMarket.Web.Common) | Common web features: custom MVC infrastructure, bundling, Tag Helpers, HTML helpers, and more |
+| [`BonakMarket.Modules`](src/BonakMarket.Modules) | All module and plugin projects |
+| [`BonakMarket.Web`](src/BonakMarket.Web) | Entry host project: controllers, model classes, themes, and static assets |
 
 <p>&nbsp;</p>
 
@@ -219,17 +211,12 @@ Creates a composite Docker container with the **BonakMarket** application image 
 
 <p>&nbsp;</p>
 
-## Try It Online
+## Deployment safety
 
-We provide a live demo so you can explore BonakMarket without a local installation. Test all features in both the storefront and the backend. Note that the backend demo is shared — other testers may modify data simultaneously.
-
-- [**Storefront**](https://core.BonakMarket.com/frontend/en) (User: `demo`, Password: `1234`)
-- [**Backend**](https://core.BonakMarket.com/backend/admin/) (User: `demo`, Password: `1234`)
-
-<p>&nbsp;</p>
+This fork does not currently publish a verified public live demo. Validate build, startup, authentication/SMS and database compatibility in staging before publishing to IIS or production. See [rename and deployment safety](dev-docs/rename-safety.md).
 
 ## License
 
-BonakMarket Community Edition is released under the [AGPL license](https://www.gnu.org/licenses/agpl-3.0.de.html).
+BonakMarketFamily is a customized fork of [Smartstore](https://github.com/smartstore/Smartstore), originally developed by Smartstore AG. Original authorship and copyright notices remain applicable. The community code is distributed under the [GNU AGPL v3](https://www.gnu.org/licenses/agpl-3.0.html); review the repository license and third-party component licenses before redistributing.
 
 &#11088; **Star this repository** to stay up to date, follow our progress, and never miss a new release. Contributions and community involvement are always welcome.

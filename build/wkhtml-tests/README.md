@@ -35,7 +35,7 @@ All publication contexts and test results stay under `.temp/`.
 
 Use a checkout of this BonakMarket revision and the two locally packed native
 packages. They do not need to be published to nuget.org. Put them below a directory
-with `linux-x64/` and `linux-arm64/` subdirectories, as in BonakMarket.NativeLibraries.
+with `linux-x64/` and `linux-arm64/` subdirectories, as in Smartstore.NativeLibraries.
 The build requires internet access for .NET dependencies and Ubuntu packages.
 The probe seeds NuGet's cache from the local native packages, then calls the real
 installer for lazy deployment. It does not test downloading the published native

@@ -96,8 +96,8 @@ public sealed class SmsLoginController : PublicController
         if (customer is null || customer.Deleted || !customer.Active ||
             !customer.IsRegistered() ||
             !await _signInManager.CanSignInAsync(customer) ||
-            await _userManager.IsLockedOutAsync(customer) ||
-            await _userManager.GetTwoFactorEnabledAsync(customer))
+            (_userManager.SupportsUserLockout && await _userManager.IsLockedOutAsync(customer)) ||
+            (_userManager.SupportsUserTwoFactor && await _userManager.GetTwoFactorEnabledAsync(customer)))
         {
             ModelState.AddModelError(nameof(model.Code), T("Plugins.Sms.MultiSms.Otp.InvalidCode").Value);
             model.CodeRequested = true;

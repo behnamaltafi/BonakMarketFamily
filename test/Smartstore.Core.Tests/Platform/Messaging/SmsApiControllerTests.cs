@@ -98,7 +98,9 @@ public class SmsApiControllerTests
         otp.Setup(x => x.ConfirmLoginAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(reason == "unknown" ? null : customer);
         var users = CreateUserManager();
+        users.SetupGet(x => x.SupportsUserLockout).Returns(reason == "locked");
         users.Setup(x => x.IsLockedOutAsync(customer)).ReturnsAsync(reason == "locked");
+        users.SetupGet(x => x.SupportsUserTwoFactor).Returns(reason == "two_factor");
         users.Setup(x => x.GetTwoFactorEnabledAsync(customer)).ReturnsAsync(reason == "two_factor");
         var signIn = CreateSignInManager(users);
         signIn.Setup(x => x.CanSignInAsync(customer)).ReturnsAsync(reason != "not_allowed");
@@ -118,6 +120,8 @@ public class SmsApiControllerTests
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.ConfirmLoginAsync("09123456789", "123456", It.IsAny<CancellationToken>())).ReturnsAsync(customer);
         var users = CreateUserManager();
+        users.Setup(x => x.IsLockedOutAsync(customer)).CallBase();
+        users.Setup(x => x.GetTwoFactorEnabledAsync(customer)).CallBase();
         var signIn = CreateSignInManager(users);
         signIn.Setup(x => x.CanSignInAsync(customer)).ReturnsAsync(true);
         using var db = new Mock<SmartDbContext>(new DbContextOptions<SmartDbContext>()).Object;

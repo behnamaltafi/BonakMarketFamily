@@ -86,8 +86,8 @@ public sealed class SmsLoginApiController : ControllerBase
         var customer = await _otp.ConfirmLoginAsync(request.Phone, request.Code, ct);
         if (customer is null || customer.Deleted || !customer.Active || !customer.IsRegistered() ||
             !await _signInManager.CanSignInAsync(customer) ||
-            await _userManager.IsLockedOutAsync(customer) ||
-            await _userManager.GetTwoFactorEnabledAsync(customer))
+            (_userManager.SupportsUserLockout && await _userManager.IsLockedOutAsync(customer)) ||
+            (_userManager.SupportsUserTwoFactor && await _userManager.GetTwoFactorEnabledAsync(customer)))
         {
             return BadRequest(new { code = "invalid_code" });
         }

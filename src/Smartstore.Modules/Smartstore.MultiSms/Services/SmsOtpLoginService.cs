@@ -106,8 +106,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                 x => x.Id == binding.CustomerId, ct);
             if (customer is null || !customer.Active || customer.Deleted || !customer.IsRegistered() ||
                 !await _signInManager.CanSignInAsync(customer) ||
-                await _userManager.IsLockedOutAsync(customer) ||
-                await _userManager.GetTwoFactorEnabledAsync(customer))
+                (_userManager.SupportsUserLockout && await _userManager.IsLockedOutAsync(customer)) ||
+                (_userManager.SupportsUserTwoFactor && await _userManager.GetTwoFactorEnabledAsync(customer)))
             {
                 return;
             }
@@ -210,8 +210,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                 .FirstOrDefaultAsync(x => x.Id == binding.CustomerId, ct);
             if (customer is null || customer.Deleted || !customer.Active || !customer.IsRegistered() ||
                 !await _signInManager.CanSignInAsync(customer) ||
-                await _userManager.IsLockedOutAsync(customer) ||
-                await _userManager.GetTwoFactorEnabledAsync(customer))
+                (_userManager.SupportsUserLockout && await _userManager.IsLockedOutAsync(customer)) ||
+                (_userManager.SupportsUserTwoFactor && await _userManager.GetTwoFactorEnabledAsync(customer)))
             {
                 return null;
             }
@@ -281,8 +281,6 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                     LastActivityDateUtc = now
                 };
 
-                customer.GenericAttributes.Phone = username;
-
                 customer.CustomerRoleMappings.Add(new CustomerRoleMapping
                 {
                     CustomerRoleId = registeredRole.Id,
@@ -310,6 +308,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                     await transaction.RollbackAsync(ct);
                     return null;
                 }
+
+                customer.GenericAttributes.Phone = username;
 
                 _db.Set<SmsLoginPhone>().Add(new SmsLoginPhone
                 {

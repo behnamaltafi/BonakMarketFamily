@@ -57,7 +57,7 @@
 	
 	<ProjectExtensions>
 		<VisualStudio>
-			<UserProperties module_1json__JsonSchema="..\..\BonakMarket.Web\Properties\module.schema.json#" />
+			<UserProperties module_1json__JsonSchema="..\module.schema.json#" />
 		</VisualStudio>
 	</ProjectExtensions>
 	

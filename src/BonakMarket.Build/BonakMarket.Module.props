@@ -36,6 +36,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
+        <!-- Build the ModuleBuilder from source before running module post-processing. -->
+        <ProjectReference Include="..\..\BonakMarket.Build\BonakMarket.ModuleBuilder\src\BonakMarket.ModuleBuilder.csproj" ReferenceOutputAssembly="false" Private="false" />
         <ProjectReference Include="..\..\BonakMarket\BonakMarket.csproj">
             <Private>False</Private>
             <CopyLocal>False</CopyLocal>

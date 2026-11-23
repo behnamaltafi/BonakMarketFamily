@@ -169,7 +169,7 @@ class Build : NukeBuild
                 "-b", publishDirectory,
                 "-bc", buildComponentDirectory,
                 "-ps", "BonakMarket",
-                "-nsb", "https://BonakMarket.com",
+                "-nsb", "https://github.com/behnamaltafi/BonakMarketFamily",
                 "-pn", "BonakMarket",
                 "-pv", Version,
                 "-m", manifestDirectory,

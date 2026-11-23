@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "bonakmarketfamily",
+  "solution": "BonakMarket.sln",
+  "github": {
+    "repository": "behnamaltafi/BonakMarketFamily"
+  },
+  "build": {
+    "configuration": "Release",
+    "tests": true,
+    "coverage": {
+      "enabled": false,
+      "minimum": 0.8
+    }
+  },
+  "release": {
+    "enabled": false,
+    "developPrerelease": false
+  },
+  "artifacts": [
+    {
+      "type": "zip",
+      "name": "web",
+      "project": "src/BonakMarket.Web/BonakMarket.Web.csproj"
+    }
+  ],
+  "nexus": {
+    "baseUrl": "https://nexus.example.com",
+    "rawRepository": "bonakmarketfamily-releases",
+    "rawRepositoryMode": "dedicated"
+  },
+  "credentials": {
+    "platformReader": "cicd-platform-read",
+    "nexusPublisher": "bonakmarketfamily-nexus-publish",
+    "githubPublisher": "bonakmarketfamily-github-release"
+  }
+}

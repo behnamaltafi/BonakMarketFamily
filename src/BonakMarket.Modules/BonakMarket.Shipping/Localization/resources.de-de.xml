@@ -1,9 +1,9 @@
 ﻿<Language Name="Deutsch" IsDefault="true" IsRightToLeft="false">
 
-    <LocaleResource Name="Plugins.FriendlyName.SmartStore.Shipping" AppendRootKey="false">
+    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.Shipping" AppendRootKey="false">
         <Value>Versandarten</Value>
     </LocaleResource>
-    <LocaleResource Name="Plugins.Description.SmartStore.Shipping" AppendRootKey="false">
+    <LocaleResource Name="Plugins.Description.BonakMarket.Shipping" AppendRootKey="false">
         <Value>Stellt Versandarten für Versand mit festen Preisen und basierend auf Gesamtsumme des Bestellwertes zur Verfügung.</Value>
     </LocaleResource>
 

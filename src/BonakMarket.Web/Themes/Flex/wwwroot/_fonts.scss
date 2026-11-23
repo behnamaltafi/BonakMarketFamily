@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // If your shop is multilingual, you can define font families on language level in this file.
 // You have to upload the font files to your webserver yourself, unless you include a web font, e.g. from Google.
-// 
+//
 // The examples below are for clarification only, customize or add any section you wish.
 // ----------------------------------------------------------------------------------------------------------------------
 
@@ -31,7 +31,7 @@ html[lang="cn"] {
 }
 */
 
-// Persian 
+// Persian
 // --------------------------------------------------
 /*
 html[lang="fa"] {
@@ -45,3 +45,19 @@ html[lang="fa"] {
 	}
 }
 */
+html[lang="fa"],
+html[lang^="fa-"] {
+    body,
+    input,
+    select,
+    textarea,
+    button {
+        font-family: "Vazirmatn", "Noto Sans Arabic", Tahoma, "Segoe UI", sans-serif;
+    }
+
+    input[type="tel"],
+    input[autocomplete="one-time-code"] {
+        direction: ltr;
+        text-align: left;
+    }
+}

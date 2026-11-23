@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Static safety checks for the Smartstore-to-BonakMarket source rename."""
 from pathlib import Path
+import json
 import re
 import sys
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[1]
 errors = []
@@ -69,6 +71,27 @@ for path in [
 readme = (ROOT / "README.md").read_text(encoding="utf-8-sig")
 for asset in re.findall(r'src="(assets/[^"]+)"', readme):
     check((ROOT / asset).is_file(), f"README image not found: {asset}")
+
+for descriptor in (ROOT / "src/BonakMarket.Modules").glob("*/module.json"):
+    system_name = json.loads(descriptor.read_text(encoding="utf-8-sig"))["SystemName"]
+    for culture in ("en-us", "de-de"):
+        path = descriptor.parent / "Localization" / f"resources.{culture}.xml"
+        if not path.is_file():
+            continue
+        keys = {node.get("Name", "") for node in ET.parse(path).iter("LocaleResource")}
+        for prefix in ("Plugins.FriendlyName.", "Plugins.Description."):
+            check(prefix + system_name in keys, f"Missing module resource in {path}: {prefix + system_name}")
+
+settings = ROOT / "tools/BonakMarket.Packager/Properties/Settings.settings"
+check(ET.parse(settings).getroot().get("GeneratedClassNamespace") == "BonakMarket.Packager.Properties",
+      "Packager settings must generate into the BonakMarket namespace.")
+
+seed = ROOT / "src/BonakMarket.Web/App_Data/Seed/cultures"
+english_keys = {node.get("Name") for node in ET.parse(seed / "en-US/resources/all.smres.xml").iter("LocaleResource")}
+persian_keys = {node.get("Name") for node in ET.parse(seed / "fa-IR/resources/all.smres.xml").iter("LocaleResource")}
+check(english_keys == persian_keys, "Persian seed resource keys must match the renamed English catalog.")
+check(not any("smartstore" in key.lower() for key in persian_keys if key),
+      "Persian seed resource keys must use the BonakMarket names.")
 
 if errors:
     for message in errors:

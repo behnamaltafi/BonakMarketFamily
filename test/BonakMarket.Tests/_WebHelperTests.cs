@@ -3,10 +3,10 @@
 //using System.Collections.Specialized;
 //using System.Web;
 //using NUnit.Framework;
-//using SmartStore.Core.Fakes;
-//using SmartStore.Tests;
+//using BonakMarket.Core.Fakes;
+//using BonakMarket.Tests;
 
-//namespace SmartStore.Core.Tests
+//namespace BonakMarket.Core.Tests
 //{
 //    [TestFixture]
 //    public class WebHelperTests
@@ -74,9 +74,9 @@
 //        {
 //            var serverVariables = new NameValueCollection();
 //            serverVariables.Add("HTTP_HOST", "www.example.com");
-//            _httpContext = new FakeHttpContext("~/SmartStoreNETpath", "GET", null, null, null, null, null, serverVariables);
+//            _httpContext = new FakeHttpContext("~/BonakMarketPath", "GET", null, null, null, null, null, serverVariables);
 //            _webHelper = new WebHelper(_httpContext);
-//            _webHelper.GetStoreLocation(false).ShouldEqual("http://www.example.com/SmartStoreNETpath/");
+//            _webHelper.GetStoreLocation(false).ShouldEqual("http://www.example.com/BonakMarketPath/");
 //        }
 
 //        //[Test]

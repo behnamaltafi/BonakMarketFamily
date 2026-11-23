@@ -1,9 +1,9 @@
 ﻿<Language Name="English" IsDefault="false" IsRightToLeft="false">
 
-    <LocaleResource Name="Plugins.FriendlyName.SmartStore.Shipping" AppendRootKey="false">
+    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.Shipping" AppendRootKey="false">
         <Value>Shipping methods</Value>
     </LocaleResource>
-    <LocaleResource Name="Plugins.Description.SmartStore.Shipping" AppendRootKey="false">
+    <LocaleResource Name="Plugins.Description.BonakMarket.Shipping" AppendRootKey="false">
         <Value>Provides shipping methods for fixed rate shipping and computation based on order total.</Value>
     </LocaleResource>
 

@@ -1,9 +1,9 @@
 ﻿<Language Name="English" IsDefault="true" IsRightToLeft="false">
 
-    <LocaleResource Name="Plugins.FriendlyName.SmartStore.Tax" AppendRootKey="false">
+    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.Tax" AppendRootKey="false">
         <Value>Standard tax calculation</Value>
     </LocaleResource>
-    <LocaleResource Name="Plugins.Description.SmartStore.Tax" AppendRootKey="false">
+    <LocaleResource Name="Plugins.Description.BonakMarket.Tax" AppendRootKey="false">
         <Value>Provides standard tax calculation modules - including fixed tax rate, tax rate by region, etc.</Value>
     </LocaleResource>
 

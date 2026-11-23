@@ -1,9 +1,9 @@
 ﻿<Language Name="Deutsch" IsDefault="true" IsRightToLeft="false">
 
-    <LocaleResource Name="Plugins.FriendlyName.SmartStore.OfflinePayment" AppendRootKey="false">
+    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.OfflinePayment" AppendRootKey="false">
         <Value>Offline Zahlungsarten</Value>
     </LocaleResource>
-    <LocaleResource Name="Plugins.Description.SmartStore.OfflinePayment" AppendRootKey="false">
+    <LocaleResource Name="Plugins.Description.BonakMarket.OfflinePayment" AppendRootKey="false">
         <Value>Stellt Offline Zahlungsarten zur Verfügung - u.A. Bankeinzug, Kreditkarte, Rechnung, Vorkasse, Nachnahme etc.</Value>
     </LocaleResource>
 

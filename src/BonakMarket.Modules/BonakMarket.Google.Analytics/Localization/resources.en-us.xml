@@ -1,8 +1,8 @@
 ﻿<Language Name="English" IsDefault="false" IsRightToLeft="false">
-    <LocaleResource Name="Plugins.FriendlyName.SmartStore.Google.Analytics" AppendRootKey="false">
+    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.Google.Analytics" AppendRootKey="false">
         <Value>Google Analytics</Value>
     </LocaleResource>
-    <LocaleResource Name="Plugins.Description.SmartStore.Google.Analytics" AppendRootKey="false">
+    <LocaleResource Name="Plugins.Description.BonakMarket.Google.Analytics" AppendRootKey="false">
         <Value>Adds Google Analytics tracking scripts to the shop.</Value>
     </LocaleResource>
     <LocaleResource Name="AdminInstruction">

@@ -1,8 +1,8 @@
 ﻿<Language Name="English" IsDefault="false" IsRightToLeft="false">
-    <LocaleResource Name="Plugins.FriendlyName.SmartStore.Clickatell" AppendRootKey="false">
+    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.Clickatell" AppendRootKey="false">
         <Value>Clickatell SMS Provider</Value>
     </LocaleResource>
-    <LocaleResource Name="Plugins.Description.SmartStore.Clickatell" AppendRootKey="false">
+    <LocaleResource Name="Plugins.Description.BonakMarket.Clickatell" AppendRootKey="false">
         <Value>Sends order notifications to shop administrator via SMS.</Value>
     </LocaleResource>
     <LocaleResource Name="AdminInstruction">

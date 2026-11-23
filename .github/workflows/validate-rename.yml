@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - feature/change-name-of-project
+      - develop
+      - master
   pull_request:
     branches:
       - main
+      - develop
+      - master
   workflow_dispatch:
 
 permissions:

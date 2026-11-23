@@ -25,6 +25,7 @@ for sln in ("BonakMarket.sln", "BonakMarket.Tools.sln"):
     check(bool(projects), f"Could not extract projects from {sln}")
     for project in projects:
         normalized = project.replace("\\", "/")
+        check("smartstore" not in normalized.lower(), f"{sln}: old project name in {normalized}")
         check((ROOT / normalized).is_file(), f"{sln}: missing {normalized}")
 
 reverted_ids = {
@@ -39,6 +40,10 @@ for project in ROOT.rglob("*.csproj"):
     if any(p in ("obj", "bin", ".temp") for p in project.parts):
         continue
     content = project.read_text(encoding="utf-8-sig")
+    for reference in re.findall(r'<ProjectReference\s+Include="([^"]+)"', content):
+        check("smartstore" not in reference.lower(), f"Old project reference in {project}: {reference}")
+        check((project.parent / reference.replace("\\", "/")).is_file(),
+              f"Missing project reference in {project}: {reference}")
     found.update(re.findall(r'<PackageReference\s+Include="([^"]+)"', content))
     for invalid in bad_names:
         check(f'Include="{invalid}"' not in content, f"Unpublished package ID in {project}: {invalid}")
@@ -92,6 +97,16 @@ persian_keys = {node.get("Name") for node in ET.parse(seed / "fa-IR/resources/al
 check(english_keys == persian_keys, "Persian seed resource keys must match the renamed English catalog.")
 check(not any("smartstore" in key.lower() for key in persian_keys if key),
       "Persian seed resource keys must use the BonakMarket names.")
+
+app_data = ROOT / "src/BonakMarket.Web/App_Data"
+for name in ("COPYRIGHT.txt", "LICENSE.txt", "dbip-country-lite.mmdb"):
+    check((app_data / "Geo" / name).is_file(), f"Missing Geo data asset: {name}")
+for culture in ("en", "de"):
+    templates = app_data / "EmailTemplates" / culture
+    for name in ("Customer.WelcomeMessage.xml", "Customer.PasswordRecovery.xml"):
+        check((templates / name).is_file(), f"Missing email template: {culture}/{name}")
+    for path in templates.glob("*.xml"):
+        ET.parse(path)
 
 if errors:
     for message in errors:

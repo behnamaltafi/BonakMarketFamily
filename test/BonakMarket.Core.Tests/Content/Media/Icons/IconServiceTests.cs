@@ -1511,8 +1511,13 @@ public class IconServiceTests
     [Test, Explicit("Validates the optional local icon package; not required on CI.")]
     public async Task Installed_HugeIcons_Package_Is_Supported()
     {
-        var workspace = new DirectoryInfo(_root).Parent.Parent.Parent.Parent;
-        using var files = new LocalFileSystem(Path.Combine(workspace.FullName, "BonakMarket", "src", "BonakMarket.Web", "App_Data", "Icons"));
+        var workspace = new DirectoryInfo(TestContext.CurrentContext.TestDirectory);
+        while (workspace != null && !File.Exists(Path.Combine(workspace.FullName, "BonakMarket.sln")))
+        {
+            workspace = workspace.Parent;
+        }
+        Assert.That(workspace, Is.Not.Null);
+        using var files = new LocalFileSystem(Path.Combine(workspace.FullName, "src", "BonakMarket.Web", "App_Data", "Icons"));
         var context = new Mock<IApplicationContext>();
         context.SetupGet(x => x.TypeScanner).Returns(NullTypeScanner.Instance);
         context.SetupGet(x => x.AppDataRoot).Returns(files);

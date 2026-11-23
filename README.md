@@ -4,7 +4,7 @@
 </a>
 </p>
 <h3 align="center">
-<img src="assets/bonakmarket-text.png" alt="BonakMarket" width="250">
+<img src="assets/bonakmarket-text.svg" alt="BonakMarket" width="250">
 </h3>
 <h3 align="center"><strong>Ready. Sell. Grow.</strong></h3>
 <p align="center">

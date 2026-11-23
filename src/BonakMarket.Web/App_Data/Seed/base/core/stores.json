@@ -4,7 +4,7 @@
     "key": "default",
     "name": "Your store name",
     "hosts": "yourstore.com,www.yourstore.com",
-    "logoMediaFile": "company-logo.png",
+    "logoMediaFile": "company-logo.svg",
     "displayOrder": 1,
     "defaultCurrency": "USD",
     "primaryExchangeRateCurrency": "USD"

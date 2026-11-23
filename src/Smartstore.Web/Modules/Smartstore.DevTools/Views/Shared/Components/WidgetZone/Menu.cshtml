@@ -1,0 +1,114 @@
+@using Smartstore.Core.Widgets
+
+@{
+    // TODO: (mw) (dt) Bug: Scrolljump when closing the offcanvas menu after auto scroll.
+    //                      Possible solution: Save scrollX/Y before scrolling, then scroll back after the animation is done (See smartstore.devtools.js).
+
+    if (ViewData["widgetzone"] is not IWidgetZone zone)
+    {
+        return;
+    }
+
+    // Check if the visibility cookie is set.
+    var visibilityCookie = Request.Cookies[".Smart.WZVisibility"];
+    var isVisible = visibilityCookie != "false";
+    var zonePreviewClass = isVisible ? "" : " d-none";
+    var wzToolClass = isVisible ? " show-wz" : "";
+
+    if (zone.Name == "start")
+    {
+        // Add the offcanvas zone preview menu
+        <a id="wz-menu-toggle" class="d-none d-lg-block btn btn-dark dispensable" href="#" data-toggle="offcanvas"
+           data-autohide="false" data-blocker="false" data-placement="end" data-fullscreen="false" data-slide="false" data-target="#wz-menu" title="@T("Plugins.Developer.DevTools.WidgetZoneMenu")">
+            <icon name="layers"  />
+        </a>
+        <aside id="wz-menu" class="d-none d-lg-block bg-dark offcanvas offcanvas-end offcanvas-shadow dispensable">
+            <div class="offcanvas-content d-flex flex-column">
+                <div class="wz-zone-list custom-scrollbar custom-scrollbar-invert" attr-class='(!isVisible, "d-flex")'>
+                    <div sm-if="!isVisible" class="text-white-50 text-center align-self-center p-3">@Html.Raw(T("Plugins.Developer.DevTools.WidgetZoneMenu.ActivateZones"))</div>
+                </div>
+
+                <div id="wz-toolbar">
+                    <a class="wz-tool wz-toggle@(wzToolClass)" data-persistent="true"
+                       href="#" rel="nofollow" title="" data-toggle="tooltip" data-placement="top" data-original-title="@T("Plugins.Developer.DevTools.WidgetZoneMenu.PersistentToggle")">
+                        <icon name="power" />
+                    </a>
+                    <span class="vr bg-white" style="opacity: 0.05"></span>
+                    <a class="wz-tool wz-toggle@(wzToolClass)" attr-class='(!isVisible, "disabled")'
+                       href="#" rel="nofollow" title="" data-toggle="tooltip" data-placement="top" data-original-title="@Html.Raw(T("Plugins.Developer.DevTools.WidgetZoneMenu.Toggle"))">
+                        <icon name="eye" class="wz-visible" attr-class='(!isVisible, "d-none")' />
+                        <icon name="eye-off" class="wz-invisible" attr-class='(isVisible, "d-none")' />
+                    </a>
+                    <span class="vr bg-white" style="opacity: 0.05"></span>
+                    <a class="wz-tool wz-sidebar-close"
+                       href="#" rel="nofollow" title="" data-toggle="tooltip" data-placement="top" data-original-title="@T("Plugins.Developer.DevTools.WidgetZoneMenu.CloseButton")">
+                        <icon name="arrow-right" />
+                    </a>
+                </div>
+            </div>
+        </aside>
+    }
+}
+
+<script sm-if='zone.Name == "end"' sm-minify="true" type="module">
+    @{
+        var translationKeys = new[]
+        {
+            "Common.CopyToClipboard"
+        };
+    }
+
+    import { DevTools } from "@(Url.Content("~/Modules/Smartstore.DevTools/js/smartstore.devtools.js"))";
+
+    // Add widget zone group containers.
+    let groups = @Html.Raw(Json.Serialize(ViewBag.WidgetZoneGroups));
+
+    // Add a meta and default group for user-defined zones.
+    groups.unshift({
+        name: 'Meta',
+        zones: [],
+    });
+    groups.push({
+        name: @T("Admin.WidgetZones.UserDefined").JsValue,
+        zones: []
+    });
+
+    $(function () {
+        const zoneList = document.querySelector('.wz-zone-list');
+
+        // Add div's to '#wz-menu .wz-zone-list' for each element in groups.
+        groups.forEach(group => {
+            let groupContainer = $(`<div class="wz-zone-group d-none" data-group="${group.name}"><h6 class="text-white">${group.name}</h6></div>`);
+            groupContainer.data('groups', group.zones.join(' '))
+            $(zoneList).append(groupContainer);
+        });
+
+        const devTools = new DevTools();
+        devTools.initialize(@(isVisible ? "true" : "false"));
+
+        // Add translations
+        devTools.Res = {
+            @foreach (var key in translationKeys)
+            {
+                <text>"@(Html.Raw(key))": @(T(key).JsValue), </text>
+            }
+        };
+
+        const zones = $('.wz-preview');
+        zones.each(function() {
+            const el = $(this);
+            if (el.is('meta')) {
+                devTools.registerWidgetZone({
+                    name: el.attr('content'),
+                    previewTagName: 'meta'
+                });
+            }
+            else {
+                devTools.registerWidgetZone({
+                    name: el.attr('title'),
+                    previewTagName: el[0].tagName.toLowerCase()
+                });
+            }
+        });
+    });
+</script>

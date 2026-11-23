@@ -1,38 +1,72 @@
 %PDF-1.4
+%‚„œ”
 1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
+<<
+/Producer (pypdf)
+>>
 endobj
 2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+<<
+/Type /Pages
+/Count 1
+/Kids [ 4 0 R ]
+>>
 endobj
 3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
 endobj
 4 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+<<
+/Type /Page
+/MediaBox [ 0 0 595 842 ]
+/Resources <<
+/Font <<
+/F1 5 0 R
+>>
+>>
+/Contents 6 0 R
+/Parent 2 0 R
+>>
 endobj
 5 0 obj
-<< /Length 211 >>
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Length 219
+>>
 stream
 BT /F1 18 Tf 24 TL 72 760 Td
 (The Quiet Harbour) Tj T*
 (A novel by a fictional author) Tj T*
 () Tj T*
-(Placeholder file of the Smartstore demo shop.) Tj T*
+(Placeholder file of the BonakMarket demo shop.) Tj T*
 (This is where the purchased e-book would be.) Tj T*
 ET
 endstream
 endobj
 xref
-0 6
+0 7
 0000000000 65535 f 
-0000000009 00000 n 
-0000000058 00000 n 
-0000000115 00000 n 
-0000000241 00000 n 
-0000000311 00000 n 
+0000000015 00000 n 
+0000000054 00000 n 
+0000000113 00000 n 
+0000000162 00000 n 
+0000000290 00000 n 
+0000000360 00000 n 
 trailer
-<< /Size 6 /Root 1 0 R >>
+<<
+/Size 7
+/Root 3 0 R
+/Info 1 0 R
+>>
 startxref
-573
+630
 %%EOF

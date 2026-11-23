@@ -173,8 +173,8 @@ public class LinqCatalogSearchServiceTests : ServiceTestBase
         });
     }
 
-    [TestCase(new int[] { 1, 2, 4 }, "Smart")]
-    [TestCase(new int[] { 1, 2, 4, 5 }, "Smart", SearchMode.Contains, 1)]
+    [TestCase(new int[] { 1, 2, 4 }, "Bonak")]
+    [TestCase(new int[] { 1, 2, 4, 5 }, "Bonak", SearchMode.Contains, 1)]
     public async Task LinqSearch_find_term(
         int[] hitsIds,
         string term,
@@ -184,7 +184,7 @@ public class LinqCatalogSearchServiceTests : ServiceTestBase
         var products = new List<Product>
         {
             new SearchProduct(1) { Name = "BonakMarket" },
-            new SearchProduct(2) { Name = "Apple iPhone Smartphone 6" },
+            new SearchProduct(2) { Name = "Apple iPhone Smartphone 6 by BonakMarket" },
             new SearchProduct(3) { Name = "Energistically recaptiualize superior e-markets without next-generation platforms" },
             new SearchProduct(4) { Name = "Rapidiously conceptualize future-proof imperatives", ShortDescription = "Shopping System powered by BonakMarket" },
             new SearchProduct(5) { Name = "Enthusiastically pursue leading-edge e-tailers with worldwide schemas", ShortDescription = "Authoritatively evisculate open-source after interdependent data." },

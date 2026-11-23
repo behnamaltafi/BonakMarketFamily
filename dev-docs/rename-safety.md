@@ -20,6 +20,14 @@ This repository is a modified fork of [Smartstore](https://github.com/smartstore
 - Docker image names are lowercase and use the repository owner's GHCR namespace: `ghcr.io/behnamaltafi/bonakmarket-linux` and `ghcr.io/behnamaltafi/bonakmarket-windows`.
 - The GitHub Actions rename validation job checks static naming and performs a clean build and selected SMS tests, but it **does not** prove production database compatibility.
 
+## Development baseline
+
+Use `develop` and `BonakMarket.sln` for new development. The integrated baseline includes the project rename, native SMS OTP login, Persian localization and CI configuration.
+
+When merging an older feature branch, move any newly added source files into the corresponding `BonakMarket` directories and update their first-party namespaces, project references and locale resource keys. Preserve published external package IDs and original attribution. Keep application data and generated module output out of source commits.
+
+Run `python .github/validate-rename.py`, build `BonakMarket.sln` and run its tests after integration. The rename workflow also runs on pushes and pull requests to `develop` and `master`. Release builds require a valid SixLabors license for the renamed assemblies.
+
 ## Rollback
 
 Stop the renamed application, restore the original application files including the original `App_Data/Tenants`, and restore the SQL Server backup if any write or migration occurred. Do not use a database changed by the renamed app with the old application until compatibility has been confirmed.

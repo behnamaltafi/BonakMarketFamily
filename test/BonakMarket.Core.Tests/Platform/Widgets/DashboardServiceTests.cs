@@ -676,8 +676,10 @@ public class DashboardLayoutPersistenceTests : ServiceTestBase
     public void CreateDashboard()
     {
         var workspace = new DirectoryInfo(TestContext.CurrentContext.TestDirectory);
-        while (workspace != null && !Directory.Exists(Path.Combine(workspace.FullName, "BonakMarket", "src")))
+        while (workspace != null && !File.Exists(Path.Combine(workspace.FullName, "BonakMarket.sln")))
+        {
             workspace = workspace.Parent;
+        }
         Assert.That(workspace, Is.Not.Null);
         _directory = Path.Combine(workspace.FullName, ".temp", "dashboard-tests", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(_directory);

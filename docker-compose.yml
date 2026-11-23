@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   web:
-    image: ghcr.io/BonakMarket/BonakMarket-linux
+    image: ghcr.io/behnamaltafi/bonakmarket-linux
     container_name: web
     ports:
       - "80:80"

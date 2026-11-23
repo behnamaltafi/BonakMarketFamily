@@ -73,7 +73,7 @@ else
         throw new InvalidOperationException("Lazy probe requires a fresh image without an installed tool.");
     }
     using var installer = manager.CreateLibraryInstaller();
-    executable = await installer.InstallFromPackageAsync(new InstallNativePackageRequest("wkhtmltopdf", true, "BonakMarket.wkhtmltopdf.Native")
+    executable = await installer.InstallFromPackageAsync(new InstallNativePackageRequest("wkhtmltopdf", true, "Smartstore.wkhtmltopdf.Native")
     {
         MinVersion = "0.12.6.1",
         MaxVersion = "0.12.6.1"

@@ -15,6 +15,12 @@ pipeline {
         CICD_CONFIG = 'cicd/project.json'
         CICD_BASE_REF = 'origin/master'
         CICD_PLATFORM_REVISION = '1e2c209528818f5940c63998668cdeac4bffb66e'
+        // Reduce compilation pressure on the CI agent (2.25 GiB cgroup limit).
+        UseSharedCompilation = 'false'
+        BuildInParallel = 'false'
+        RunAnalyzersDuringBuild = 'false'
+        MSBUILDDISABLENODEREUSE = '1'
+        DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER = '1'
     }
 
     stages {

@@ -55,8 +55,14 @@ public sealed class CustomerApiBearerMiddleware(RequestDelegate next)
     // Keep ERP/OData, MVC, SMS provider administration and anonymous OTP/refresh flows outside this scheme.
     public static bool UsesCustomerBearer(PathString path)
     {
-        if (path.StartsWithSegments("/api/storefront/v1"))
+        if (path.StartsWithSegments("/api/storefront/v1") || path.StartsWithSegments("/api/identity/v1/me"))
             return true;
+        if (path.StartsWithSegments("/api/identity/v1/auth", out var auth))
+        {
+            var action = auth.Value?.TrimEnd('/') ?? "";
+            return action.Equals("/session", StringComparison.OrdinalIgnoreCase)
+                || action.Equals("/logout", StringComparison.OrdinalIgnoreCase);
+        }
         if (!path.StartsWithSegments("/api/sms-login", out var remainder))
             return false;
         var endpoint = remainder.Value?.TrimEnd('/') ?? "";

@@ -30,6 +30,4 @@ public interface ISmsOtpLoginService
     /// <summary>Consumes a login code, creating a native Customer on first use if registration is enabled.</summary>
     Task<Customer?> ConfirmLoginAsync(string phone, string code, CancellationToken ct = default);
 
-    /// <summary>Complete or update the phone-linked Customer's profile. Email may be omitted.</summary>
-    Task<Microsoft.AspNetCore.Identity.IdentityResult> CompleteProfileAsync(Customer customer, string username, string? firstName, string? lastName, string? email, CancellationToken ct = default);
 }

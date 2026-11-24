@@ -18,14 +18,14 @@ Install MultiSms, then Identity, then StorefrontApi in the module manager. On an
 
 ## Authentication / authorization
 Use HTTPS (behind a proxy configure trusted forwarded headers).
-Cookie: native sign-in. GET /api/sms-login/session returns a CSRF token/header; use it with the cookie on mutations.
+Cookie: native sign-in. GET /api/identity/v1/auth/session returns a CSRF token/header; use it with the cookie on mutations.
 Mobile: set MobileApi__Enabled=true and MobileApi__SigningKey (base64 of at least 32 random bytes, from secret storage). 
-1. GET /api/sms-login/session
-2. POST /api/sms-login/request {phone}; keep cookie and returned CSRF header.
-3. POST /api/sms-login/verify {phone,code,issueTokens:true}; returns accessToken, refreshToken, expiresIn. Existing SMS response unchanged.
+1. GET /api/identity/v1/auth/session
+2. POST /api/identity/v1/auth/sms/request {phone}; keep cookie and returned CSRF header.
+3. POST /api/identity/v1/auth/sms/verify {phone,code,issueTokens:true}; returns accessToken, refreshToken, expiresIn. Existing SMS response unchanged.
 4. Send Authorization: Bearer <accessToken> on /api/storefront/v1 endpoints.
-5. POST /api/sms-login/refresh {refreshToken}; replace both credentials, do not refresh concurrently.
-6. POST /api/sms-login/logout (Bearer revokes its session; cookie requires CSRF and signs out the native cookie). Returns 204.
+5. POST /api/identity/v1/auth/refresh {refreshToken}; replace both credentials, do not refresh concurrently.
+6. POST /api/identity/v1/auth/logout (Bearer revokes its session; cookie requires CSRF and signs out the native cookie). Returns 204.
 Access expiry up to 10 minutes, refresh absolute lifetime 30 days. No Basic fallback. Identity authentication middleware sets the verified identity before WorkContext for both account and storefront routes. It never authenticates OData, admin, or MVC routes; request/verify retain cookie CSRF and refresh accepts its own credential. JWT issuer is BonakMarket, audience BonakMarket.CustomerApi; sub is CustomerId, with sid/jti/iat/exp. Previously issued access JWTs must be refreshed or reissued after the audience change. Authorization filter validates identity, native permissions, HTTPS and cookie antiforgery. Ownership checks use the resolved customer and store; there is no client-supplied CustomerId.
 Native permission provider registers storefront.catalog (guest/registered), storefront.cart, storefront.orders, and storefront root (administrator). Existing AccessShop, DisplayPrice, AccessShoppingCart remain in force. Verify these assignments in admin after install. A role cannot use permissions to bypass order/address ownership.
 
@@ -45,13 +45,26 @@ All paths below use /api/storefront/v1. Catalog is available to guests with nati
 - POST /cart/coupon {code:"..."}; DELETE /cart/coupon (204 on success)
  
 ## Account endpoints (Identity)
-All paths below use /api/sms-login. Private account actions accept either a valid mobile Bearer or the native authenticated cookie. Cookie mutations require the antiforgery token; use a new session request after login. Account actions resolve the native Customer and reject impersonation or identity mismatch. Account profile is self-service, not a commerce permission.
-- GET /session; POST /request; POST /verify; POST /refresh
-- GET /profile; PUT /profile; POST /profile (existing completion response)
-- GET /profile/addresses (read only)
-- POST /profile/phone/request; POST /profile/phone/verify (existing enroll aliases retained)
-- POST /logout
-The unmerged StorefrontApi profile, address and logout routes are removed; callers must use the Identity-owned paths instead. Browser and mobile credentials are separate; signing out one does not automatically revoke the other.
+The canonical routes are versioned and divided by responsibility. The old routes remain compatibility aliases to the same actions and retain response bodies. Private actions accept valid customer Bearer or native authenticated cookies. Cookie mutations require CSRF; fetch a fresh session after signing in. All private account operations require HTTPS and reject identity/WorkContext mismatch and impersonation. No customer ID can be supplied to read or edit another account.
+
+| Controller | Method | Canonical path | Legacy alias |
+| --- | --- | --- | --- |
+| SmsLoginApi | POST | /api/identity/v1/auth/sms/request | /api/sms-login/request |
+| SmsLoginApi | POST | /api/identity/v1/auth/sms/verify | /api/sms-login/verify |
+| AuthApi | GET | /api/identity/v1/auth/session | /api/sms-login/session |
+| AuthApi | POST | /api/identity/v1/auth/refresh | /api/sms-login/refresh |
+| AuthApi | POST | /api/identity/v1/auth/logout | /api/sms-login/logout |
+| ProfileApi | GET | /api/identity/v1/me/profile | /api/sms-login/profile |
+| ProfileApi | PUT | /api/identity/v1/me/profile | /api/sms-login/profile |
+| ProfileApi | GET | /api/identity/v1/me/addresses | /api/sms-login/profile/addresses |
+| AccountSecurityApi | POST | /api/identity/v1/me/security/phone/request | /api/sms-login/profile/phone/request; /api/sms-login/enroll/request |
+| AccountSecurityApi | POST | /api/identity/v1/me/security/phone/verify | /api/sms-login/profile/phone/verify; /api/sms-login/enroll/verify |
+
+Legacy POST /api/sms-login/profile is also retained with its original completion response. New callers should use PUT /api/identity/v1/me/profile. Address reads and profile reads are independent of OTP availability for an otherwise valid authenticated session. The existing phone-first profile-write policy remains: a verified phone and enabled OTP/gateway are required. The token service retains its existing OTP-enabled session policy. General profile editing for password-only customers, address CRUD and password/email security changes are not introduced by this refactor. The native MVC password/customer flow is unchanged. Session responses retain the existing enabled, profileRequired, phone, isAuthenticated and CSRF fields for compatibility.
+
+The CustomerProfileService now owns phone-linked profile reads and profile completion; SmsOtpLoginService no longer implements profile mutation and uses the shared profile contract to read onboarding state. Account controllers share a single CustomerAccountApiController security boundary. Phone enrollment remains an authenticated security operation, not a login operation. Browser and mobile credentials remain separate; signing out one does not automatically revoke the other.
+
+Storefront Swagger lists the canonical Identity paths, while the legacy aliases continue to work but are omitted from the document. OData documentation and authentication do not include customer routes.
 
 ## OData boundary
 WebApi Startup registers Basic authentication with a public/secret API key for the integration API. No mobile JWT or anonymous access is enabled on OData here. Countries, states, currencies, languages, units and other reference data are reuse candidates only after verifying the individual endpoint, read-only contract, field/navigation allowlist, publication/store/ACL, and bounded query options. Do not embed an integration API secret in a customer application. Brands and categories stay in StorefrontApi because their actual queries depend on customer roles and store mappings, even for guest traffic. No OData code or permission changes.

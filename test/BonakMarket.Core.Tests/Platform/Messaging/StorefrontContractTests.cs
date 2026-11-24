@@ -66,6 +66,15 @@ public class StorefrontContractTests
         Assert.That(registered.PermissionRecords.Select(x => x.SystemName), Does.Contain(StorefrontPermissions.Orders));
     }
 
+    [TestCase("/api/identity/v1/me/profile", true)]
+    [TestCase("/api/identity/v1/me/addresses", true)]
+    [TestCase("/api/identity/v1/me/security/phone/verify", true)]
+    [TestCase("/api/identity/v1/auth/session", true)]
+    [TestCase("/api/identity/v1/auth/logout", true)]
+    [TestCase("/api/identity/v1/auth/refresh", false)]
+    [TestCase("/api/identity/v1/auth/sms/request", false)]
+    [TestCase("/api/identity/v1/auth/sms/verify", false)]
+    [TestCase("/api/identity/v10/me/profile", false)]
     [TestCase("/api/sms-login/profile", true)]
     [TestCase("/api/sms-login/profile/phone/verify", true)]
     [TestCase("/api/sms-login/session", true)]
@@ -89,7 +98,7 @@ public class StorefrontContractTests
         using var services = new ServiceCollection().BuildServiceProvider();
         var http = new DefaultHttpContext { RequestServices = services };
         http.Request.Scheme = "https";
-        http.Request.Path = "/api/sms-login/profile";
+        http.Request.Path = "/api/identity/v1/me/profile";
         http.Request.Headers.Authorization = "Bearer invalid-token";
         http.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, "7") }, "cookie"));
         using var body = new MemoryStream();
@@ -130,6 +139,8 @@ public class StorefrontContractTests
 
     [TestCase("/odata/v1/Countries")]
     [TestCase("/api/sms-login/refresh")]
+    [TestCase("/api/identity/v1/auth/refresh")]
+    [TestCase("/api/identity/v1/auth/sms/request")]
     public async Task OtherAuthenticationFlowsAreNotIntercepted(string path)
     {
         var http = new DefaultHttpContext();
@@ -154,10 +165,25 @@ public class StorefrontContractTests
         Assert.That(typeof(CustomerApiBearerMiddleware).Assembly, Is.SameAs(type.Assembly));
         Assert.That(type.Assembly.GetReferencedAssemblies().Any(x => x.Name == "BonakMarket.MultiSms"), Is.False);
         Assert.That(typeof(BonakMarket.MultiSms.Services.SmsGatewaySender).Assembly.GetReferencedAssemblies().Any(x => x.Name == "BonakMarket.Identity"), Is.False);
-        Assert.That(type.GetCustomAttribute<RouteAttribute>()?.Template, Is.EqualTo("api/sms-login"));
-        Assert.That(type.GetMethod(nameof(SmsLoginApiController.GetProfile))?.GetCustomAttribute<HttpGetAttribute>()?.Template, Is.EqualTo("profile"));
-        Assert.That(type.GetMethod(nameof(SmsLoginApiController.UpdateProfile))?.GetCustomAttribute<HttpPutAttribute>()?.Template, Is.EqualTo("profile"));
-        Assert.That(type.GetMethod(nameof(SmsLoginApiController.Logout))?.GetCustomAttribute<HttpPostAttribute>()?.Template, Is.EqualTo("logout"));
+        Assert.That(type.GetCustomAttribute<RouteAttribute>()?.Template, Is.EqualTo("api/identity/v1/auth/sms"));
+        Assert.That(type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+            .Where(m => m.GetCustomAttributes<HttpPostAttribute>().Any()).Select(m => m.Name),
+            Is.EquivalentTo(new[] { nameof(SmsLoginApiController.RequestCode), nameof(SmsLoginApiController.VerifyCode) }));
+        Assert.That(type.GetMethod(nameof(SmsLoginApiController.RequestCode))?.GetCustomAttributes<HttpPostAttribute>().Select(a => a.Template),
+            Is.EquivalentTo(new[] { "request", "~/api/sms-login/request" }));
+        Assert.That(typeof(ProfileApiController).GetCustomAttribute<RouteAttribute>()?.Template, Is.EqualTo("api/identity/v1/me"));
+        Assert.That(typeof(ProfileApiController).GetMethod(nameof(ProfileApiController.GetProfile))?.GetCustomAttributes<HttpGetAttribute>().Select(a => a.Template),
+            Is.EquivalentTo(new[] { "profile", "~/api/sms-login/profile" }));
+        Assert.That(typeof(ProfileApiController).GetMethod(nameof(ProfileApiController.UpdateProfile))?.GetCustomAttributes<HttpPutAttribute>().Select(a => a.Template),
+            Is.EquivalentTo(new[] { "profile", "~/api/sms-login/profile" }));
+        Assert.That(typeof(AuthApiController).GetCustomAttribute<RouteAttribute>()?.Template, Is.EqualTo("api/identity/v1/auth"));
+        Assert.That(typeof(AuthApiController).GetMethod(nameof(AuthApiController.Logout))?.GetCustomAttributes<HttpPostAttribute>().Select(a => a.Template),
+            Is.EquivalentTo(new[] { "logout", "~/api/sms-login/logout" }));
+        Assert.That(typeof(AccountSecurityApiController).GetCustomAttribute<RouteAttribute>()?.Template, Is.EqualTo("api/identity/v1/me/security/phone"));
+        Assert.That(typeof(AccountSecurityApiController).GetMethod(nameof(AccountSecurityApiController.ConfirmEnrollment))?.GetCustomAttributes<HttpPostAttribute>().Select(a => a.Template),
+            Is.EquivalentTo(new[] { "verify", "~/api/sms-login/enroll/verify", "~/api/sms-login/profile/phone/verify" }));
+        Assert.That(typeof(BonakMarket.Identity.Services.ISmsOtpLoginService).GetMethod("CompleteProfileAsync"), Is.Null);
+        Assert.That(typeof(IStorefrontSmsProfileService).IsAssignableFrom(typeof(BonakMarket.Identity.Services.CustomerProfileService)), Is.True);
         Assert.That(typeof(StorefrontController).Assembly.GetType("BonakMarket.StorefrontApi.Controllers.ProfileController"), Is.Null);
         Assert.That(typeof(StorefrontController).Assembly.GetType("BonakMarket.StorefrontApi.Controllers.AuthController"), Is.Null);
     }

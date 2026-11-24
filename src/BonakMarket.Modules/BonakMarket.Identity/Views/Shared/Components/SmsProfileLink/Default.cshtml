@@ -3,9 +3,9 @@
 @{
     // This widget is rendered INSIDE the native Customer/Info form.
     // Use buttons + same-origin fetch: nested forms would be invalid markup.
-    var sessionUrl = Url.Content("~/api/sms-login/session");
-    var requestUrl = Url.Content("~/api/sms-login/profile/phone/request");
-    var verifyUrl = Url.Content("~/api/sms-login/profile/phone/verify");
+    var sessionUrl = Url.Content("~/api/identity/v1/auth/session");
+    var requestUrl = Url.Content("~/api/identity/v1/me/security/phone/request");
+    var verifyUrl = Url.Content("~/api/identity/v1/me/security/phone/verify");
 }
 
 <div id="multi-sms-phone-settings" class="card mb-4"

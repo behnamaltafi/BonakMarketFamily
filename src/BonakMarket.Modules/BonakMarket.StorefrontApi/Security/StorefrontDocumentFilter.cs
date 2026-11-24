@@ -23,9 +23,8 @@ internal sealed class StorefrontDocumentFilter : IDocumentFilter
                 operation.Security.Clear();
                 if (path.Key.StartsWith("/api/storefront/v1/orders", StringComparison.OrdinalIgnoreCase) ||
                     path.Key.StartsWith("/api/storefront/v1/cart", StringComparison.OrdinalIgnoreCase) ||
-                    path.Key.StartsWith("/api/sms-login/profile", StringComparison.OrdinalIgnoreCase) ||
-                    path.Key.StartsWith("/api/sms-login/enroll", StringComparison.OrdinalIgnoreCase) ||
-                    path.Key.Equals("/api/sms-login/logout", StringComparison.OrdinalIgnoreCase))
+                    path.Key.StartsWith("/api/identity/v1/me/", StringComparison.OrdinalIgnoreCase) ||
+                    path.Key.Equals("/api/identity/v1/auth/logout", StringComparison.OrdinalIgnoreCase))
                 {
                     operation.Security.Add(new OpenApiSecurityRequirement
                     {
@@ -35,7 +34,7 @@ internal sealed class StorefrontDocumentFilter : IDocumentFilter
                     operation.Description = (operation.Description ?? "") + " Browser cookie authentication is also supported with the antiforgery request header on mutations.";
                 }
                 else if (path.Key.StartsWith("/api/storefront/v1/", StringComparison.OrdinalIgnoreCase) ||
-                    path.Key.Equals("/api/sms-login/session", StringComparison.OrdinalIgnoreCase))
+                    path.Key.Equals("/api/identity/v1/auth/session", StringComparison.OrdinalIgnoreCase))
                 {
                     operation.Security.Add(new OpenApiSecurityRequirement
                     {

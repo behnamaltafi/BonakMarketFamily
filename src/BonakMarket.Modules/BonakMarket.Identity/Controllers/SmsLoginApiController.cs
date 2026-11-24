@@ -1,8 +1,4 @@
-using System.Net.Http.Headers;
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using BonakMarket.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,12 +11,9 @@ using BonakMarket.Identity.Services;
 
 namespace BonakMarket.Identity.Controllers;
 
-/// <summary>
-/// Customer authentication and account endpoints. Cookie mutations require CSRF;
-/// authenticated Bearer requests use the same native Customer and OTP services.
-/// </summary>
+/// <summary>Passwordless SMS login and registration only.</summary>
 [ApiController]
-[Route("api/sms-login")]
+[Route("api/identity/v1/auth/sms")]
 [AutoValidateAntiforgeryToken]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class SmsLoginApiController : ControllerBase
@@ -29,48 +22,20 @@ public sealed class SmsLoginApiController : ControllerBase
     private readonly SignInManager<Customer> _signInManager;
     private readonly UserManager<Customer> _userManager;
     private readonly SmartDbContext _db;
-    private readonly IAntiforgery _antiforgery;
     private readonly IEventPublisher _events;
 
-    public SmsLoginApiController(ISmsOtpLoginService otp,
-        SignInManager<Customer> signInManager,
-        UserManager<Customer> userManager,
-        SmartDbContext db,
-        IAntiforgery antiforgery,
-        IEventPublisher events)
+    public SmsLoginApiController(ISmsOtpLoginService otp, SignInManager<Customer> signInManager,
+        UserManager<Customer> userManager, SmartDbContext db, IEventPublisher events)
     {
         _otp = otp;
         _signInManager = signInManager;
         _userManager = userManager;
         _db = db;
-        _antiforgery = antiforgery;
         _events = events;
     }
 
-    /// <summary>Gets feature availability, the current session and a CSRF request token.</summary>
-    [HttpGet("session"), AllowAnonymous]
-    public async Task<IActionResult> Session(CancellationToken ct)
-    {
-        bool enabled = await _otp.IsEnabledAsync();
-        var customer = await GetCustomerAsync();
-        if (Request.Headers.ContainsKey("Authorization") && customer is null)
-            return Unauthorized();
-
-        var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
-        return Ok(new
-        {
-            enabled,
-            isAuthenticated = customer is not null,
-            profileRequired = enabled && customer is not null &&
-                await _otp.IsProfileIncompleteAsync(customer.Id, ct),
-            phone = enabled && customer is not null ? await _otp.GetVerifiedPhoneAsync(customer.Id, ct) : null,
-            requestToken = tokens.RequestToken,
-            headerName = tokens.HeaderName
-        });
-    }
-
     /// <summary>Requests a login code with an account-independent response.</summary>
-    [HttpPost("request"), AllowAnonymous]
+    [HttpPost("request"), HttpPost("~/api/sms-login/request"), AllowAnonymous]
     public async Task<IActionResult> RequestCode([FromBody] SmsCodeRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -83,7 +48,7 @@ public sealed class SmsLoginApiController : ControllerBase
     }
 
     /// <summary>Consumes an OTP and creates the native, non-persistent login cookie.</summary>
-    [HttpPost("verify"), AllowAnonymous]
+    [HttpPost("verify"), HttpPost("~/api/sms-login/verify"), AllowAnonymous]
     public async Task<IActionResult> VerifyCode([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -124,176 +89,5 @@ public sealed class SmsLoginApiController : ControllerBase
                 expiresIn = pair.ExpiresIn, tokenType = "Bearer" });
         }
         return Ok(new { code = "signed_in", profileRequired, profilePath = "/sms-login/profile" });
-    }
-
-    /// <summary>Rotates a mobile refresh credential. Does not use the web cookie.</summary>
-    [HttpPost("refresh"), AllowAnonymous, IgnoreAntiforgeryToken]
-    public async Task<IActionResult> Refresh([FromBody] MobileRefreshRequest request, CancellationToken ct)
-    {
-        if (!Request.IsHttps || !await _otp.IsEnabledAsync())
-            return Unauthorized();
-        var service = HttpContext.RequestServices.GetService<IMobileApiTokenService>();
-        var pair = service?.IsEnabled == true ? await service.RefreshAsync(request.RefreshToken, ct) : null;
-        return pair == null ? Unauthorized() : Ok(new { accessToken = pair.AccessToken,
-            refreshToken = pair.RefreshToken, expiresIn = pair.ExpiresIn, tokenType = "Bearer" });
-    }
-
-    /// <summary>Updates the phone-linked Customer's optional profile.</summary>
-    [HttpPost("profile"), AllowAnonymous, IgnoreAntiforgeryToken]
-    public async Task<IActionResult> CompleteProfile([FromBody] SmsProfileApiRequest request, CancellationToken ct)
-    {
-        if (!await _otp.IsEnabledAsync())
-        {
-            return NotFound();
-        }
-
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
-
-        var result = await _otp.CompleteProfileAsync(
-            customer, request.Username, request.FirstName, request.LastName, request.Email, ct);
-        if (!result.Succeeded)
-        {
-            return BadRequest(new { code = "invalid_profile", errors = result.Errors.Select(x => x.Description) });
-        }
-
-        return Ok(new { code = "profile_saved" });
-    }
-
-    /// <summary>Requests a phone binding for the currently signed-in account only.</summary>
-    [HttpPost("enroll/request")]
-    [HttpPost("profile/phone/request"), AllowAnonymous, IgnoreAntiforgeryToken]
-    public async Task<IActionResult> RequestEnrollment([FromBody] SmsCodeRequest request, CancellationToken ct)
-    {
-        if (!await _otp.IsEnabledAsync())
-        {
-            return NotFound();
-        }
-
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
-
-        await _otp.RequestEnrollmentCodeAsync(customer, request.Phone, ct);
-        return Ok(new { code = "code_requested" });
-    }
-
-    /// <summary>Confirms a phone binding without accepting a client-supplied customer ID.</summary>
-    [HttpPost("enroll/verify")]
-    [HttpPost("profile/phone/verify"), AllowAnonymous, IgnoreAntiforgeryToken]
-    public async Task<IActionResult> ConfirmEnrollment([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
-    {
-        if (!await _otp.IsEnabledAsync())
-        {
-            return NotFound();
-        }
-
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
-
-        if (!await _otp.ConfirmEnrollmentAsync(customer, request.Phone, request.Code, ct))
-        {
-            return BadRequest(new { code = "invalid_code" });
-        }
-
-        return Ok(new { code = "phone_verified" });
-    }
-
-    /// <summary>Returns the current customer's profile without accepting a customer identifier.</summary>
-    [HttpGet("profile"), AllowAnonymous]
-    public async Task<IActionResult> GetProfile(CancellationToken ct)
-    {
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
-        return Ok(await ReadProfileAsync(customer, ct));
-    }
-
-    /// <summary>Updates the same native profile as POST profile and returns the current representation.</summary>
-    [HttpPut("profile"), AllowAnonymous, IgnoreAntiforgeryToken]
-    public async Task<IActionResult> UpdateProfile([FromBody] SmsProfileApiRequest request, CancellationToken ct)
-    {
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
-        if (!await _otp.IsEnabledAsync()) return NotFound();
-        var result = await _otp.CompleteProfileAsync(customer, request.Username, request.FirstName, request.LastName, request.Email, ct);
-        if (!result.Succeeded)
-        {
-            var problem = new ProblemDetails { Status = 422, Title = "invalid_profile" };
-            problem.Extensions["errors"] = result.Errors.Select(x => x.Description).ToArray();
-            return new ObjectResult(problem) { StatusCode = 422, ContentTypes = { "application/problem+json" } };
-        }
-        return Ok(await ReadProfileAsync(customer, ct));
-    }
-
-    [HttpGet("profile/addresses"), AllowAnonymous]
-    public async Task<IActionResult> Addresses(CancellationToken ct)
-    {
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
-        var addresses = await _db.Customers.AsNoTracking().Where(x => x.Id == customer.Id)
-            .SelectMany(x => x.Addresses).OrderBy(x => x.Id)
-            .Select(x => new SmsAccountAddressDto(x.Id, x.FirstName, x.LastName, x.CountryId, x.StateProvinceId,
-                x.City, x.Address1, x.Address2, x.ZipPostalCode, x.PhoneNumber)).ToListAsync(ct);
-        return Ok(addresses);
-    }
-
-    [HttpPost("logout"), AllowAnonymous, IgnoreAntiforgeryToken]
-    public async Task<IActionResult> Logout(CancellationToken ct)
-    {
-        var (_, error) = await RequireAccountAsync();
-        if (error is not null) return error;
-        if (Request.Headers.ContainsKey("Authorization"))
-        {
-            var tokens = HttpContext.RequestServices.GetService<IMobileApiTokenService>();
-            if (!AuthenticationHeaderValue.TryParse(Request.Headers.Authorization.ToString(), out var header) ||
-                tokens == null || !await tokens.RevokeAsync(header.Parameter, ct))
-                return Unauthorized();
-        }
-        else
-        {
-            await _signInManager.SignOutAsync();
-        }
-        return NoContent();
-    }
-
-    private async Task<SmsAccountProfileDto> ReadProfileAsync(Customer customer, CancellationToken ct)
-    {
-        var phone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
-        var required = phone != null && await _otp.IsProfileIncompleteAsync(customer.Id, ct);
-        var email = customer.Email?.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase) == true ? null : customer.Email;
-        return new(customer.Id, customer.Username, customer.FirstName, customer.LastName, email, phone, required);
-    }
-
-    private async Task<(Customer Customer, IActionResult Error)> RequireAccountAsync()
-    {
-        if (!Request.IsHttps) return (null, BadRequest(new { code = "https_required" }));
-        var customer = await GetCustomerAsync();
-        if (customer is null) return (null, Unauthorized());
-        if (!Request.Headers.ContainsKey("Authorization") && !HttpMethods.IsGet(Request.Method) && !HttpMethods.IsHead(Request.Method))
-        {
-            try { await _antiforgery.ValidateRequestAsync(HttpContext); }
-            catch (AntiforgeryValidationException) { return (null, BadRequest(new { code = "invalid_antiforgery_token" })); }
-        }
-        return (customer, null);
-    }
-
-    private async Task<Customer> GetCustomerAsync()
-    {
-        Customer customer;
-        if (Request.Headers.ContainsKey("Authorization"))
-        {
-            customer = HttpContext.Items.TryGetValue(typeof(IMobileApiTokenService), out var verified)
-                ? verified as Customer : null;
-        }
-        else
-        {
-            if (!_signInManager.IsSignedIn(User)) return null;
-            customer = await _userManager.GetUserAsync(User);
-        }
-
-        if (customer is null || !customer.Active || customer.Deleted || !customer.IsRegistered() || customer.IsSystemAccount)
-            return null;
-
-        var work = HttpContext.RequestServices.GetRequiredService<IWorkContext>();
-        return work.CurrentImpersonator == null && work.CurrentCustomer?.Id == customer.Id ? customer : null;
     }
 }

@@ -21,18 +21,20 @@ namespace BonakMarket.Identity.Controllers;
 public sealed class SmsLoginController : PublicController
 {
     private readonly SmsOtpLoginService _otp;
+    private readonly IStorefrontSmsProfileService _profile;
     private readonly SignInManager<Customer> _signInManager;
     private readonly UserManager<Customer> _userManager;
     private readonly SmartDbContext _db;
     private readonly IShoppingCartService _shoppingCartService;
 
-    public SmsLoginController(SmsOtpLoginService otp,
+    public SmsLoginController(SmsOtpLoginService otp, IStorefrontSmsProfileService profile,
         SignInManager<Customer> signInManager,
         UserManager<Customer> userManager,
         SmartDbContext db,
         IShoppingCartService shoppingCartService)
     {
         _otp = otp;
+        _profile = profile;
         _signInManager = signInManager;
         _userManager = userManager;
         _db = db;
@@ -176,7 +178,7 @@ public sealed class SmsLoginController : PublicController
             return View("Profile", model);
         }
 
-        var result = await _otp.CompleteProfileAsync(
+        var result = await _profile.CompleteProfileAsync(
             customer, model.Username, model.FirstName, model.LastName, model.Email, ct);
         if (!result.Succeeded)
         {

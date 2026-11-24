@@ -86,6 +86,7 @@ public sealed class DownloadsController(SmartDbContext db, StorefrontRequestCont
         if (file.MediaFile == null || file.MediaFile.Size == 0) return null;
         var stream = await downloads.OpenDownloadStreamAsync(file);
         if (stream == null) return null;
+        if (stream.CanSeek && stream.Length == 0) { await stream.DisposeAsync(); return null; }
         return new FileStreamResult(stream, file.MediaFile.MimeType) { FileDownloadName = file.MediaFile.Name };
     }
 }

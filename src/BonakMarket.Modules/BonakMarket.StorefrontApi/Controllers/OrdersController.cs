@@ -31,8 +31,8 @@ public sealed class OrdersController(OrderQueries orders, IOrderProcessingServic
     {
         var order = await orders.FindOwnedAsync(id, ct);
         if (order == null) return Error(404, "order_not_found");
-        return Ok(new OrderBrowserActionsDto(Url.Action("Print", "Order", new { id, pdf = true }),
-            Url.Action("Details", "Order", new { id }), await payments.CanRePostProcessPaymentAsync(order), true));
+        return Ok(new OrderBrowserActionsDto(Url.Action("Print", "Order", new { id, pdf = true, area = "" }),
+            Url.Action("Details", "Order", new { id, area = "" }), await payments.CanRePostProcessPaymentAsync(order), true));
     }
 
     [HttpPost("{id:int}/reorder")]

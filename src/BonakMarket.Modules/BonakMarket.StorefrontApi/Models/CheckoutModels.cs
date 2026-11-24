@@ -20,3 +20,5 @@ public sealed class ReviewVoteRequest
 }
 public sealed record ReviewResultDto(int Id, bool Approved);
 public sealed record ReviewVoteDto(int HelpfulYes, int HelpfulNo);
+
+public sealed record CustomerReviewDto(int Id, string Title, string ReviewText, int Rating, int HelpfulYes, int HelpfulNo, DateTime CreatedOnUtc, bool IsMine);

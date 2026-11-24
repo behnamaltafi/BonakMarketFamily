@@ -128,6 +128,16 @@ public class SwaggerContractTests
         Assert.That(identity.Paths.Keys.All(x => x.StartsWith("/api/identity/v1/")), Is.True);
         Assert.That(storefront.Paths.Keys, Is.Not.Empty);
         Assert.That(storefront.Paths.Keys.All(x => x.StartsWith("/api/storefront/v1/")), Is.True);
+        foreach (var path in new[] { "/wishlist", "/reward-points", "/stock-subscriptions", "/orders/{orderId}/shipments",
+            "/shipments/{id}", "/recurring-payments", "/returns", "/orders/{id}/returns", "/downloads",
+            "/checkout/readiness", "/checkout/start", "/checkout/shipping-options", "/checkout/payment-methods",
+            "/products/{productId}/reviews", "/orders/{id}/browser-actions", "/cart/gift-cards" })
+        {
+            var key = "/api/storefront/v1" + path;
+            Assert.That(storefront.Paths.ContainsKey(key), Is.True, key);
+            foreach (var operation in storefront.Paths[key].Operations.Values)
+                Assert.That(operation.Security.Count, Is.EqualTo(2), key);
+        }
         Assert.That(integration.Paths.Keys, Is.Empty);
         Assert.That(integration.Components.SecuritySchemes.Keys, Does.Contain("Basic"));
 

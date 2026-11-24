@@ -63,7 +63,10 @@ public class StorefrontContractTests
         var guests = defaults.Single(x => x.CustomerRoleSystemName == SystemCustomerRoleNames.Guests);
         Assert.That(guests.PermissionRecords.Select(x => x.SystemName), Is.EquivalentTo(new[] { StorefrontPermissions.Catalog }));
         var registered = defaults.Single(x => x.CustomerRoleSystemName == SystemCustomerRoleNames.Registered);
-        Assert.That(registered.PermissionRecords.Select(x => x.SystemName), Does.Contain(StorefrontPermissions.Orders));
+        foreach (var permission in new[] { StorefrontPermissions.Orders, StorefrontPermissions.Wishlist,
+            StorefrontPermissions.RewardPoints, StorefrontPermissions.StockSubscriptions, StorefrontPermissions.Checkout,
+            StorefrontPermissions.Returns, StorefrontPermissions.Downloads, StorefrontPermissions.Reviews })
+            Assert.That(registered.PermissionRecords.Select(x => x.SystemName), Does.Contain(permission));
     }
 
     [TestCase("/api/identity/v1/me/profile", true)]
@@ -191,7 +194,10 @@ public class StorefrontContractTests
     [Test]
     public void PrivateControllersDoNotMarkActionsPublic()
     {
-        var types = new[] { typeof(OrdersController), typeof(CartController) };
+        var types = new[] { typeof(OrdersController), typeof(CartController), typeof(WishlistController),
+            typeof(RewardPointsController), typeof(StockSubscriptionsController), typeof(ShipmentsController),
+            typeof(RecurringPaymentsController), typeof(ReturnsController), typeof(DownloadsController),
+            typeof(CheckoutController), typeof(ReviewsController) };
         foreach (var type in types)
         {
             Assert.That(type.GetCustomAttributes<TypeFilterAttribute>(true).Any(x => x.ImplementationType == typeof(StorefrontAuthorizationFilter)), Is.True);

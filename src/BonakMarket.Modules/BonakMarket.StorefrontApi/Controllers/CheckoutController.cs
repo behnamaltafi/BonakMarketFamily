@@ -33,7 +33,7 @@ public sealed class CheckoutController(SmartDbContext db, StorefrontRequestConte
         var billing = request.Customer.GenericAttributes.DefaultBillingAddressId;
         var delivery = request.Customer.GenericAttributes.DefaultShippingAddressId;
         return Ok(new CheckoutReadinessDto(blockers.Count == 0, blockers.ToArray(), cart.IsShippingRequired,
-            billing, delivery, Url.RouteUrl("Checkout"), true));
+            billing, delivery, Url.RouteUrl("Checkout") ?? Url.Content("~/checkout"), true));
     }
 
     [HttpPost("start")]

@@ -105,3 +105,8 @@ Validation on staging: check both JSON documents, verify their path sets, tags, 
 ## Customer onboarding
 
 See [Customer onboarding and address management](customer-onboarding.md) for the current Identity v1 contracts, guild setup, checkout restrictions and phone-change workflow. Native customer address actions delegate to the unified profile page when Identity is installed.
+
+
+## Authenticated storefront expansion
+
+See [Authenticated storefront coverage](authenticated-storefront.md) for the full audit of native login gates, route inventory, exclusions and browser-dependent checkout/payment boundaries. The new controllers share the existing HTTPS/JWT/cookie/CSRF/customer-store authorization filter.

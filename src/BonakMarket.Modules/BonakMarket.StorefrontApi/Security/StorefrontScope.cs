@@ -25,11 +25,11 @@ internal static class StorefrontScope
         return query.Where(x => (!x.SubjectToAcl || acl.Contains(x.Id)) && (!x.LimitedToStores || stores.Contains(x.Id)));
     }
 
-    public static IQueryable<Product> Products(SmartDbContext db, Customer customer, int store)
+    public static IQueryable<Product> Products(SmartDbContext db, Customer customer, int store, bool forSearch = false)
     {
         var now = DateTime.UtcNow;
-        return Visible(db.Set<Product>(), db, customer, store)
-            .Where(x => x.Published && !x.Deleted && !x.IsSystemProduct && x.Visibility == ProductVisibility.Full &&
+        return Visible(db.Set<Product>(), db, customer, store).ApplyStandardFilter()
+            .Where(x => !x.Deleted && (x.Visibility == ProductVisibility.Full || (forSearch && x.Visibility == ProductVisibility.SearchResults)) &&
                 (x.AvailableStartDateTimeUtc == null || x.AvailableStartDateTimeUtc <= now) &&
                 (x.AvailableEndDateTimeUtc == null || x.AvailableEndDateTimeUtc >= now));
     }
@@ -38,7 +38,7 @@ internal static class StorefrontScope
     public static IQueryable<Manufacturer> Brands(SmartDbContext db, Customer customer, int store) =>
         Visible(db.Set<Manufacturer>(), db, customer, store).Where(x => x.Published && !x.Deleted);
     public static IQueryable<Order> Orders(SmartDbContext db, Customer customer, int store) =>
-        db.Set<Order>().Where(x => !x.Deleted && x.CustomerId == customer.Id && x.StoreId == store);
+        db.Set<Order>().Where(x => !x.Deleted).ApplyStandardFilter(customer.Id, store);
     public static IQueryable<ShoppingCartItem> Cart(SmartDbContext db, Customer customer, int store) =>
         db.Set<ShoppingCartItem>().Where(x => x.CustomerId == customer.Id && x.StoreId == store &&
             x.ShoppingCartTypeId == (int)ShoppingCartType.ShoppingCart);

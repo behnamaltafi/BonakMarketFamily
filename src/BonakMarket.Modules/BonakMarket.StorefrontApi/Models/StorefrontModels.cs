@@ -62,3 +62,44 @@ public sealed class UpdateCartItem
 {
     [Range(1, 1000)] public int Quantity { get; set; }
 }
+
+public record PageDto<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount, int TotalPages);
+public class PageRequest
+{
+    [Range(1, 10000)] public int Page { get; set; } = 1;
+    [Range(1, 100)] public int PageSize { get; set; } = 20;
+}
+public enum CatalogSort { Initial, NameAsc, NameDesc, PriceAsc, PriceDesc, Newest }
+public sealed class ProductSearchRequest : PageRequest, IValidatableObject
+{
+    [StringLength(200)] public string Search { get; set; }
+    [Range(1, int.MaxValue)] public int? CategoryId { get; set; }
+    [Range(1, int.MaxValue)] public int? BrandId { get; set; }
+    public decimal? MinPrice { get; set; }
+    public decimal? MaxPrice { get; set; }
+    public bool? InStock { get; set; }
+    public bool? HasDiscount { get; set; }
+    public CatalogSort Sort { get; set; }
+    public bool IncludePrice { get; set; } = true;
+    public IEnumerable<ValidationResult> Validate(ValidationContext context)
+    {
+        if (!Enum.IsDefined(Sort)) yield return new ValidationResult("Invalid sort.", new[] { nameof(Sort) });
+        if (MinPrice < 0 || MaxPrice < 0 || MinPrice > MaxPrice)
+            yield return new ValidationResult("Invalid price range.", new[] { nameof(MinPrice), nameof(MaxPrice) });
+    }
+}
+public sealed class CategorySearchRequest : PageRequest
+{
+    [StringLength(200)] public string Search { get; set; }
+    [Range(0, int.MaxValue)] public int? ParentId { get; set; }
+}
+public sealed class BrandSearchRequest : PageRequest
+{
+    [StringLength(200)] public string Search { get; set; }
+}
+public sealed class OrderSearchRequest : PageRequest
+{
+    public int? OrderStatusId { get; set; }
+    public int? PaymentStatusId { get; set; }
+    public int? ShippingStatusId { get; set; }
+}

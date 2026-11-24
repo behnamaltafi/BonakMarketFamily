@@ -22,10 +22,18 @@
       "type": "zip",
       "name": "web",
       "project": "src/BonakMarket.Web/BonakMarket.Web.csproj"
+    },
+    {
+      "type": "docker",
+      "name": "web",
+      "project": "src/BonakMarket.Web/BonakMarket.Web.csproj",
+      "assembly": "BonakMarket.Web.dll",
+      "repository": "nexus.bonakfamily.ir/bonakmarketfamily/web",
+      "runtimeImage": "mcr.microsoft.com/dotnet/aspnet:10.0"
     }
   ],
   "nexus": {
-    "baseUrl": "https://nexus.example.com",
+    "baseUrl": "https://nexus.bonakfamily.ir",
     "rawRepository": "bonakmarketfamily-releases",
     "rawRepositoryMode": "dedicated"
   },

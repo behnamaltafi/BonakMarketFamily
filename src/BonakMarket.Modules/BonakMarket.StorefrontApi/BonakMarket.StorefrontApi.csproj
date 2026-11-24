@@ -4,7 +4,6 @@
     <OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.StorefrontApi</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
     <StorefrontCommonVersion Condition="'$(StorefrontCommonVersion)' == ''">1.0.1</StorefrontCommonVersion>
-    <RestoreAdditionalProjectSources Condition="'$(BONAK_COMMON_NUGET_SOURCE)' != ''">$(RestoreAdditionalProjectSources);$(BONAK_COMMON_NUGET_SOURCE)</RestoreAdditionalProjectSources>
     <StorefrontPagingVersion Condition="'$(StorefrontPagingVersion)' == ''">1.0.0</StorefrontPagingVersion>
   </PropertyGroup>
   <ItemGroup>

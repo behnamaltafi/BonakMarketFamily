@@ -158,6 +158,19 @@ internal sealed class MobileApiTokenService : IMobileApiTokenService
         return Pair(session, next, key);
     }
 
+    public async Task<bool> RevokeAsync(string accessToken, CancellationToken ct)
+    {
+        var customer = await ValidateAsync(accessToken, ct);
+        if (customer == null) return false;
+        // The JWT has already passed full signature, lifetime and session validation.
+        var jwt = new JwtSecurityTokenHandler().ReadJwtToken(accessToken);
+        if (!Guid.TryParseExact(jwt.Claims.FirstOrDefault(x => x.Type == "sid")?.Value, "N", out var sid)) return false;
+        var utc = DateTime.UtcNow;
+        return await _db.Set<MobileApiSession>().Where(x => x.SessionId == sid &&
+            x.CustomerId == customer.Id && x.RevokedOnUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.RevokedOnUtc, utc), ct) == 1;
+    }
+
     public async Task<Customer> ValidateAsync(string accessToken, CancellationToken ct)
     {
         var key = SigningKey();

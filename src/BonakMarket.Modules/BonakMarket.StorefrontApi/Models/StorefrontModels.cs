@@ -7,10 +7,15 @@ public sealed class ProductDto
     public int Id { get; set; }
     public string Name { get; set; }
     public string ShortDescription { get; set; }
+    public int? MediaFileId { get; set; }
+    public string ImageUrl { get; set; }
+    public PriceDto Price { get; set; }
 }
 public sealed class CategoryDto
 {
     public int Id { get; set; }
+    public int? ParentId { get; set; }
+    public int DisplayOrder { get; set; }
     public string Name { get; set; }
     public int? MediaFileId { get; set; }
 }
@@ -32,7 +37,20 @@ public sealed class OrderDto
 }
 public sealed record OrderLineDto(int Id, int ProductId, int Quantity, decimal UnitPriceInclTax, decimal PriceInclTax);
 public sealed record OrderDetailDto(OrderDto Order, List<OrderLineDto> Items);
-public sealed record ProfileDto(int Id, string Username, string FirstName, string LastName, string Email);
+public sealed record ProfileDto(int Id, string Username, string FirstName, string LastName, string Email, string Phone, bool ProfileRequired);
+public sealed record AddressDto(int Id, string FirstName, string LastName, int? CountryId, int? StateProvinceId, string City, string Address1, string Address2, string ZipPostalCode, string PhoneNumber);
+public sealed class UpdateProfileRequest
+{
+    [Required, StringLength(100)] public string Username { get; set; }
+    [StringLength(225)] public string FirstName { get; set; }
+    [StringLength(225)] public string LastName { get; set; }
+    [EmailAddress, StringLength(500)] public string Email { get; set; }
+}
+public sealed class CouponRequest
+{
+    [Required, StringLength(200)] public string Code { get; set; }
+}
+public sealed record CartTotalDto(decimal? Total, decimal DiscountAmount, string CurrencyCode);
 public sealed record CartItemDto(int Id, int ProductId, int Quantity, bool Active, int? ParentItemId);
 public sealed record PriceDto(int ProductId, string CurrencyCode, decimal FinalPrice, decimal? RegularPrice, decimal DiscountAmount);
 public sealed class AddCartItem

@@ -1,0 +1,12 @@
+using System.Threading;
+using Microsoft.AspNetCore.Identity;
+
+namespace BonakMarket.Core.Identity;
+
+/// <summary>Optional native SMS profile completion, shared by storefront clients.</summary>
+public interface IStorefrontSmsProfileService
+{
+    Task<bool> IsProfileIncompleteAsync(int customerId, CancellationToken ct = default);
+    Task<string> GetVerifiedPhoneAsync(int customerId, CancellationToken ct = default);
+    Task<IdentityResult> CompleteProfileAsync(Customer customer, string username, string firstName, string lastName, string email, CancellationToken ct = default);
+}

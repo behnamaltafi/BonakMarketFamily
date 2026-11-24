@@ -33,6 +33,7 @@ internal sealed class Startup : StarterBase
         services.AddScoped<ISmsSender, SmsGatewaySender>();
         services.AddScoped<SmsOtpLoginService>();
         services.AddScoped<IMobileApiTokenService, MobileApiTokenService>();
+        services.AddScoped<IStorefrontSmsProfileService>(sp => sp.GetRequiredService<SmsOtpLoginService>());
         services.AddScoped<ISmsOtpLoginService>(services => services.GetRequiredService<SmsOtpLoginService>());
         services.AddScoped<IWidgetSource, SmsLoginWidgetSource>();
         services.Configure<MvcOptions>(options => options.Filters

@@ -17,7 +17,7 @@ namespace BonakMarket.MultiSms.Services;
 /// Unifies mobile-number login and post-verification Customer registration.
 /// Never trusts an unverified Customer.GenericAttributes.Phone value.
 /// </summary>
-public sealed class SmsOtpLoginService : ISmsOtpLoginService
+public sealed class SmsOtpLoginService : ISmsOtpLoginService, IStorefrontSmsProfileService
 {
     private readonly SmartDbContext _db;
     private readonly ISmsSender _sms;

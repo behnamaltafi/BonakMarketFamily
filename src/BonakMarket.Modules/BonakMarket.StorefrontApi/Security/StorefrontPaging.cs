@@ -35,7 +35,7 @@ public static class StorefrontPaging
             return f.FilterOption is ComparisonMethod.IsNullOrWhiteSpace or ComparisonMethod.IsNotNullOrWhiteSpace ||
                 (!string.IsNullOrWhiteSpace(value) && value.Length <= 256 && (int)f.FilterOption >= 5);
         if (string.IsNullOrWhiteSpace(value) || value.Length > 128 || (int)f.FilterOption > 6) return false;
-        if (property.PropertyType == typeof(int)) return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _);
+        if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?)) return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out _);
         if (property.PropertyType == typeof(decimal)) return decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out _);
         if (property.PropertyType == typeof(DateTime)) return DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _);
         return false;

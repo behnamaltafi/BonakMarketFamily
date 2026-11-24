@@ -3,13 +3,9 @@
     <Product>BonakMarket Storefront API</Product>
     <OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.StorefrontApi</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
-    <StorefrontCommonVersion Condition="'$(StorefrontCommonVersion)' == ''">1.0.1</StorefrontCommonVersion>
-    <StorefrontPagingVersion Condition="'$(StorefrontPagingVersion)' == ''">1.0.0</StorefrontPagingVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Common.Contracts" Version="$(StorefrontCommonVersion)" />
-    <PackageReference Include="Common.Paging.EntityFrameworkCore" Version="$(StorefrontPagingVersion)" />
-      <PackageReference Include="Microsoft.OpenApi" Version="1.6.31" />
+    <PackageReference Include="Microsoft.OpenApi" Version="1.6.31" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
   </ItemGroup>
 </Project>

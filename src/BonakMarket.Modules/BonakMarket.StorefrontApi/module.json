@@ -13,13 +13,6 @@
     "BonakMarket.MultiSms"
   ],
   "PrivateReferences": [
-    "Common.Contracts",
-    "Common.Core",
-    "Common.Paging.Core",
-    "Common.Paging.EntityFrameworkCore",
-    "MassTransit",
-    "MassTransit.Abstractions",
-    "Newtonsoft.Json",
     "Microsoft.OpenApi",
     "Swashbuckle.AspNetCore.Swagger",
     "Swashbuckle.AspNetCore.SwaggerGen",

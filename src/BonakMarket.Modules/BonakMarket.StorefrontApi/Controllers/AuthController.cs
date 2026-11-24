@@ -2,7 +2,6 @@ using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
-using Common.DTO;
 using BonakMarket.Core.Identity;
 
 namespace BonakMarket.StorefrontApi.Controllers;
@@ -12,7 +11,7 @@ public sealed class AuthController : StorefrontController
 {
     // OTP request, verify and refresh deliberately reuse /api/sms-login.
     [HttpPost("logout")]
-    [ProducesResponseType(typeof(ApiResult), 200)]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> Logout(CancellationToken ct)
     {
         if (Request.Headers.ContainsKey("Authorization"))
@@ -26,6 +25,6 @@ public sealed class AuthController : StorefrontController
         {
             await HttpContext.RequestServices.GetRequiredService<SignInManager<Customer>>().SignOutAsync();
         }
-        return Ok(new ApiResult());
+        return NoContent();
     }
 }

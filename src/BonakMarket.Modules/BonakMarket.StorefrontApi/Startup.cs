@@ -18,6 +18,7 @@ internal sealed class Startup : StarterBase
 
     public override void ConfigureServices(IServiceCollection services, IApplicationContext appContext)
     {
+        services.AddScoped<StorefrontRequestContext>();
         // Register a separate document; never change OData routes or authentication.
         services.AddSwaggerGen(o =>
         {

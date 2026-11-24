@@ -2,7 +2,6 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
-        <RestoreAdditionalProjectSources Condition="'$(BONAK_COMMON_NUGET_SOURCE)' != ''">$(RestoreAdditionalProjectSources);$(BONAK_COMMON_NUGET_SOURCE)</RestoreAdditionalProjectSources>
         <!-- Solution builds reject a global RuntimeIdentifier; CI forwards its RID to application projects here. -->
         <RuntimeIdentifier Condition="'$(BonakMarketBuildRuntime)' != '' And '$(RuntimeIdentifier)' == ''">$(BonakMarketBuildRuntime)</RuntimeIdentifier>
         <!--<RuntimeIdentifiers>win-x64; osx-x64; linux-x64</RuntimeIdentifiers>-->

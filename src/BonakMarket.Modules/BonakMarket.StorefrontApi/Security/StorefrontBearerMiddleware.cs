@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using BonakMarket.Core.Identity;
-using Common.DTO;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BonakMarket.StorefrontApi.Security;
 
@@ -38,7 +38,7 @@ public sealed class StorefrontBearerMiddleware(RequestDelegate next)
         {
             context.Response.StatusCode = 401;
             context.Response.Headers.WWWAuthenticate = "Bearer";
-            await context.Response.WriteAsJsonAsync(new ApiResult("invalid_access_token", false, null, 401), context.RequestAborted);
+            await context.Response.WriteAsJsonAsync(new ProblemDetails { Status = 401, Title = "invalid_access_token" }, context.RequestAborted);
             return;
         }
 

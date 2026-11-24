@@ -37,6 +37,9 @@ internal static class StorefrontScope
         Visible(db.Set<Category>(), db, customer, store).Where(x => x.Published && !x.Deleted);
     public static IQueryable<Manufacturer> Brands(SmartDbContext db, Customer customer, int store) =>
         Visible(db.Set<Manufacturer>(), db, customer, store).Where(x => x.Published && !x.Deleted);
+    public static IQueryable<BonakMarket.Core.Content.Topics.Topic> Topics(SmartDbContext db, Customer customer, int store) =>
+        Visible(db.Topics, db, customer, store).Where(x => x.IsPublished && !x.IsPasswordProtected && !x.RenderAsWidget);
+
     public static IQueryable<Order> Orders(SmartDbContext db, Customer customer, int store) =>
         db.Set<Order>().Where(x => !x.Deleted).ApplyStandardFilter(customer.Id, store);
     public static IQueryable<ShoppingCartItem> Cart(SmartDbContext db, Customer customer, int store, ShoppingCartType type = ShoppingCartType.ShoppingCart) =>

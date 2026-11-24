@@ -38,6 +38,9 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
             "shipments" => "Shipments",
             "recurring-payments" => "Recurring Payments",
             "downloads" => "Downloads",
+            "bootstrap" => "Storefront",
+            "pages" => "Pages",
+            "me" => "Customer Services",
             _ => "Commerce"
         }) } };
         // Use the route template and verb (not overloaded CLR method names).

@@ -175,6 +175,10 @@ public class SwaggerContractTests
         Assert.That(profile.Parameters.Any(p => p.Name == "X-Test-CSRF" && !p.Required), Is.True);
         Assert.That(profile.Responses.ContainsKey("422"), Is.True);
         Assert.That(profile.Responses["422"].Content["application/problem+json"].Schema.Properties.ContainsKey("code"), Is.True);
+        foreach (var path in new[] { "/bootstrap", "/pages", "/pages/{id}" })
+            Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.True);
+        foreach (var path in new[] { "/me/summary", "/me/reviews" })
+            Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.False);
         var products = storefront.Paths["/api/storefront/v1/products"].Operations[OperationType.Get];
         Assert.That(products.Security.Any(s => s.Count == 0), Is.True);
         var quote = storefront.Paths["/api/storefront/v1/products/{id}/quote"].Operations[OperationType.Post];

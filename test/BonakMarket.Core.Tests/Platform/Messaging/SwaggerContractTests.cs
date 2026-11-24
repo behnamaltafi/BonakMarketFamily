@@ -162,6 +162,7 @@ public class SwaggerContractTests
         Assert.That(profile.Security.Count, Is.EqualTo(2));
         Assert.That(profile.Parameters.Any(p => p.Name == "X-Test-CSRF" && !p.Required), Is.True);
         Assert.That(profile.Responses.ContainsKey("422"), Is.True);
+        Assert.That(profile.Responses["422"].Content["application/problem+json"].Schema.Properties.ContainsKey("code"), Is.True);
         var products = storefront.Paths["/api/storefront/v1/products"].Operations[OperationType.Get];
         Assert.That(products.Security.Any(s => s.Count == 0), Is.True);
         var cart = storefront.Paths["/api/storefront/v1/cart"].Operations[OperationType.Get];

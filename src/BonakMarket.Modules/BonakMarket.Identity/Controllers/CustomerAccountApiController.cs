@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using BonakMarket.Core.Identity;
+using BonakMarket.Identity.Models;
 
 namespace BonakMarket.Identity.Controllers;
 
@@ -25,13 +26,13 @@ public abstract class CustomerAccountApiController : ControllerBase
 
     protected async Task<(Customer Customer, IActionResult Error)> RequireAccountAsync()
     {
-        if (!Request.IsHttps) return (null, BadRequest(new { code = "https_required" }));
+        if (!Request.IsHttps) return (null, BadRequest(new IdentityCodeResponse("https_required")));
         var customer = await GetCustomerAsync();
         if (customer is null) return (null, Unauthorized());
         if (!Request.Headers.ContainsKey("Authorization") && !HttpMethods.IsGet(Request.Method) && !HttpMethods.IsHead(Request.Method))
         {
             try { await _antiforgery.ValidateRequestAsync(HttpContext); }
-            catch (AntiforgeryValidationException) { return (null, BadRequest(new { code = "invalid_antiforgery_token" })); }
+            catch (AntiforgeryValidationException) { return (null, BadRequest(new IdentityCodeResponse("invalid_antiforgery_token"))); }
         }
         return (customer, null);
     }

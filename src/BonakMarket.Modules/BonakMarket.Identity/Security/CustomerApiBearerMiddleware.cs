@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using BonakMarket.Core.Identity;
 using Microsoft.AspNetCore.Mvc;
+using BonakMarket.Identity.Filters;
 
 namespace BonakMarket.Identity.Security;
 
@@ -37,7 +38,16 @@ public sealed class CustomerApiBearerMiddleware(RequestDelegate next)
         {
             context.Response.StatusCode = 401;
             context.Response.Headers.WWWAuthenticate = "Bearer";
-            await context.Response.WriteAsJsonAsync(new ProblemDetails { Status = 401, Title = "invalid_access_token" }, context.RequestAborted);
+            var problem = new ProblemDetails { Status = 401, Title = "invalid_access_token" };
+            if (CustomerApiProblemFilter.IsCanonicalPath(context.Request.Path))
+            {
+                problem.Extensions["code"] = "invalid_access_token";
+                problem.Extensions["traceId"] = System.Diagnostics.Activity.Current?.Id ?? context.TraceIdentifier;
+                await context.Response.WriteAsJsonAsync(problem, options: (System.Text.Json.JsonSerializerOptions)null,
+                    contentType: "application/problem+json", cancellationToken: context.RequestAborted);
+            }
+            else
+                await context.Response.WriteAsJsonAsync(problem, context.RequestAborted);
             return;
         }
 

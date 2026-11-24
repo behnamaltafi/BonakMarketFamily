@@ -67,7 +67,33 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
             }
             if (route == "me/profile" && method == "PUT")
                 AddResponse(operation, "422", "Profile validation failed (ProblemDetails).");
-            // Identity preserves legacy mixed error payloads; do not declare a single false schema for them.
+        }
+        AddResponse(operation, "400", "Invalid request.");
+        foreach (var entry in operation.Responses)
+        {
+            if (!int.TryParse(entry.Key, out var status) || status < 400 || status >= 600) continue;
+            entry.Value.Content ??= new Dictionary<string, OpenApiMediaType>();
+            entry.Value.Content.Clear();
+            entry.Value.Content["application/problem+json"] = new OpenApiMediaType
+            {
+                Schema = new OpenApiSchema
+                {
+                    Type = "object",
+                    Required = new HashSet<string> { "status", "code", "title", "traceId" },
+                    AdditionalPropertiesAllowed = true,
+                    Properties = new Dictionary<string, OpenApiSchema>
+                    {
+                        ["status"] = new() { Type = "integer", Format = "int32" },
+                        ["code"] = new() { Type = "string", Description = "Stable machine-readable error code." },
+                        ["title"] = new() { Type = "string" },
+                        ["detail"] = new() { Type = "string", Nullable = true },
+                        ["traceId"] = new() { Type = "string" },
+                        ["errors"] = new() { Type = "object", AdditionalProperties = new OpenApiSchema
+                            { Type = "array", Items = new OpenApiSchema { Type = "string" } } },
+                        ["warnings"] = new() { Type = "array", Items = new OpenApiSchema { Type = "string" } }
+                    }
+                }
+            };
         }
     }
 

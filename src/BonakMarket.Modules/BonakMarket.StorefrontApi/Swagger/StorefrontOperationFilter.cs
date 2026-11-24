@@ -73,15 +73,31 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
         if (section == "wishlist" && method == "POST") AddResponse(operation, "409", "Unsupported product configuration.");
 
         if (tag == "Sharing") AddResponse(operation, "429", "Sharing rate limit exceeded.");
-        foreach (var status in new[] { "400", "401", "403", "404", "409", "422", "429", "503" })
+        foreach (var entry in operation.Responses)
         {
-            if (!operation.Responses.TryGetValue(status, out var response)) continue;
-            response.Content ??= new Dictionary<string, OpenApiMediaType>();
-            if (!response.Content.ContainsKey("application/problem+json"))
-                response.Content["application/problem+json"] = new OpenApiMediaType
+            if (!int.TryParse(entry.Key, out var status) || status < 400 || status >= 600) continue;
+            entry.Value.Content ??= new Dictionary<string, OpenApiMediaType>();
+            entry.Value.Content.Clear();
+            entry.Value.Content["application/problem+json"] = new OpenApiMediaType
+            {
+                Schema = new OpenApiSchema
                 {
-                    Schema = context.SchemaGenerator.GenerateSchema(typeof(ProblemDetails), context.SchemaRepository)
-                };
+                    Type = "object",
+                    Required = new HashSet<string> { "status", "code", "title", "traceId" },
+                    AdditionalPropertiesAllowed = true,
+                    Properties = new Dictionary<string, OpenApiSchema>
+                    {
+                        ["status"] = new() { Type = "integer", Format = "int32" },
+                        ["code"] = new() { Type = "string", Description = "Stable machine-readable error code." },
+                        ["title"] = new() { Type = "string" },
+                        ["detail"] = new() { Type = "string", Nullable = true },
+                        ["traceId"] = new() { Type = "string" },
+                        ["errors"] = new() { Type = "object", AdditionalProperties = new OpenApiSchema
+                            { Type = "array", Items = new OpenApiSchema { Type = "string" } } },
+                        ["warnings"] = new() { Type = "array", Items = new OpenApiSchema { Type = "string" } }
+                    }
+                }
+            };
         }
     }
 

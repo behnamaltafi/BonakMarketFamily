@@ -55,7 +55,11 @@ public sealed class UpdateCartItem
     [Range(1, 1000)] public int Quantity { get; set; }
 }
 
-public record PageDto<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount, int TotalPages);
+public record PageDto<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount, int TotalPages)
+{
+    public bool HasNextPage => Page < TotalPages;
+    public bool HasPreviousPage => Page > 1;
+}
 public class PageRequest
 {
     [Range(1, 10000)] public int Page { get; set; } = 1;

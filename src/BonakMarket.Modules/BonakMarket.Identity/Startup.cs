@@ -29,6 +29,7 @@ internal sealed class Startup : StarterBase
     public override void ConfigureServices(IServiceCollection services, IApplicationContext appContext)
     {
         services.AddIdentitySwagger();
+        services.Configure<MvcOptions>(options => options.Filters.Add(new CustomerApiProblemFilter()));
         services.AddScoped<IUserValidator<Customer>, PhoneUsernameValidator>();
         if (appContext.IsInstalled)
             services.PostConfigure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, VerifiedPhoneCookie.Configure);

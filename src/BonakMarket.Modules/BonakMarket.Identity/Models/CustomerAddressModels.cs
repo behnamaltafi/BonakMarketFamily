@@ -23,7 +23,12 @@ public sealed record CustomerAddressDto(int Id, string? FirstName, string? LastN
     int? StateProvinceId, string? City, string? Address1, string? Address2, string? ZipPostalCode,
     string? PhoneNumber, string? CountryName, string? StateProvinceName, bool IsDefaultBilling,
     bool IsDefaultShipping, string? Salutation, string? Title, string? Company, string? FaxNumber);
-public sealed record AddressPage(IReadOnlyList<CustomerAddressDto> Items, int Page, int PageSize, int TotalCount);
+public sealed record AddressPage(IReadOnlyList<CustomerAddressDto> Items, int Page, int PageSize, int TotalCount)
+{
+    public int TotalPages => PageSize > 0 ? (int)(((long)TotalCount + PageSize - 1) / PageSize) : 0;
+    public bool HasNextPage => Page < TotalPages;
+    public bool HasPreviousPage => Page > 1;
+}
 public sealed record AddressField(bool Enabled, bool Required);
 public sealed record AddressLocation(int Id, string Name);
 public sealed record CustomerAddressSettings(AddressLocation Country, IReadOnlyDictionary<string, AddressField> Fields,

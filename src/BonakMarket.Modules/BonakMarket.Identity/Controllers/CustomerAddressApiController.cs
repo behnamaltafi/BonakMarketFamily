@@ -20,7 +20,7 @@ public sealed class CustomerAddressApiController(CustomerAddressService addresse
     {
         var (customer, error) = await RequireAccountAsync();
         if (error != null) return error;
-        if (page < 1 || pageSize is < 1 or > 100 || (long)(page - 1) * pageSize > int.MaxValue) return BadRequest();
+        if (page is < 1 or > 10000 || pageSize is < 1 or > 100) return BadRequest();
         return Ok(await addresses.ListAsync(customer, page, pageSize, ct));
     }
 
@@ -38,7 +38,7 @@ public sealed class CustomerAddressApiController(CustomerAddressService addresse
         var (_, error) = await RequireAccountAsync();
         if (error != null) return error;
         var result = await addresses.GetSettingsAsync(ct);
-        return result == null ? Conflict(new { code = "iran_not_configured" }) : Ok(result);
+        return result == null ? Conflict(new IdentityCodeResponse("iran_not_configured")) : Ok(result);
     }
 
     [HttpGet("{id:int}"), AllowAnonymous]

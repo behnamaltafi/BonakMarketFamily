@@ -65,7 +65,7 @@ public class StorefrontContractTests
         var registered = defaults.Single(x => x.CustomerRoleSystemName == SystemCustomerRoleNames.Registered);
         foreach (var permission in new[] { StorefrontPermissions.Orders, StorefrontPermissions.Wishlist,
             StorefrontPermissions.RewardPoints, StorefrontPermissions.StockSubscriptions, StorefrontPermissions.Checkout,
-            StorefrontPermissions.Returns, StorefrontPermissions.Downloads, StorefrontPermissions.Reviews })
+            StorefrontPermissions.Returns, StorefrontPermissions.Downloads, StorefrontPermissions.Reviews, StorefrontPermissions.Sharing })
             Assert.That(registered.PermissionRecords.Select(x => x.SystemName), Does.Contain(permission));
     }
 
@@ -197,7 +197,7 @@ public class StorefrontContractTests
         var types = new[] { typeof(OrdersController), typeof(CartController), typeof(WishlistController),
             typeof(RewardPointsController), typeof(StockSubscriptionsController), typeof(ShipmentsController),
             typeof(RecurringPaymentsController), typeof(ReturnsController), typeof(DownloadsController),
-            typeof(CheckoutController), typeof(ReviewsController) };
+            typeof(CheckoutController), typeof(ReviewsController), typeof(SharingController) };
         foreach (var type in types)
         {
             Assert.That(type.GetCustomAttributes<TypeFilterAttribute>(true).Any(x => x.ImplementationType == typeof(StorefrontAuthorizationFilter)), Is.True);

@@ -131,7 +131,8 @@ public class SwaggerContractTests
         foreach (var path in new[] { "/wishlist", "/reward-points", "/stock-subscriptions", "/orders/{orderId}/shipments",
             "/shipments/{id}", "/recurring-payments", "/returns", "/orders/{id}/returns", "/downloads",
             "/checkout/readiness", "/checkout/start", "/checkout/shipping-options", "/checkout/payment-methods",
-            "/products/{productId}/reviews", "/orders/{id}/browser-actions", "/cart/gift-cards" })
+            "/products/{productId}/reviews", "/orders/{id}/browser-actions", "/cart/gift-cards",
+            "/products/{productId}/share", "/wishlist/share" })
         {
             var key = "/api/storefront/v1" + path;
             Assert.That(storefront.Paths.ContainsKey(key), Is.True, key);

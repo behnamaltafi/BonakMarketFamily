@@ -19,7 +19,8 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
         var route = path.Substring("api/storefront/v1/".Length).TrimEnd('/').ToLowerInvariant();
         var method = context.ApiDescription.HttpMethod;
         var section = route.Split('/')[0];
-        var tag = route.Contains("/reviews") ? "Reviews" :
+        var tag = route.EndsWith("/share") ? "Sharing" :
+            route.Contains("/reviews") ? "Reviews" :
             route.Contains("/return-options") || route.Contains("/returns") ? "Returns" :
             route.Contains("/shipments") ? "Shipments" : null;
         operation.Tags = new List<OpenApiTag> { new() { Name = tag ?? (section switch
@@ -71,7 +72,8 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
         }
         if (section == "wishlist" && method == "POST") AddResponse(operation, "409", "Unsupported product configuration.");
 
-        foreach (var status in new[] { "400", "401", "403", "404", "409", "422", "503" })
+        if (tag == "Sharing") AddResponse(operation, "429", "Sharing rate limit exceeded.");
+        foreach (var status in new[] { "400", "401", "403", "404", "409", "422", "429", "503" })
         {
             if (!operation.Responses.TryGetValue(status, out var response)) continue;
             response.Content ??= new Dictionary<string, OpenApiMediaType>();

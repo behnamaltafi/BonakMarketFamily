@@ -18,7 +18,7 @@ Source audit: all public storefront controllers under src/BonakMarket.Web/Contro
 | RewardPoints | Registered + enabled feature | Balance/history and cart redemption preference |
 | StockSubscriptions / BackInStockSubscribePopup | Native service requires registered customer | List, subscribe, unsubscribe; real email required by email-based native notification |
 | Product ReviewsAdd / SetReviewHelpfulness | Conditional on anonymous-review setting | Private list/create/vote; form CAPTCHA and GDPR |
-| EmailAFriend / EmailWishlistSend | Conditional on anonymous-sharing setting | Not added; keep native CAPTCHA-enabled forms until API abuse controls are designed |
+| EmailAFriend / EmailWishlistSend | Conditional on anonymous-sharing setting | Private share endpoints using native CAPTCHA, consent, registered email and persistent per-customer rate limit |
 | Product/checkout attribute uploads | Not a strict login gate | Not added; file ownership and configuration upload require a separate contract |
 | Product catalog, CMS, search, compare, recently viewed, newsletter, languages, currencies, contact, questions | No strict registered-user requirement | Existing public catalog API stays unchanged; public gaps outside this task |
 | Admin, ERP/OData, installer, PDF template internals, external provider callbacks | Administrative/integration/provider boundary, not customer authentication | Not exposed as customer APIs |
@@ -33,6 +33,7 @@ All relative to /api/storefront/v1; require HTTPS and a valid customer bearer to
 - GET returns; GET returns/{id}; GET orders/{id}/return-options; POST orders/{id}/returns.
 - GET downloads; GET downloads/{id}; POST downloads/{id}/file?agree=true&version=...; GET downloads/{id}/license. id is the purchased order-item GUID. File POST consumes a download allowance. A configured HTTPS external download may redirect; never forward bearer credentials to the external host.
 - GET products/{productId}/reviews; POST products/{productId}/reviews (form-urlencoded or multipart, title/reviewText/rating/gdprConsent and native CAPTCHA fields); PUT products/{productId}/reviews/{reviewId}/helpfulness.
+- POST products/{productId}/share; POST wishlist/share (form-urlencoded or multipart, friendEmail, personalMessage, gdprConsent, and native CAPTCHA fields). Five attempts per rolling hour per customer across both API routes; sender is the account email. Native MVC share forms retain their existing policy.
 - GET checkout/readiness; POST checkout/start (validation/preflight, no payment or order creation); GET checkout/shipping-options?addressId=...; GET checkout/payment-methods.
 - GET orders/{id}/browser-actions (invoice and native order-details URLs, native eligibility for retry).
 
@@ -42,4 +43,4 @@ Native checkout handlers read HTTP route values, form fields, session CheckoutSt
 
 ## Deployment and tests
 
-Confirm the Storefront permission provider has installed the new storefront.wishlist, storefront.rewardpoints, storefront.stocksubscriptions, storefront.checkout, storefront.returns, storefront.downloads, storefront.reviews permissions for the Registered role; guests only receive catalog access. Existing installations may need module permission synchronization. No new tables or migrations are introduced here. Validate against SQL Server and the installed payment/shipping providers before production. Run StorefrontContractTests and SwaggerContractTests, and add integration tests for cross-customer/store IDs, checkout handoff, concurrent returns/downloads, and payment provider behavior. No build/test execution is claimed by this source change.
+Confirm the Storefront permission provider has installed the new storefront.wishlist, storefront.rewardpoints, storefront.stocksubscriptions, storefront.checkout, storefront.returns, storefront.downloads, storefront.reviews, storefront.sharing permissions for the Registered role; guests only receive catalog access. Existing installations may need module permission synchronization. No new tables or migrations are introduced here. Validate against SQL Server and the installed payment/shipping providers before production. Run StorefrontContractTests and SwaggerContractTests, and add integration tests for cross-customer/store IDs, checkout handoff, concurrent returns/downloads, and payment provider behavior. No build/test execution is claimed by this source change.

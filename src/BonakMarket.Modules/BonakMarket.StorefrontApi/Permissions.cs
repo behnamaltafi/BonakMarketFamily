@@ -16,6 +16,7 @@ public static class StorefrontPermissions
     public const string Returns = "storefront.returns";
     public const string Downloads = "storefront.downloads";
     public const string Reviews = "storefront.reviews";
+    public const string Sharing = "storefront.sharing";
 }
 
 public sealed class StorefrontPermissionProvider : IPermissionProvider
@@ -29,7 +30,7 @@ public sealed class StorefrontPermissionProvider : IPermissionProvider
         yield return For(SystemCustomerRoleNames.Registered, StorefrontPermissions.Catalog,
             StorefrontPermissions.Cart, StorefrontPermissions.Orders, StorefrontPermissions.Wishlist,
             StorefrontPermissions.RewardPoints, StorefrontPermissions.StockSubscriptions, StorefrontPermissions.Checkout,
-            StorefrontPermissions.Returns, StorefrontPermissions.Downloads, StorefrontPermissions.Reviews);
+            StorefrontPermissions.Returns, StorefrontPermissions.Downloads, StorefrontPermissions.Reviews, StorefrontPermissions.Sharing);
         yield return For(SystemCustomerRoleNames.Administrators, StorefrontPermissions.Self);
     }
 

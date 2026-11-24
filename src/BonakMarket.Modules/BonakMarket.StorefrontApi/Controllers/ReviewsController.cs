@@ -40,7 +40,7 @@ public sealed class ReviewsController(SmartDbContext db, StorefrontRequestContex
     // Native CAPTCHA providers read form fields, not JSON. Do not allow JSON to bypass the native filter.
     [HttpPost]
     [Consumes("application/x-www-form-urlencoded", "multipart/form-data")]
-    [ValidateCaptcha(CaptchaSettings.Targets.ProductReview)]
+    [ValidateCaptcha(CaptchaSettings.Targets.ProductReview), RequireCaptchaResult]
     [ProducesResponseType(typeof(ReviewResultDto), 201)]
     public async Task<ActionResult<ReviewResultDto>> Create(int productId, [FromForm] ReviewRequest input, CancellationToken ct)
     {

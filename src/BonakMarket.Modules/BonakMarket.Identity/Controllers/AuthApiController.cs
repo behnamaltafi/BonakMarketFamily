@@ -13,6 +13,7 @@ namespace BonakMarket.Identity.Controllers;
 
 /// <summary>Authentication session, refresh and sign-out.</summary>
 [ApiController]
+[ApiExplorerSettings(GroupName = "identity")]
 [Route("api/identity/v1/auth")]
 [AutoValidateAntiforgeryToken]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -29,6 +30,7 @@ public sealed class AuthApiController : CustomerAccountApiController
 
     /// <summary>Gets feature availability, the current session and a CSRF request token.</summary>
     [HttpGet("session"), HttpGet("~/api/sms-login/session"), AllowAnonymous]
+    [ProducesResponseType(typeof(IdentitySessionResponse), 200)]
     public async Task<IActionResult> Session(CancellationToken ct)
     {
         bool enabled = await _otp.IsEnabledAsync();
@@ -37,31 +39,27 @@ public sealed class AuthApiController : CustomerAccountApiController
             return Unauthorized();
 
         var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
-        return Ok(new
-        {
-            enabled,
-            isAuthenticated = customer is not null,
-            profileRequired = enabled && customer is not null &&
-                await _otp.IsProfileIncompleteAsync(customer.Id, ct),
-            phone = enabled && customer is not null ? await _otp.GetVerifiedPhoneAsync(customer.Id, ct) : null,
-            requestToken = tokens.RequestToken,
-            headerName = tokens.HeaderName
-        });
+        return Ok(new IdentitySessionResponse(
+            enabled, customer is not null,
+            enabled && customer is not null && await _otp.IsProfileIncompleteAsync(customer.Id, ct),
+            enabled && customer is not null ? await _otp.GetVerifiedPhoneAsync(customer.Id, ct) : null,
+            tokens.RequestToken, tokens.HeaderName));
     }
 
     /// <summary>Rotates a mobile refresh credential. Does not use the web cookie.</summary>
     [HttpPost("refresh"), HttpPost("~/api/sms-login/refresh"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [ProducesResponseType(typeof(IdentityTokenResponse), 200)]
     public async Task<IActionResult> Refresh([FromBody] MobileRefreshRequest request, CancellationToken ct)
     {
         if (!Request.IsHttps || !await _otp.IsEnabledAsync())
             return Unauthorized();
         var service = HttpContext.RequestServices.GetService<IMobileApiTokenService>();
         var pair = service?.IsEnabled == true ? await service.RefreshAsync(request.RefreshToken, ct) : null;
-        return pair == null ? Unauthorized() : Ok(new { accessToken = pair.AccessToken,
-            refreshToken = pair.RefreshToken, expiresIn = pair.ExpiresIn, tokenType = "Bearer" });
+        return pair == null ? Unauthorized() : Ok(new IdentityTokenResponse(pair.AccessToken, pair.RefreshToken, pair.ExpiresIn, "Bearer"));
     }
 
     [HttpPost("logout"), HttpPost("~/api/sms-login/logout"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> Logout(CancellationToken ct)
     {
         var (_, error) = await RequireAccountAsync();

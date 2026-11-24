@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using BonakMarket.Identity.Security;
+using BonakMarket.Identity.Swagger;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using BonakMarket.Core.Data;
@@ -25,6 +26,7 @@ internal sealed class Startup : StarterBase
 {
     public override void ConfigureServices(IServiceCollection services, IApplicationContext appContext)
     {
+        services.AddIdentitySwagger();
         services.AddScoped<SmsOtpLoginService>();
         services.AddScoped<IMobileApiTokenService, MobileApiTokenService>();
         services.AddScoped<CustomerProfileService>();
@@ -44,6 +46,9 @@ internal sealed class Startup : StarterBase
     public override void BuildPipeline(RequestPipelineBuilder builder)
     {
         if (!builder.ApplicationContext.IsInstalled) return;
+
+        builder.Configure(StarterOrdering.BeforeRoutingMiddleware, app =>
+            app.UseIdentitySwagger(builder.ApplicationContext.HostEnvironment));
 
         builder.Configure(StarterOrdering.BeforeWorkContextMiddleware, app =>
             app.UseMiddleware<CustomerApiBearerMiddleware>());

@@ -28,6 +28,9 @@ public sealed class OrdersController(OrderQueries orders, IOrderProcessingServic
     [HttpPost("{id:int}/reorder")]
     [StorefrontPermission(StorefrontPermissions.Cart)]
     [StorefrontPermission(Permissions.Cart.AccessShoppingCart)]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(typeof(ProblemDetails), 404)]
+    [ProducesResponseType(typeof(ProblemDetails), 403)]
     public async Task<IActionResult> ReOrder(int id, CancellationToken ct)
     {
         var order = await orders.FindOwnedAsync(id, ct);

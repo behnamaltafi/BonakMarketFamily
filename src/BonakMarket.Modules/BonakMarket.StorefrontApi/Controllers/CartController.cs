@@ -31,10 +31,13 @@ public sealed class CartController(CartFacade cart) : StorefrontController
     public async Task<ActionResult<CartTotalDto>> Total() => Ok(await cart.TotalAsync());
 
     [HttpPost("coupon")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(typeof(ProblemDetails), 422)]
     public async Task<IActionResult> ApplyCoupon([FromBody] CouponRequest request, CancellationToken ct) =>
         await cart.ApplyCouponAsync(request.Code, ct) ? NoContent() : Error(422, "coupon_not_applicable");
 
     [HttpDelete("coupon")]
+    [ProducesResponseType(204)]
     public async Task<IActionResult> RemoveCoupon(CancellationToken ct)
     {
         await cart.RemoveCouponAsync(ct);

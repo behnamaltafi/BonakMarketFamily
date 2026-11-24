@@ -12,6 +12,7 @@ namespace BonakMarket.Identity.Controllers;
 
 /// <summary>Current customer profile and saved addresses; never accepts a customer ID.</summary>
 [ApiController]
+[ApiExplorerSettings(GroupName = "identity")]
 [Route("api/identity/v1/me")]
 [AutoValidateAntiforgeryToken]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -30,6 +31,7 @@ public sealed class ProfileApiController : CustomerAccountApiController
 
     /// <summary>Returns the current customer's profile without accepting a customer identifier.</summary>
     [HttpGet("profile"), HttpGet("~/api/sms-login/profile"), AllowAnonymous]
+    [ProducesResponseType(typeof(CustomerProfileDto), 200)]
     public async Task<IActionResult> GetProfile(CancellationToken ct)
     {
         var (customer, error) = await RequireAccountAsync();
@@ -39,6 +41,8 @@ public sealed class ProfileApiController : CustomerAccountApiController
 
     /// <summary>Updates the same native profile as POST profile and returns the current representation.</summary>
     [HttpPut("profile"), HttpPut("~/api/sms-login/profile"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [ProducesResponseType(typeof(CustomerProfileDto), 200)]
+    [ProducesResponseType(typeof(ProblemDetails), 422)]
     public async Task<IActionResult> UpdateProfile([FromBody] ProfileUpdateRequest request, CancellationToken ct)
     {
         var (customer, error) = await RequireAccountAsync();
@@ -55,6 +59,7 @@ public sealed class ProfileApiController : CustomerAccountApiController
     }
 
     [HttpGet("addresses"), HttpGet("~/api/sms-login/profile/addresses"), AllowAnonymous]
+    [ProducesResponseType(typeof(List<CustomerAddressDto>), 200)]
     public async Task<IActionResult> Addresses(CancellationToken ct)
     {
         var (customer, error) = await RequireAccountAsync();
@@ -68,6 +73,7 @@ public sealed class ProfileApiController : CustomerAccountApiController
 
     /// <summary>Updates the phone-linked Customer's optional profile.</summary>
     [HttpPost("~/api/sms-login/profile"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
     public async Task<IActionResult> CompleteProfile([FromBody] ProfileUpdateRequest request, CancellationToken ct)
     {
         if (!await _profile.IsPhoneProfileEnabledAsync())
@@ -85,7 +91,7 @@ public sealed class ProfileApiController : CustomerAccountApiController
             return BadRequest(new { code = "invalid_profile", errors = result.Errors.Select(x => x.Description) });
         }
 
-        return Ok(new { code = "profile_saved" });
+        return Ok(new IdentityCodeResponse("profile_saved"));
     }
 
     private async Task<CustomerProfileDto> ReadProfileAsync(Customer customer, CancellationToken ct)

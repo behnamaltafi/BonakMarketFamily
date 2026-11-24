@@ -10,6 +10,7 @@ namespace BonakMarket.Identity.Controllers;
 
 /// <summary>Authenticated phone enrollment and change; separate from sign-in OTP.</summary>
 [ApiController]
+[ApiExplorerSettings(GroupName = "identity")]
 [Route("api/identity/v1/me/security/phone")]
 [AutoValidateAntiforgeryToken]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -26,6 +27,7 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
 
     /// <summary>Requests a phone binding for the currently signed-in account only.</summary>
     [HttpPost("request"), HttpPost("~/api/sms-login/enroll/request"), HttpPost("~/api/sms-login/profile/phone/request"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
     public async Task<IActionResult> RequestEnrollment([FromBody] SmsCodeRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -37,11 +39,12 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
         if (error is not null) return error;
 
         await _otp.RequestEnrollmentCodeAsync(customer, request.Phone, ct);
-        return Ok(new { code = "code_requested" });
+        return Ok(new IdentityCodeResponse("code_requested"));
     }
 
     /// <summary>Confirms a phone binding without accepting a client-supplied customer ID.</summary>
     [HttpPost("verify"), HttpPost("~/api/sms-login/enroll/verify"), HttpPost("~/api/sms-login/profile/phone/verify"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
     public async Task<IActionResult> ConfirmEnrollment([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -54,9 +57,9 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
 
         if (!await _otp.ConfirmEnrollmentAsync(customer, request.Phone, request.Code, ct))
         {
-            return BadRequest(new { code = "invalid_code" });
+            return BadRequest(new IdentityCodeResponse("invalid_code"));
         }
 
-        return Ok(new { code = "phone_verified" });
+        return Ok(new IdentityCodeResponse("phone_verified"));
     }
 }

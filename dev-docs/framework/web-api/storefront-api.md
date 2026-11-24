@@ -64,16 +64,29 @@ Legacy POST /api/sms-login/profile is also retained with its original completion
 
 The CustomerProfileService now owns phone-linked profile reads and profile completion; SmsOtpLoginService no longer implements profile mutation and uses the shared profile contract to read onboarding state. Account controllers share a single CustomerAccountApiController security boundary. Phone enrollment remains an authenticated security operation, not a login operation. Browser and mobile credentials remain separate; signing out one does not automatically revoke the other.
 
-Storefront Swagger lists the canonical Identity paths, while the legacy aliases continue to work but are omitted from the document. OData documentation and authentication do not include customer routes.
+Identity Swagger lists canonical Identity paths only. Storefront Swagger lists canonical commerce paths only. Legacy aliases continue to work but are omitted from both documents. OData documentation and authentication do not include customer routes.
 
 ## OData boundary
-WebApi Startup registers Basic authentication with a public/secret API key for the integration API. No mobile JWT or anonymous access is enabled on OData here. Countries, states, currencies, languages, units and other reference data are reuse candidates only after verifying the individual endpoint, read-only contract, field/navigation allowlist, publication/store/ACL, and bounded query options. Do not embed an integration API secret in a customer application. Brands and categories stay in StorefrontApi because their actual queries depend on customer roles and store mappings, even for guest traffic. No OData code or permission changes.
+WebApi Startup registers Basic authentication with a public/secret API key for the integration API. No mobile JWT or anonymous access is enabled on OData here. Countries, states, currencies, languages, units and other reference data are reuse candidates only after verifying the individual endpoint, read-only contract, field/navigation allowlist, publication/store/ACL, and bounded query options. Do not embed an integration API secret in a customer application. Brands and categories stay in StorefrontApi because their actual queries depend on customer roles and store mappings, even for guest traffic. No OData endpoint or permission changes. Its Swagger JSON/YAML route is now restricted to the native integration document names.
 
 Source review: Countries and StateProvinces require Configuration.Country.Read; Currencies require Configuration.Currency.Read; QuantityUnits requires Configuration.Measure.Read; Languages requires Configuration.Language.Read. ProductTags requires Catalog.Product.Read. Their collection actions return entity queries using Entities.AsNoTracking(), rather than an explicitly public DTO. Categories and Manufacturers likewise expose entity queries and require their catalog read permissions, and expose media and discount navigation endpoints. None of these reviewed actions is approved for direct anonymous customer access in this phase. This is a source inspection, not a live endpoint or full EDM audit. A future public read-only surface can reuse the underlying native query/services and explicitly restrict fields, filters, navigation, paging and publication rules without changing the integration API.
 
 Breaking changes against the unmerged earlier implementation: /products/search, /categories/search, /brands/search, /orders/search POST routes are replaced by GET collection routes, and dynamic Common filter bodies and ApiResult envelope are removed. Successful list responses are {items,page,pageSize,totalCount,totalPages}. Page size 1..100, page 1..10000. Errors use actual HTTP status plus ProblemDetails. No dynamic SQL fields, raw entity responses, export or aggregates.
 
-Swagger: /docs/storefront (development; explicit opt-in in other environments with StorefrontApi__EnableSwagger=true).
+## OpenAPI / Swagger
+
+| UI | Document URL | Owner |
+| --- | --- | --- |
+| /docs/customer | Uses the enabled JSON URLs below | Identity hosts a shared UI; no extra JSON route |
+| /docs/identity | /docs/identity/identity/swagger.json | Identity |
+| /docs/storefront | /docs/storefront/storefront/swagger.json | StorefrontApi |
+| /docs/api | Existing native OData JSON/YAML URLs | WebApi |
+
+Customer documentation is enabled in Development. Other environments opt in independently with Identity__EnableSwagger=true and StorefrontApi__EnableSwagger=true (restart required). A disabled module's UI and JSON return 404; the shared UI lists only enabled, registered documents. The OData JSON/YAML middleware accepts only the native integration document names. Customer documentation remains separate from Basic integration credentials. Flags enable documentation, not per-user authorization; use a reverse proxy access policy / private network if enabling in Production. No persistent token storage is configured in the customer UI. Cookie login requires the same browser's cookies and CSRF token; Swagger cannot set an HttpOnly cookie directly.
+
+The Identity group metadata is explicit so the WebApi MVC convention does not hide the new controllers. The old aliases are not listed. Operation IDs are deterministic based on method and canonical route. Identity success response DTOs preserve the existing JSON shape, including the absence of token fields for cookie-only sign-in. Some legacy errors retain code-based or empty bodies; do not assume every error is ProblemDetails. Storefront documents ProblemDetails responses and 204 coupon/reorder operations. The existing OData document filter is scoped to integration documents.
+
+Validation on staging: check both JSON documents, verify their path sets, tags, response schemas and security requirements, check that OData URLs cannot serve customer documents, verify each flag combination outside Development, and exercise SMS request/verify with CSRF plus JWT and cookie requests. The Swagger contract tests are in SwaggerContractTests; runtime validation remains required.
  
 ## Boundaries and validation
 - Simple products and list-based variants (dropdown, radio, boxes, checkbox) are supported via native attribute materializer. Bundles, grouped products, gift cards, user-entered price, text/date/file attributes are not fully supported. File GUIDs are not accepted.

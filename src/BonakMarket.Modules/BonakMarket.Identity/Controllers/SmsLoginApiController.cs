@@ -13,6 +13,7 @@ namespace BonakMarket.Identity.Controllers;
 
 /// <summary>Passwordless SMS login and registration only.</summary>
 [ApiController]
+[ApiExplorerSettings(GroupName = "identity")]
 [Route("api/identity/v1/auth/sms")]
 [AutoValidateAntiforgeryToken]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
@@ -36,6 +37,7 @@ public sealed class SmsLoginApiController : ControllerBase
 
     /// <summary>Requests a login code with an account-independent response.</summary>
     [HttpPost("request"), HttpPost("~/api/sms-login/request"), AllowAnonymous]
+    [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
     public async Task<IActionResult> RequestCode([FromBody] SmsCodeRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -44,11 +46,12 @@ public sealed class SmsLoginApiController : ControllerBase
         }
 
         await _otp.RequestLoginCodeAsync(request.Phone, ct);
-        return Ok(new { code = "code_requested" });
+        return Ok(new IdentityCodeResponse("code_requested"));
     }
 
     /// <summary>Consumes an OTP and creates the native, non-persistent login cookie.</summary>
     [HttpPost("verify"), HttpPost("~/api/sms-login/verify"), AllowAnonymous]
+    [ProducesResponseType(typeof(SmsSignInResponse), 200)]
     public async Task<IActionResult> VerifyCode([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -58,7 +61,7 @@ public sealed class SmsLoginApiController : ControllerBase
 
         var tokenService = request.IssueTokens ? HttpContext.RequestServices.GetService<IMobileApiTokenService>() : null;
         if (request.IssueTokens && (!Request.IsHttps || tokenService?.IsEnabled != true))
-            return StatusCode(503, new { code = "mobile_tokens_unavailable" });
+            return StatusCode(503, new IdentityCodeResponse("mobile_tokens_unavailable"));
 
         var customer = await _otp.ConfirmLoginAsync(request.Phone, request.Code, ct);
         if (customer is null || customer.Deleted || !customer.Active || !customer.IsRegistered() ||
@@ -66,7 +69,7 @@ public sealed class SmsLoginApiController : ControllerBase
             (_userManager.SupportsUserLockout && await _userManager.IsLockedOutAsync(customer)) ||
             (_userManager.SupportsUserTwoFactor && await _userManager.GetTwoFactorEnabledAsync(customer)))
         {
-            return BadRequest(new { code = "invalid_code" });
+            return BadRequest(new IdentityCodeResponse("invalid_code"));
         }
 
         MobileApiTokenPair pair = null;
@@ -74,7 +77,7 @@ public sealed class SmsLoginApiController : ControllerBase
         {
             pair = await tokenService.IssueAsync(customer, ct);
             if (pair == null)
-                return Unauthorized(new { code = "mobile_tokens_unavailable" });
+                return Unauthorized(new IdentityCodeResponse("mobile_tokens_unavailable"));
         }
 
         await _signInManager.SignInAsync(customer, isPersistent: false);
@@ -84,10 +87,9 @@ public sealed class SmsLoginApiController : ControllerBase
         bool profileRequired = await _otp.IsProfileIncompleteAsync(customer.Id, ct);
         if (request.IssueTokens)
         {
-            return Ok(new { code = "signed_in", profileRequired, profilePath = "/sms-login/profile",
-                accessToken = pair.AccessToken, refreshToken = pair.RefreshToken,
-                expiresIn = pair.ExpiresIn, tokenType = "Bearer" });
+            return Ok(new SmsSignInResponse("signed_in", profileRequired, "/sms-login/profile",
+                pair.AccessToken, pair.RefreshToken, pair.ExpiresIn, "Bearer"));
         }
-        return Ok(new { code = "signed_in", profileRequired, profilePath = "/sms-login/profile" });
+        return Ok(new SmsSignInResponse("signed_in", profileRequired, "/sms-login/profile"));
     }
 }

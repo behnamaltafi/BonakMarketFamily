@@ -11,5 +11,11 @@
   "ResourceRootKey": "Plugins.Identity.Customer",
   "DependsOn": [
     "BonakMarket.MultiSms"
+  ],
+  "PrivateReferences": [
+    "Microsoft.OpenApi",
+    "Swashbuckle.AspNetCore.Swagger",
+    "Swashbuckle.AspNetCore.SwaggerGen",
+    "Swashbuckle.AspNetCore.SwaggerUI"
   ]
 }

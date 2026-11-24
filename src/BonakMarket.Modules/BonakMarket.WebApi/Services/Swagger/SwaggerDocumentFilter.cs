@@ -28,6 +28,8 @@ internal partial class SwaggerDocumentFilter : IDocumentFilter
 
     public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
     {
+        // OData-specific schema/path rules must not mutate customer documents.
+        if (swaggerDoc.Info.Title?.StartsWith("BonakMarket Web API - ", StringComparison.Ordinal) != true) return;
         try
         {
             FilterSchemas(context);

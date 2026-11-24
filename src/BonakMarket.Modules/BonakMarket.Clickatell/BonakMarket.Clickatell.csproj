@@ -1,7 +1,0 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
-  <PropertyGroup>
-		<Product>BonakMarket Clickatell SMS</Product>
-		<OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.Clickatell</OutputPath>
-		<OutDir>$(OutputPath)</OutDir>
-  </PropertyGroup>
-</Project>

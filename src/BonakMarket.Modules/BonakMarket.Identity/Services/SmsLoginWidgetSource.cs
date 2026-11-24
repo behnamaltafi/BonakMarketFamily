@@ -9,9 +9,9 @@ namespace BonakMarket.Identity.Services;
 /// </summary>
 public sealed class SmsLoginWidgetSource : IWidgetSource
 {
-    private readonly ISmsOtpLoginService _otp;
+    private readonly Lazy<ISmsOtpLoginService> _otp;
 
-    public SmsLoginWidgetSource(ISmsOtpLoginService otp)
+    public SmsLoginWidgetSource(Lazy<ISmsOtpLoginService> otp)
     {
         _otp = otp;
     }
@@ -27,7 +27,7 @@ public sealed class SmsLoginWidgetSource : IWidgetSource
         if (!isPublicArea ||
             (!string.Equals(zone.Name, "after_login_buttons", StringComparison.OrdinalIgnoreCase) &&
              !string.Equals(zone.Name, "customer_info_top", StringComparison.OrdinalIgnoreCase)) ||
-            !await _otp.IsEnabledAsync())
+            !await _otp.Value.IsEnabledAsync())
         {
             return Array.Empty<Widget>();
         }

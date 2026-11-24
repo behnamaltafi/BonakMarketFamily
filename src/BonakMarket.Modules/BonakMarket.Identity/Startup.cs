@@ -29,7 +29,10 @@ internal sealed class Startup : StarterBase
         services.AddScoped<IMobileApiTokenService, MobileApiTokenService>();
         services.AddScoped<IStorefrontSmsProfileService>(sp => sp.GetRequiredService<SmsOtpLoginService>());
         services.AddScoped<ISmsOtpLoginService>(services => services.GetRequiredService<SmsOtpLoginService>());
-        services.AddScoped<IWidgetSource, SmsLoginWidgetSource>();
+        if (appContext.IsInstalled)
+        {
+            services.AddScoped<IWidgetSource, SmsLoginWidgetSource>();
+        }
         services.Configure<MvcOptions>(options => options.Filters
             .AddEndpointFilter<SmsPrimaryLoginFilter, PublicController>()
             .ForController("Identity")

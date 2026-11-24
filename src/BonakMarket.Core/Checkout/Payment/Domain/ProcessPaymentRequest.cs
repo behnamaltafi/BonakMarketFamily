@@ -29,6 +29,17 @@ public partial class ProcessPaymentRequest
     public decimal OrderTotal { get; set; }
 
     /// <summary>
+    /// Optional amount explicitly accepted by the caller, in native primary currency.
+    /// When present, order placement must reject a different calculated amount before calling any payment provider.
+    /// Null preserves the existing browser, recurring and integration contracts.
+    /// This is a precondition only; it never replaces the server-calculated OrderTotal.
+    /// </summary>
+    public decimal? ExpectedOrderTotal { get; set; }
+
+    public bool MatchesExpectedOrderTotal(decimal actualTotal)
+        => !ExpectedOrderTotal.HasValue || ExpectedOrderTotal.Value == actualTotal;
+
+    /// <summary>
     /// Gets or sets an order tax total.
     /// </summary>
     public decimal OrderTax { get; set; }

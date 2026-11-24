@@ -29,6 +29,13 @@ public partial class OrderProcessingService : IOrderProcessingService
         {
             paymentRequest.OrderGuid = Guid.NewGuid();
         }
+        else if (await _db.Orders.IgnoreQueryFilters().AsNoTracking()
+            .AnyAsync(x => x.OrderGuid == paymentRequest.OrderGuid, cancelToken))
+        {
+            // Do not disclose the owner or existing order. The unique index is the final DB invariant;
+            // this early check is not a substitute for serializing an external payment attempt.
+            return CreateFailure("order_already_exists");
+        }
 
         var customer = await _db.Customers
             .IncludeCustomerRoles()
@@ -72,6 +79,15 @@ public partial class OrderProcessingService : IOrderProcessingService
             // Also applies data (like order and tax total) to paymentRequest for payment processing below.
             await ApplyCustomerData(ctx);
             await ApplyPricingData(ctx);
+
+            // Reject a stale accepted amount before PreProcessPayment or ProcessPayment can run.
+            // The request's expected amount is never used as the authoritative charge.
+            if (!paymentRequest.MatchesExpectedOrderTotal(ctx.PaymentRequest.OrderTotal))
+            {
+                ctx.Result.Errors.Add("order_total_changed");
+                await transaction.RollbackAsync(CancellationToken.None);
+                return ctx.Result;
+            }
 
             await ProcessPayment(ctx);
 
@@ -652,7 +668,10 @@ public partial class OrderProcessingService : IOrderProcessingService
             order.TaxRates = FormatTaxRates(taxRates);
 
             // Order total.
-            ctx.CartTotal = await _orderCalculationService.GetShoppingCartTotalAsync(ctx.Cart, ShoppingCartTotalOptions.Default, ctx.BatchContext);
+            var totalOptions = ctx.PaymentRequest.ExpectedOrderTotal.HasValue
+                ? new ShoppingCartTotalOptions { UseRequestCache = false }
+                : ShoppingCartTotalOptions.Default;
+            ctx.CartTotal = await _orderCalculationService.GetShoppingCartTotalAsync(ctx.Cart, totalOptions, ctx.BatchContext);
             order.OrderTotal = ctx.CartTotal.Total.Value.Amount;
             order.OrderTotalRounding = ctx.CartTotal.ToNearestRounding.Amount;
             order.RefundedAmount = decimal.Zero;

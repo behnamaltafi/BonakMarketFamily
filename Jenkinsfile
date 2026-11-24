@@ -13,9 +13,12 @@ pipeline {
 
     environment {
         CICD_CONFIG = 'cicd/project.json'
-        CICD_BASE_REF = 'origin/master'
+        // 2026-11-24: baseline after the tested historical integration PR #5.
+        // All subsequent non-merge commits are validated by the pinned CLI.
+        CICD_BASE_REF = '974c116e3dc3f3e26d0c2daf8df07ae6d6cde3d5'
         CICD_PLATFORM_REVISION = '1e2c209528818f5940c63998668cdeac4bffb66e'
-        // Reduce compilation pressure on the CI agent (2.25 GiB cgroup limit).
+        // Bound compilation memory and support net9 tool roll-forward on the .NET 10 agent.
+        DOTNET_ROLL_FORWARD = 'Major'
         UseSharedCompilation = 'false'
         BuildInParallel = 'false'
         RunAnalyzersDuringBuild = 'false'
@@ -65,7 +68,12 @@ pipeline {
         }
 
         stage('Build') {
-            steps { sh 'node .cicd-platform/scripts/cli.mjs ci build' }
+            steps {
+                // File credential is provisioned only for trusted CI; never commit the license.
+                withCredentials([file(credentialsId: 'bonakmarket-sixlabors-license', variable: 'SIXLABORS_LICENSE_FILE')]) {
+                    sh 'SixLaborsLicenseFile="$SIXLABORS_LICENSE_FILE" node .cicd-platform/scripts/cli.mjs ci build'
+                }
+            }
         }
 
         stage('Unit tests') {

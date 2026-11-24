@@ -49,10 +49,10 @@ jobs:
         dotnet-version: 10.x # << Change this to current .NET version.
 
     - name: Build
-      # The checked-in ModuleBuilder still targets .NET 9; allow it to run on .NET 10.
+      # ModuleBuilder is compiled from source with .NET 10.
       env:
         DOTNET_ROLL_FORWARD: Major
-      run: dotnet build Smartstore.sln -c Release
+      run: dotnet build BonakMarket.sln -c Release
 
     - name: Log in to the GitHub Container registry
       uses: docker/login-action@v4
@@ -63,8 +63,8 @@ jobs:
 
     - name: Publish and Push for Windows
       run: | 
-        dotnet publish src/Smartstore.Web/Smartstore.Web.csproj -c Release -o .temp/windows-image/publish --no-restore --no-build --no-self-contained
+        dotnet publish src/BonakMarket.Web/BonakMarket.Web.csproj -c Release -o .temp/windows-image/publish --no-restore --no-build --no-self-contained
         Copy-Item Nano.Dockerfile .temp/windows-image/
-        docker build --build-arg SOURCE=publish -f .temp/windows-image/Nano.Dockerfile -t ghcr.io/smartstore/smartstore-windows:latest -t ghcr.io/smartstore/smartstore-windows:${{ steps.format-branch-label.outputs.branch-label }} .temp/windows-image
-        docker push ghcr.io/smartstore/smartstore-windows:latest
-        docker push ghcr.io/smartstore/smartstore-windows:${{ steps.format-branch-label.outputs.branch-label }}
+        docker build --build-arg SOURCE=publish -f .temp/windows-image/Nano.Dockerfile -t ghcr.io/behnamaltafi/bonakmarket-windows:latest -t ghcr.io/behnamaltafi/bonakmarket-windows:${{ steps.format-branch-label.outputs.branch-label }} .temp/windows-image
+        docker push ghcr.io/behnamaltafi/bonakmarket-windows:latest
+        docker push ghcr.io/behnamaltafi/bonakmarket-windows:${{ steps.format-branch-label.outputs.branch-label }}

@@ -1,0 +1,123 @@
+﻿@model ConfigurationModel
+
+@{    
+    Layout = "_ConfigureProvider";
+}
+
+@await Component.InvokeAsync("StoreScope")
+
+<widget target-zone="admin_button_toolbar_before">
+    <button id="SaveConfigButton" type="submit" name="save" class="btn btn-primary" value="save">
+        <icon name="check"  />
+        <span>@T("Admin.Common.Save")</span>
+    </button>
+</widget>
+
+<div class="alert alert-info alert-dismissible fade show">
+    <button type="button" class="btn-close" data-dismiss="alert"></button>
+    <a class="d-inline-block mb-3 mw-100" style="max-width: 268px" href="#" target="_blank">
+        <img class="img-fluid alert-branding" src="@Url.Content("~/Modules/BonakMarket.Stripe/branding.png")" alt="Stripe" />
+    </a>
+    <div class="text-expander" data-max-height="130">
+        <div class="text-expander-content">
+            @Html.Raw(T("Plugins.BonakMarket.Stripe.AdminInstruction"))
+        </div>
+    </div>
+</div>
+
+<form asp-action="Configure">
+    <div asp-validation-summary="All"></div>
+    <div class="adminContent">
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="PublicApiKey" />
+            </div>
+            <div class="adminData wide">
+                <setting-editor asp-for="PublicApiKey"></setting-editor>
+                <span asp-validation-for="PublicApiKey"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="SecrectApiKey" />
+            </div>
+            <div class="adminData wide">
+                <setting-editor asp-for="SecrectApiKey"></setting-editor>
+                <span asp-validation-for="SecrectApiKey"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="WebhookSecret" />
+            </div>
+            <div class="adminData wide">
+                <setting-editor asp-for="WebhookSecret"></setting-editor>
+                <span asp-validation-for="WebhookSecret"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="WebhookUrl" />
+            </div>
+            <div class="adminData">
+                <div class="input-group">
+                    <input asp-for="WebhookUrl" readonly />
+                    <div class="input-group-append">
+                        <button class="btn btn-light btn-icon btn-clipboard" data-copy-from="#@(Html.IdFor(x => x.WebhookUrl))">
+                            <icon name="clipboard" />
+                        </button>
+                    </div>
+                    <span class="input-group-append">
+                        <button type="submit" id="createwebhook" name="createwebhook" value="createwebhook" class="btn btn-light"
+                                attr-disabled='(!Model.PublicApiKey.HasValue() || !Model.SecrectApiKey.HasValue(), "disabled")'>
+                            <icon name="gear"  />
+                            <span>@T("Plugins.BonakMarket.Stripe.CreateWebhook")</span>
+                        </button>
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="CaptureMethod" />
+            </div>
+            <div class="adminData">
+                <setting-editor asp-for="CaptureMethod">
+                    <select asp-for="CaptureMethod" asp-items="ViewBag.AvailableCaptureMethods"></select>
+                </setting-editor>
+                <span asp-validation-for="CaptureMethod"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="AdditionalFee" />
+            </div>
+            <div class="adminData">
+                <setting-editor asp-for="AdditionalFee">
+                    <editor asp-for="AdditionalFee" asp-additional-viewdata='new { units = new[] { (string)ViewBag.CurrentCurrencyCode, "%" } }' />
+                </setting-editor>
+                <span asp-validation-for="AdditionalFee.Value"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="ShowButtonInMiniShoppingCart" />
+            </div>
+            <div class="adminData">
+                <setting-editor asp-for="ShowButtonInMiniShoppingCart"></setting-editor>
+                <span asp-validation-for="ShowButtonInMiniShoppingCart"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="PaymentPageButtonMethods" />
+            </div>
+            <div class="adminData">
+                <setting-editor asp-for="PaymentPageButtonMethods">
+                    <select asp-for="PaymentPageButtonMethods" asp-items="ViewBag.AvailablePaymentPageButtonMethods" multiple="multiple"></select>
+                </setting-editor>
+                <span asp-validation-for="PaymentPageButtonMethods"></span>
+            </div>
+        </div>
+    </div>
+</form>

@@ -4,7 +4,7 @@
 For a more in-depth view on widgets, zones and invokers, please refer to [widgets.md](../../../framework/content/widgets.md "mention").
 {% endhint %}
 
-There are many ways to display or inject content in Smartstore. One of the methods is to use a Widget. Following the tutorial [adding-tabs.md](adding-tabs.md "mention") tutorial, you'll be adding a widget to your project.
+There are many ways to display or inject content in BonakMarket. One of the methods is to use a Widget. Following the tutorial [adding-tabs.md](adding-tabs.md "mention") tutorial, you'll be adding a widget to your project.
 
 ## Implementing the IActivatableWidget
 
@@ -40,7 +40,7 @@ More examples of widget zone names can be found under [List of all core widget z
 {% hint style="info" %}
 If you want to see the widget zones in your store, you can use the _DevTools_ plugin.
 
-1. Install the _Smartstore Developer Tools_ plugin.
+1. Install the _BonakMarket Developer Tools_ plugin.
 2. Click on **Configure**.
 3. Activate the option to **Display Widget Zones**.
 {% endhint %}
@@ -80,7 +80,7 @@ For the widget to access `MyTabValue` from the [previous tutorial](adding-tabs.m
 
 Then add the following lines:
 
-<pre class="language-csharp" data-title="ViewComponentModel.cs"><code class="lang-csharp"><strong>using Smartstore.Web.Modelling;
+<pre class="language-csharp" data-title="ViewComponentModel.cs"><code class="lang-csharp"><strong>using BonakMarket.Web.Modelling;
 </strong>
 namespace MyOrg.HelloWorld.Models
 {
@@ -160,7 +160,7 @@ For you to use `ProductDetailsModel`, add these lines to you project file:
 
 ```xml
 <ItemGroup>
-    <ProjectReference Include="..\..\Smartstore.Web\Smartstore.Web.csproj">
+    <ProjectReference Include="..\..\BonakMarket.Web\BonakMarket.Web.csproj">
         <Private>False</Private>
         <CopyLocal>False</CopyLocal>
         <CopyLocalSatelliteAssemblies>False</CopyLocalSatelliteAssemblies>
@@ -223,7 +223,7 @@ Then add these lines:
 
 {% code title="CacheableRoutes.cs" %}
 ```csharp
-using Smartstore.Core.OutputCache;
+using BonakMarket.Core.OutputCache;
 
 namespace MyOrg.HelloWorld
 {
@@ -270,7 +270,7 @@ Now you should be able to define a property in your product catalog and see it d
 {% hint style="warning" %}
 Don't forget to activate your widget!
 
-1. Go to the Smartstore admin settings
+1. Go to the BonakMarket admin settings
 2. Navigate to CMS / Widgets
 3. You should see your widget listed. Press **Activate**.
 {% endhint %}
@@ -278,5 +278,5 @@ Don't forget to activate your widget!
 In this tutorial you built a widget using the `IActivatableWidget` interface and specified your widget zones. You created a `ViewComponent` and bound it to different widget zones. Hopefully this will get you started with widgets and enable you to build more complex modules.
 
 {% hint style="info" %}
-The code for [this tutorial](https://github.com/smartstore/dev-docs-code-examples/tree/main/src/MyOrg.WidgetTutorial) can be found in the examples repository.
+The code for [this tutorial](https://github.com/BonakMarket/dev-docs-code-examples/tree/main/src/MyOrg.WidgetTutorial) can be found in the examples repository.
 {% endhint %}

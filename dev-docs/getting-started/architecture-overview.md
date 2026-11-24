@@ -4,15 +4,15 @@ description: Domain, DB, Service, Model, Validation, UI, wwwroot
 
 # Architecture overview
 
-Smartstore uses a layered architecture built on ASP.NET Core and Entity Framework Core. Responsibilities are split across distinct layers and modules to support clean separation of concerns.
+BonakMarket uses a layered architecture built on ASP.NET Core and Entity Framework Core. Responsibilities are split across distinct layers and modules to support clean separation of concerns.
 
 ## Domain layer
 
-Defines entity classes and value objects that model the business. Entities live in `Smartstore.Core` and are mapped with EF Core to the database. Domain logic is kept close to the entities.
+Defines entity classes and value objects that model the business. Entities live in `BonakMarket.Core` and are mapped with EF Core to the database. Domain logic is kept close to the entities.
 
 ## Data layer
 
-Data access is performed through `SmartDbContext`, repositories, and provider packages under `src/Smartstore.Data.*`. Each provider supplies migrations and SQL‑dialect specific services, keeping the core application database agnostic.
+Data access is performed through `SmartDbContext`, repositories, and provider packages under `src/BonakMarket.Data.*`. Each provider supplies migrations and SQL‑dialect specific services, keeping the core application database agnostic.
 
 ## Service layer
 
@@ -24,7 +24,7 @@ View models and DTOs[^1] are tailored for the UI and admin areas. Input is valid
 
 ## UI layer
 
-`Smartstore.Web` hosts the ASP.NET Core MVC application. Controllers handle HTTP requests, interact with services, and render Razor views. Tag helpers, filters, and theming support come from `Smartstore.Web.Common`.
+`BonakMarket.Web` hosts the ASP.NET Core MVC application. Controllers handle HTTP requests, interact with services, and render Razor views. Tag helpers, filters, and theming support come from `BonakMarket.Web.Common`.
 
 ## Static web assets
 
@@ -32,10 +32,10 @@ Static files such as JavaScript, CSS, and images reside under `wwwroot`. During 
 
 ## Extensibility
 
-Optional features are packaged as modules (`src/Smartstore.Modules`). A module may contribute domain entities, services, controllers, and UI assets, enabling isolated development and deployment.
+Optional features are packaged as modules (`src/BonakMarket.Modules`). A module may contribute domain entities, services, controllers, and UI assets, enabling isolated development and deployment.
 
 {% hint style="info" %}
-Database provider modules (`src/Smartstore.Data.*`) supply EF Core migrations and provider-specific services, letting the core remain provider independent.
+Database provider modules (`src/BonakMarket.Data.*`) supply EF Core migrations and provider-specific services, letting the core remain provider independent.
 {% endhint %}
 
 [^1]: Data transfer object: an object that carries data between processes.

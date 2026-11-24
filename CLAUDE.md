@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Agent instructions for Smartstore live in `AGENTS.md`, so that every coding agent
+Agent instructions for BonakMarket live in `AGENTS.md`, so that every coding agent
 works from the same source.
 
 @AGENTS.md

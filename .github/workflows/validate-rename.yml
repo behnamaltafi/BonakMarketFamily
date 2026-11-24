@@ -1,0 +1,57 @@
+name: Validate BonakMarket rename
+
+on:
+  push:
+    branches:
+      - feature/change-name-of-project
+      - develop
+      - master
+  pull_request:
+    branches:
+      - main
+      - develop
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rename-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  restore-build-test:
+    name: Rename checks and build (${{ matrix.rid }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            rid: linux-x64
+          - os: windows-latest
+            rid: win-x64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check renamed project paths and external package identities
+        run: python .github/validate-rename.py
+
+      - name: Restore complete solution
+        run: dotnet restore BonakMarket.sln -p:BonakMarketBuildRuntime=${{ matrix.rid }}
+
+      - name: Build complete solution
+        run: dotnet build BonakMarket.sln -c Release -p:BonakMarketBuildRuntime=${{ matrix.rid }} --no-restore --no-self-contained
+
+      - name: Test OTP, SMS providers, mock transport and API
+        run: dotnet test test/BonakMarket.Core.Tests/BonakMarket.Core.Tests.csproj -c Release -p:BonakMarketBuildRuntime=${{ matrix.rid }} --no-build --no-restore --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsMockAndHistoryTests|FullyQualifiedName~SmsHistoryTransportTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"

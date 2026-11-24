@@ -2,9 +2,9 @@
 
 ## Overview
 
-Smartstore is an application where different languages can be easily downloaded and activated in the admin area. Over 30 languages are available for download in the backend via **Configuration > Regional Settings > Languages**. Activated languages are displayed in the frontend as well as in the backend.
+BonakMarket is an application where different languages can be easily downloaded and activated in the admin area. Over 30 languages are available for download in the backend via **Configuration > Regional Settings > Languages**. Activated languages are displayed in the frontend as well as in the backend.
 
-Smartstore modules are shipped with localized text resources for English and German by default. The localized values are located as xml files in the modules folder _Localization_. The naming convention is `resources.{CultureCode}.xml`, e.g. `resources.de-de.xml` for German.
+BonakMarket modules are shipped with localized text resources for English and German by default. The localized values are located as xml files in the modules folder _Localization_. The naming convention is `resources.{CultureCode}.xml`, e.g. `resources.de-de.xml` for German.
 
 Resource files can also be named differently. Below are all the file names that will be searched for, using the target language with the `CultureCode` `de-de` as an example.
 

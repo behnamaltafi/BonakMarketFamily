@@ -1,11 +1,11 @@
 # Web API Clients
 
-Smartstore provides two reference clients for testing and exploring the [Web API](../web-api/):
+BonakMarket provides two reference clients for testing and exploring the [Web API](../web-api/):
 
-* `Smartstore.WebApi.Client`: a Windows desktop application for composing and executing individual requests.
-* `Smartstore.WebApi.Client.JavaScript`: a small browser-based example that demonstrates API consumption with JavaScript and jQuery.
+* `BonakMarket.WebApi.Client`: a Windows desktop application for composing and executing individual requests.
+* `BonakMarket.WebApi.Client.JavaScript`: a small browser-based example that demonstrates API consumption with JavaScript and jQuery.
 
-The source code is available on GitHub for the [.NET client](../../../tools/Smartstore.WebApi.Client) and the [JavaScript client](../../../tools/Smartstore.WebApi.Client.JavaScript).
+The source code is available on GitHub for the [.NET client](../../../tools/BonakMarket.WebApi.Client) and the [JavaScript client](../../../tools/BonakMarket.WebApi.Client.JavaScript).
 
 Both clients use HTTP Basic Authentication and communicate with the versioned OData service.
 
@@ -17,13 +17,13 @@ These applications are development and testing tools, not production-ready SDKs.
 
 Before using either client:
 
-1. Install and enable the Web API module in the Smartstore backend.
+1. Install and enable the Web API module in the BonakMarket backend.
 2. Assign Web API access to a registered customer.
 3. Generate a public and secret key for that customer.
 4. Ensure the customer has the roles and permissions required by the requested resources.
 5. Use HTTPS when connecting to anything other than a local development environment.
 
-See the [Web API prerequisites](../web-api/prerequisites.md) and the [Web API module documentation](../../../src/Smartstore.Modules/Smartstore.WebApi/) for module setup. The [authentication reference](../web-api/authentication.md) explains the credentials and API denial reasons in detail.
+See the [Web API prerequisites](../web-api/prerequisites.md) and the [Web API module documentation](../../../src/BonakMarket.Modules/BonakMarket.WebApi/) for module setup. The [authentication reference](../web-api/authentication.md) explains the credentials and API denial reasons in detail.
 
 The clients send the credentials in this form:
 
@@ -47,7 +47,7 @@ https://shop.example.com/odata/v1/Customers
 
 ## Use the Windows client
 
-Build the `Smartstore.WebApi.Client` project from `Smartstore.Tools.sln`, then start `Smartstore.WebApi.Client.exe`.
+Build the `BonakMarket.WebApi.Client` project from `BonakMarket.Tools.sln`, then start `BonakMarket.WebApi.Client.exe`.
 
 The application provides separate fields for the service URL, credentials, request method, resource path, query string, JSON body, headers, and file uploads.
 
@@ -219,8 +219,8 @@ Each file supports:
 | ----------------------- | ---------------------------------------------------------------------------- |
 | `Id`                    | Existing media-file identifier when updating a file. Use `0` for a new file. |
 | `LocalPath`             | Absolute path of the local file to upload.                                   |
-| `Path`                  | Optional target path in the Smartstore media system.                         |
-| `IsTransient`           | Whether Smartstore should initially mark the uploaded file as transient.     |
+| `Path`                  | Optional target path in the BonakMarket media system.                         |
+| `IsTransient`           | Whether BonakMarket should initially mark the uploaded file as transient.     |
 | `DuplicateFileHandling` | `0` throws an error, `1` overwrites, and `2` creates a unique name.          |
 
 `CustomProperties` adds ordinary form-data fields required by a particular endpoint:
@@ -264,7 +264,7 @@ Because the credentials are stored in the current user's application settings, u
 
 ## Use the JavaScript client
 
-`Smartstore.WebApi.Client.JavaScript` is a static example consisting of:
+`BonakMarket.WebApi.Client.JavaScript` is a static example consisting of:
 
 | File                 | Purpose                                      |
 | -------------------- | -------------------------------------------- |
@@ -384,14 +384,14 @@ Supported callbacks are:
 
 Inspect these response headers:
 
-* `Smartstore-Api-AuthResultId`
-* `Smartstore-Api-AuthResultDesc`
+* `BonakMarket-Api-AuthResultId`
+* `BonakMarket-Api-AuthResultDesc`
 
 They distinguish invalid credentials from a disabled API, unknown customer, or disabled API user. See [Authentication](../web-api/authentication.md) for all denial reasons.
 
 ### 421 Misdirected Request
 
-The request used HTTP where HTTPS is required. Switch the Store URL to HTTPS. HTTP is allowed only when Smartstore is running in a development environment.
+The request used HTTP where HTTPS is required. Switch the Store URL to HTTPS. HTTP is allowed only when BonakMarket is running in a development environment.
 
 ### 403 Forbidden
 
@@ -410,8 +410,8 @@ Use `/odata/v1/$metadata` or `/docs/api` to inspect the endpoints supported by t
 
 ### Browser request blocked
 
-Confirm that the request is sent to the correct Smartstore host and that the Web API module is enabled. The module supplies a CORS policy for GET, POST, PUT, PATCH, and DELETE requests.
+Confirm that the request is sent to the correct BonakMarket host and that the Web API module is enabled. The module supplies a CORS policy for GET, POST, PUT, PATCH, and DELETE requests.
 
 ### Large collections are incomplete
 
-Collection endpoints are paged. Use `$top` and `$skip`, and inspect the `Smartstore-Api-MaxTop` response header for the maximum permitted page size.
+Collection endpoints are paged. Use `$top` and `$skip`, and inspect the `BonakMarket-Api-MaxTop` response header for the maximum permitted page size.

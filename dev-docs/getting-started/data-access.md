@@ -6,7 +6,7 @@ description: Getting started to access the application database
 
 ## Overview
 
-Every store is represented by a single database, even when using the multi-store option. Each table is represented by a special entity type derived from the `BaseEntity` type. Smartstore currently supports **Microsoft SQL Server**, **MySQL**, **PostgreSQL** and **SQLite** database systems and uses the [Entity Framework Core (EF)](https://learn.microsoft.com/en-us/ef/core/) Object-relational-Mapper (O/R-Mapper) to access the store database.
+Every store is represented by a single database, even when using the multi-store option. Each table is represented by a special entity type derived from the `BaseEntity` type. BonakMarket currently supports **Microsoft SQL Server**, **MySQL**, **PostgreSQL** and **SQLite** database systems and uses the [Entity Framework Core (EF)](https://learn.microsoft.com/en-us/ef/core/) Object-relational-Mapper (O/R-Mapper) to access the store database.
 
 * It enables .NET developers to work with a database using .NET objects.
 * Most of the data access code that would normally be written can be omitted.
@@ -85,9 +85,9 @@ public class MySingletonService : IMySingletonService
 
 ### PagedList
 
-The traditional approach to apply paging to a LINQ query would be by calling the `Skip()` and `Take()` methods. Smartstore provides a more convenient way with `PagedList`. It allows you to take an `IQueryable` (or even an `IEnumerable`), slice it up into _pages_, and grab a particular _page_ by an _index_.
+The traditional approach to apply paging to a LINQ query would be by calling the `Skip()` and `Take()` methods. BonakMarket provides a more convenient way with `PagedList`. It allows you to take an `IQueryable` (or even an `IEnumerable`), slice it up into _pages_, and grab a particular _page_ by an _index_.
 
-You can simply call `ToPagedList` (instead of `ToList`) from your `IQueryable` / `IEnumerable`, passing the page _size_ and the page _index_ you want to load. The result is still an `IList<T>`, but contains only a subset of the total data. The `ToPagedList` call returns an instance of [IPagedList\<T>](../../src/Smartstore/Collections/IPagedList%60T.cs), which also implements the `IList<T>` and [IPageable\<T>](../../src/Smartstore/Collections/IPageable%60T.cs) interfaces.
+You can simply call `ToPagedList` (instead of `ToList`) from your `IQueryable` / `IEnumerable`, passing the page _size_ and the page _index_ you want to load. The result is still an `IList<T>`, but contains only a subset of the total data. The `ToPagedList` call returns an instance of [IPagedList\<T>](../../src/BonakMarket/Collections/IPagedList%60T.cs), which also implements the `IList<T>` and [IPageable\<T>](../../src/BonakMarket/Collections/IPageable%60T.cs) interfaces.
 
 If the source `IQueryable<T>` is a `DbSet<T>`, paging is performed on the database side, otherwise in memory.
 
@@ -207,7 +207,7 @@ To explicitly deactivate caching on a per query basis, call `AsNoCaching()` for 
 
 ## DataProvider
 
-A [DataProvider](../../src/Smartstore/Data/Providers/DataProvider.cs) abstracts and unifies the internals of a database system supported by Smartstore. It acts as an adapter for low-level database operations and provides a unified interface to the different database systems.
+A [DataProvider](../../src/BonakMarket/Data/Providers/DataProvider.cs) abstracts and unifies the internals of a database system supported by BonakMarket. It acts as an adapter for low-level database operations and provides a unified interface to the different database systems.
 
 The current DataProvider instance can be accessed by calling the `DataProvider` property of the `SmartDbContext` instance. It provides the following members, among others:
 
@@ -239,13 +239,13 @@ Encapsulating LINQ queries and `Where` predicates in extension methods provides 
 3. Increased maintainability: You can make changes to the predicates in one place, rather than having to change the code in multiple places throughout your application. This can make it easier to maintain your code and reduce the likelihood of bugs being introduced.
 4. Better separation of concerns: Helps to separate the query logic from the rest of your code, making it easier to understand and maintain.
 
-Here are some of the most commonly used built-in query extension methods in Smartstore:
+Here are some of the most commonly used built-in query extension methods in BonakMarket:
 
-* [GridCommandQueryExtension](../../src/Smartstore.Web.Common/Models/DataGrid/GridCommandQueryExtensions.cs) -> `ToPagedList`
-* [IStoreRestrictedQueryExtension](../../src/Smartstore.Core/Platform/Stores/Extensions/IStoreRestrictedQueryExtensions.cs) -> `ApplyStoreFilter`
-* [CustomerQueryExtension](../../src/Smartstore.Core/Platform/Identity/Extensions/CustomerQueryExtensions.cs) -> `IncludeCustomerRoles`
-* [ManufacturerQueryExtension](../../src/Smartstore.Core/Catalog/Brands/Extensions/ManufacturerQueryExtensions.cs) -> `ApplyStandardFilter`
-* [OrderQueryExtension](../../src/Smartstore.Core/Checkout/Orders/Extensions/OrderQueryExtensions.cs) -> `ApplyStandardFilter`
+* [GridCommandQueryExtension](../../src/BonakMarket.Web.Common/Models/DataGrid/GridCommandQueryExtensions.cs) -> `ToPagedList`
+* [IStoreRestrictedQueryExtension](../../src/BonakMarket.Core/Platform/Stores/Extensions/IStoreRestrictedQueryExtensions.cs) -> `ApplyStoreFilter`
+* [CustomerQueryExtension](../../src/BonakMarket.Core/Platform/Identity/Extensions/CustomerQueryExtensions.cs) -> `IncludeCustomerRoles`
+* [ManufacturerQueryExtension](../../src/BonakMarket.Core/Catalog/Brands/Extensions/ManufacturerQueryExtensions.cs) -> `ApplyStandardFilter`
+* [OrderQueryExtension](../../src/BonakMarket.Core/Checkout/Orders/Extensions/OrderQueryExtensions.cs) -> `ApplyStandardFilter`
 
 Here is what a custom query extension class might look like:
 
@@ -280,4 +280,4 @@ public static class MyEntityQueryExtensions
 
 ## Deep Dive
 
-To learn more about data access in Smartstore, read [data-access-deep-dive](../framework/advanced/data-access-deep-dive/ "mention").
+To learn more about data access in BonakMarket, read [data-access-deep-dive](../framework/advanced/data-access-deep-dive/ "mention").

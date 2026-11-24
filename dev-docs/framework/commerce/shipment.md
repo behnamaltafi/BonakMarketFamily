@@ -46,7 +46,7 @@ public class FixedRateProvider : IShippingRateComputationMethod
 }
 ```
 
-Register the provider in the module’s `Startup` and package it like the implementation in `src/Smartstore.Modules/Smartstore.Shipping`.
+Register the provider in the module’s `Startup` and package it like the implementation in `src/BonakMarket.Modules/BonakMarket.Shipping`.
 
 ## Working with shipments
 

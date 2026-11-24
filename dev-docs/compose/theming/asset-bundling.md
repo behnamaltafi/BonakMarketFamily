@@ -2,7 +2,7 @@
 
 ## Overview
 
-JavaScript, Sass and CSS files can be minified in Smartstore. Style bundles also support browser-targeted CSS transpilation, including vendor prefixes and syntax fallbacks. To do this, the files must be exposed to the system using a `BundleProvider`, as bundles are provided by `BundleProviders` that inherit the `IBundleProvider` interface.
+JavaScript, Sass and CSS files can be minified in BonakMarket. Style bundles also support browser-targeted CSS transpilation, including vendor prefixes and syntax fallbacks. To do this, the files must be exposed to the system using a `BundleProvider`, as bundles are provided by `BundleProviders` that inherit the `IBundleProvider` interface.
 
 ## JavaScript
 
@@ -13,7 +13,7 @@ internal class Bundles : IBundleProvider
 
     public void RegisterBundles(IApplicationContext appContext, IBundleCollection bundles)
     {
-        var jsRoot = "/Modules/Smartstore.MyModule/js/";
+        var jsRoot = "/Modules/BonakMarket.MyModule/js/";
 
         bundles.Add(new ScriptBundle("/bundle/js/my-module.js").Include(
             jsRoot + "my-javascript-1.js",
@@ -29,7 +29,7 @@ Once the bundle is registered this way, you can include it using a standard scri
 <script src="~/bundle/js/my-module.js" sm-target-zone="scripts" sm-key="my-module"></script>
 ```
 
-When a request is made, all included script files are combined into one (`my-module.js`). If minification is enabled, Smartstore minifies each file before adding it to the bundle. If a file cannot be minified, its original content is preserved and prefixed with a diagnostic comment. The remaining files continue to be processed.
+When a request is made, all included script files are combined into one (`my-module.js`). If minification is enabled, BonakMarket minifies each file before adding it to the bundle. If a file cannot be minified, its original content is preserved and prefixed with a diagnostic comment. The remaining files continue to be processed.
 
 ## CSS
 
@@ -42,7 +42,7 @@ internal class Bundles : IBundleProvider
 
     public void RegisterBundles(IApplicationContext appContext, IBundleCollection bundles)
     {
-        var cssRoot = "/Modules/Smartstore.MyModule/css/";
+        var cssRoot = "/Modules/BonakMarket.MyModule/css/";
 
         bundles.Add(new StyleBundle("/bundle/js/my-module.css").Include(
             jsRoot + "my-styles-1.scss",

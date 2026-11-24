@@ -1,48 +1,42 @@
 ﻿<p align="center">
-<a href="https://www.smartstore.com" target="_blank" rel="noopener noreferrer">
-<img src="assets/smartstore-icon-whitebg.png" alt="Smartstore" width="120">
+<a href="https://github.com/behnamaltafi/BonakMarketFamily" target="_blank" rel="noopener noreferrer">
+<img src="assets/bonakmarket-icon-whitebg.png" alt="BonakMarket" width="120">
 </a>
 </p>
 <h3 align="center">
-<img src="assets/smartstore-text.png" alt="Smartstore" width="250">
+<img src="assets/bonakmarket-text.svg" alt="BonakMarket" width="250">
 </h3>
 <h3 align="center"><strong>Ready. Sell. Grow.</strong></h3>
 <p align="center">
     A modular, scalable, and ultra-fast open-source all-in-one eCommerce platform built on ASP.NET Core 10.
 </p>
 <p align="center">
-<a href="#try-it-online">Try Online</a> &#8729;
-<a href="https://docs.smartstore.com/developer">Developer Guide</a> &#8729;
-<a href="http://community.smartstore.com">Forum</a> &#8729;
-<a href="http://community.smartstore.com/marketplace">Marketplace</a> &#8729;
-<a href="http://translate.smartstore.com/">Translations</a>
+<a href="https://github.com/behnamaltafi/BonakMarketFamily">Repository</a> &#8729;
+<a href="https://dev.smartstore.com">Upstream developer guide</a> &#8729;
+<a href="dev-docs/rename-safety.md">Rename &amp; deployment safety</a>
 </p>
 
 <br/>
 
 <p align="center">
-  <img src="assets//sm6-devices.png" alt="Smartstore Demo Shop" />
+  <img src="assets/sm6-devices.png" alt="BonakMarket Demo Shop" />
 </p>
 
 <br/>
 
-Smartstore is a cross-platform, modular, scalable, and ultra-fast open-source all-in-one eCommerce platform built on `ASP.NET Core 10`, `Entity Framework Core 10`, `Vue.js`, `Sass`, `Bootstrap`, and more.
+BonakMarket is a cross-platform, modular, scalable, and ultra-fast open-source all-in-one eCommerce platform built on `ASP.NET Core 10`, `Entity Framework Core 10`, `Vue.js`, `Sass`, `Bootstrap`, and more.
 
-**Smartstore includes all the essential features to create multi-language, multi-store, and multi-currency shops**, with built-in AI capabilities for text and image generation powered by the world's leading AI providers — targeting desktop and mobile devices alike. It enables SEO-optimized, rich product catalogs with support for an unlimited number of products and categories, variants, bundles, datasheets, ESD, discounts, coupons, and much more.
+**BonakMarket includes all the essential features to create multi-language, multi-store, and multi-currency shops**, with built-in AI capabilities for text and image generation powered by the world's leading AI providers — targeting desktop and mobile devices alike. It enables SEO-optimized, rich product catalogs with support for an unlimited number of products and categories, variants, bundles, datasheets, ESD, discounts, coupons, and much more.
 
-A comprehensive set of tools for CRM & CMS, sales, marketing, payment, and shipping makes Smartstore a powerful all-in-one solution that meets all your needs.
+A comprehensive set of tools for CRM & CMS, sales, marketing, payment, and shipping makes BonakMarket a powerful all-in-one solution that meets all your needs.
 
-**Smartstore delivers a beautiful and fully configurable storefront out of the box**, built with a high-level design approach using `Sass`, `Bootstrap`, and other modern components. The included *Flex* theme is modern, clean, and fully responsive — giving shoppers the best possible experience on any device.
+**BonakMarket delivers a beautiful and fully configurable storefront out of the box**, built with a high-level design approach using `Sass`, `Bootstrap`, and other modern components. The included *Flex* theme is modern, clean, and fully responsive — giving shoppers the best possible experience on any device.
 
-The state-of-the-art architecture — with `ASP.NET Core 10`, `Entity Framework Core 10`, and a domain-driven design approach — makes Smartstore easy to extend, extremely flexible, and a pleasure to work with.
+The state-of-the-art architecture — with `ASP.NET Core 10`, `Entity Framework Core 10`, and a domain-driven design approach — makes BonakMarket easy to extend, extremely flexible, and a pleasure to work with.
 
-* :house: **Website:** [https://www.smartstore.com](https://www.smartstore.com)
-* :orange_book: **Developer Guide:** [Smartstore Developer Guide](https://docs.smartstore.com/developer)
-* :blue_book: **User Guide:** [Smartstore User Guide](https://docs.smartstore.com)
-* :speech_balloon: **Forum:** [https://community.smartstore.com](http://community.smartstore.com)
-* :mega: **Marketplace:** [https://community.smartstore.com/marketplace](http://community.smartstore.com/marketplace)
-* :earth_americas: **Translations:** [https://translate.smartstore.com](http://translate.smartstore.com/)
-* &#9654;&#65039; **Azure Marketplace:** [Smartstore on Azure Marketplace](https://azuremarketplace.microsoft.com/marketplace/apps/smartstore-ag.smartstorenet?tab=Overview)
+* **Repository:** [BonakMarketFamily](https://github.com/behnamaltafi/BonakMarketFamily)
+* **Upstream:** [Smartstore](https://github.com/smartstore/Smartstore)
+* **Upstream developer guide:** [dev.smartstore.com](https://dev.smartstore.com)
 
 <p>&nbsp;</p>
 
@@ -65,7 +59,7 @@ The state-of-the-art architecture — with `ASP.NET Core 10`, `Entity Framework 
 ## Key Features
 
 <p>
-  <img src="https://smartstore.com/media/7936/catalog/smartstore-6-details-small.png" alt="Smartstore Screenshots" />
+  <img src="assets/sm6-devices.png" alt="BonakMarket Screenshots" />
 </p>
 
 - Multi-store support
@@ -102,7 +96,7 @@ The state-of-the-art architecture — with `ASP.NET Core 10`, `Entity Framework 
 
 ## AI Features
 
-Smartstore comes with a built-in AI framework that brings generative AI directly into the merchant workflow — no third-party plugins required.
+BonakMarket comes with a built-in AI framework that brings generative AI directly into the merchant workflow — no third-party plugins required.
 
 ### Capabilities
 
@@ -113,7 +107,7 @@ Smartstore comes with a built-in AI framework that brings generative AI directly
 
 ### Supported AI Providers
 
-Smartstore integrates with all major AI providers through a unified, provider-agnostic abstraction layer. Switch or combine providers at any time without changing your workflow:
+BonakMarket integrates with all major AI providers through a unified, provider-agnostic abstraction layer. Switch or combine providers at any time without changing your workflow:
 
 | Provider | Text Generation | Image Generation |
 |---|:---:|:---:|
@@ -142,40 +136,38 @@ Smartstore integrates with all major AI providers through a unified, provider-ag
 - PostgreSQL 11+
 - SQLite 3.31+
 
-### Upgrading from Smartstore.NET 4.2
+### Existing Smartstore installations
 
-Smartstore 5+ is a port of [Smartstore.NET 4](https://github.com/smartstore/SmartStoreNET) — based on the classic .NET Framework 4.7.2 — to the modern `ASP.NET Core 10` platform. Existing instances based on classic `ASP.NET MVC` can be upgraded seamlessly. To [upgrade](https://smartstore.atlassian.net/wiki/spaces/SMNET50/pages/1956118609/Updating+from+Previous+Versions), simply replace the application files on your server (keep the `App_Data` directory intact) and **all your data will be migrated to the new system automatically**. [See the documentation for detailed installation and upgrade instructions](https://smartstore.atlassian.net/wiki/spaces/SMNET50/pages/1956118822/Installing+Smartstore).
-
-> :information_source: Upgrading from versions earlier than 4.2 is not supported. Please migrate to Smartstore.NET 4.2 first, then upgrade to Smartstore 5+.
+This is a renamed and customized fork, not an in-place, automatically compatible upgrade. Before using it with an existing database, read [rename and deployment safety](dev-docs/rename-safety.md). Back up the **SQL Server database** and **App_Data/Tenants** first. Do not delete installation markers, replace tenant settings blindly, or run migrations on the production database before validating them against a backup.
 
 ### Visual Studio
 
-1. Clone the repository: `git clone https://github.com/smartstore/Smartstore.git` and check out the `main` branch.
+1. Clone the repository: `git clone https://github.com/behnamaltafi/BonakMarketFamily.git` and check out the `feature/change-name-of-project` branch.
 2. Download [Visual Studio 2026](https://www.visualstudio.com/downloads/) (any edition).
-3. Open `Smartstore.sln` and wait for Visual Studio to restore all NuGet packages.
-4. Set `Smartstore.Web` as the startup project and run it.
+3. Open `BonakMarket.sln` and wait for Visual Studio to restore all NuGet packages.
+4. Set `BonakMarket.Web` as the startup project and run it.
 
 ### Repository Structure
 
 | Project | Description |
 |---|---|
-| [`Smartstore`](https://github.com/smartstore/Smartstore/tree/main/src/Smartstore) | Common low-level, application-agnostic infrastructure: bootstrapper, modularity engine, caching, pub/sub, imaging, type conversion, I/O, templating, scheduling, utilities, and extension methods |
-| [`Smartstore.Data`](https://github.com/smartstore/Smartstore/tree/main/src/Smartstore.Data) | Database providers |
-| [`Smartstore.Core`](https://github.com/smartstore/Smartstore/tree/main/src/Smartstore.Core) | Application-specific modules: catalog, checkout, identity, security, localization, logging, messaging, rules engine, search engine, theme engine, migrations, and more |
-| [`Smartstore.Web.Common`](https://github.com/smartstore/Smartstore/tree/main/src/Smartstore.Web.Common) | Common web features: custom MVC infrastructure, bundling, Tag Helpers, HTML helpers, and more |
-| [`Smartstore.Modules`](https://github.com/smartstore/Smartstore/tree/main/src/Smartstore.Modules) | All module and plugin projects |
-| [`Smartstore.Web`](https://github.com/smartstore/Smartstore/tree/main/src/Smartstore.Web) | Entry host project: controllers, model classes, themes, and static assets |
+| [`BonakMarket`](src/BonakMarket) | Common low-level, application-agnostic infrastructure: bootstrapper, modularity engine, caching, pub/sub, imaging, type conversion, I/O, templating, scheduling, utilities, and extension methods |
+| [`BonakMarket.Data`](src/BonakMarket.Data) | Database providers |
+| [`BonakMarket.Core`](src/BonakMarket.Core) | Application-specific modules: catalog, checkout, identity, security, localization, logging, messaging, rules engine, search engine, theme engine, migrations, and more |
+| [`BonakMarket.Web.Common`](src/BonakMarket.Web.Common) | Common web features: custom MVC infrastructure, bundling, Tag Helpers, HTML helpers, and more |
+| [`BonakMarket.Modules`](src/BonakMarket.Modules) | All module and plugin projects |
+| [`BonakMarket.Web`](src/BonakMarket.Web) | Entry host project: controllers, model classes, themes, and static assets |
 
 <p>&nbsp;</p>
 
-## Building Smartstore
+## Building BonakMarket
 
 ### Option 1 — Publish from Visual Studio
 
-1. Open the Smartstore solution in Visual Studio 2026.
+1. Open the BonakMarket solution in Visual Studio 2026.
 2. Switch to the **Release** configuration.
 3. Rebuild the solution.
-4. Publish the **Smartstore.Web** host project.
+4. Publish the **BonakMarket.Web** host project.
 
 ### Option 2 — Run a build script
 
@@ -183,11 +175,11 @@ Run the build script for your target platform from the **build** directory: `bui
 
 By default, the script produces a self-contained, platform-specific application that bundles the ASP.NET runtime, so it runs on any machine without a pre-installed .NET runtime.
 
-Smartstore uses [Nuke](https://nuke.build/) as its build automation solution. You can customize the build process by editing `src/Smartstore.Build/Smartstore.Build/Build.cs`.
+BonakMarket uses [Nuke](https://nuke.build/) as its build automation solution. You can customize the build process by editing `src/BonakMarket.Build/BonakMarket.Build/Build.cs`.
 
-### About the `src/Smartstore.Web/Modules` Directory
+### About the `src/BonakMarket.Web/Modules` Directory
 
-During the build, all modules in `src/Smartstore.Modules/` are detected, compiled, and placed in `src/Smartstore.Web/Modules/`. The runtime loads modules dynamically from this directory. During development this folder is not required — you can safely delete it at any time.
+During the build, all modules in `src/BonakMarket.Modules/` are detected, compiled, and placed in `src/BonakMarket.Web/Modules/`. The runtime loads modules dynamically from this directory. During development this folder is not required — you can safely delete it at any time.
 
 ### Creating Docker Images
 
@@ -211,25 +203,20 @@ Run `compose.{DbSystem}.sh` to create a ready-to-use Docker container that inclu
 
 #### `compose.mysql.sh`
 
-Creates a composite Docker container with the **Smartstore** application image and the latest **MySQL** image.
+Creates a composite Docker container with the **BonakMarket** application image and the latest **MySQL** image.
 
 #### `compose.sqlserver.sh`
 
-Creates a composite Docker container with the **Smartstore** application image and the latest **MS SQL Server** image.
+Creates a composite Docker container with the **BonakMarket** application image and the latest **MS SQL Server** image.
 
 <p>&nbsp;</p>
 
-## Try It Online
+## Deployment safety
 
-We provide a live demo so you can explore Smartstore without a local installation. Test all features in both the storefront and the backend. Note that the backend demo is shared — other testers may modify data simultaneously.
-
-- [**Storefront**](https://core.smartstore.com/frontend/en) (User: `demo`, Password: `1234`)
-- [**Backend**](https://core.smartstore.com/backend/admin/) (User: `demo`, Password: `1234`)
-
-<p>&nbsp;</p>
+This fork does not currently publish a verified public live demo. Validate build, startup, authentication/SMS and database compatibility in staging before publishing to IIS or production. See [rename and deployment safety](dev-docs/rename-safety.md).
 
 ## License
 
-Smartstore Community Edition is released under the [AGPL license](https://www.gnu.org/licenses/agpl-3.0.de.html).
+BonakMarketFamily is a customized fork of [Smartstore](https://github.com/smartstore/Smartstore), originally developed by Smartstore AG. Original authorship and copyright notices remain applicable. The community code is distributed under the [GNU AGPL v3](https://www.gnu.org/licenses/agpl-3.0.html); review the repository license and third-party component licenses before redistributing.
 
 &#11088; **Star this repository** to stay up to date, follow our progress, and never miss a new release. Contributions and community involvement are always welcome.

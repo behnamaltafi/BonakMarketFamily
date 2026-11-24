@@ -1,6 +1,6 @@
 # QR codes
 
-Smartstore ships with a lightweight barcode subsystem capable of producing QR codes or many other barcode formats. Encoding is performed by `IBarcodeEncoder` which turns a `BarcodePayload` into an `IBarcode` that can render SVG or raster images.
+BonakMarket ships with a lightweight barcode subsystem capable of producing QR codes or many other barcode formats. Encoding is performed by `IBarcodeEncoder` which turns a `BarcodePayload` into an `IBarcode` that can render SVG or raster images.
 
 ## Supported barcode types
 

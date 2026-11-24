@@ -1,6 +1,6 @@
 # Release Notes
 
-## Smartstore 7.0.0
+## BonakMarket 7.0.0
 
 ### Breaking Changes
 
@@ -23,10 +23,10 @@
   - `.scroll-fade`: reusable responsive edge fades for horizontal and vertical scroll containers.
 - **Administration:** A new collapsible sidebar gives the administration area a modern, uncluttered layout with easy access to its main sections.
 - **Category icons:** Added support for assigning icons to categories, with customizable colors, rotation, mirroring and animations. Icons are displayed in the sidebar category navigation, main-menu dropdowns, MegaMenu, mobile menu and admin category tree.
-- **Media gallery:** Replaced PhotoSwipe with the new Smartstore *Lightbox* for viewing images and videos. A horizontal thumbnail strip lets shoppers jump directly to any image or video, including on mobile devices. Zoom, fullscreen viewing, touch gestures and keyboard controls remain available, with support for right-to-left layouts.
+- **Media gallery:** Replaced PhotoSwipe with the new BonakMarket *Lightbox* for viewing images and videos. A horizontal thumbnail strip lets shoppers jump directly to any image or video, including on mobile devices. Zoom, fullscreen viewing, touch gestures and keyboard controls remain available, with support for right-to-left layouts.
 - **Channable** plugin (commercial)
   - Channable product feed integration with file-based exports in CSV, XML, and JSON formats.
-- (DEV) Added `Smartstore.Packager.Cli` for scriptable packaging of modules and themes, including batch processing and automation-friendly exit codes.
+- (DEV) Added `BonakMarket.Packager.Cli` for scriptable packaging of modules and themes, including batch processing and automation-friendly exit codes.
 - (DEV) Added `linux-arm64` builds and lazy deployment support for native ARM64 tools.
 - Enhanced color and image swatches for attributes
   - Added configurable swatch presentation settings for product and checkout attributes, including size, shape, aspect ratio, value labels, and optional display of price adjustments or final prices.
@@ -99,7 +99,7 @@
   - Modernized **MegaMenu navigation** with native horizontal scrolling, edge-aware controls and safer navigation buttons.
   - Refined **border radii** across frontend and backend components, including better spacing for rounded **Select2** options.
   - Simplified the appearance and interaction of **Select2** single-select controls and dropdowns.
-  - Replaced the **Color Picker** with a new Smartstore component featuring a refreshed design and improved mouse, touch and keyboard controls.
+  - Replaced the **Color Picker** with a new BonakMarket component featuring a refreshed design and improved mouse, touch and keyboard controls.
   - Added smoother, configurable **collapse transitions** and standard collapse behavior for backend subcontrol groups.
   - Improved **keyboard shortcut styling** in dropdowns and buttons.
   - Refined **swatch selection states** and the presentation of unavailable values.
@@ -190,7 +190,7 @@
 - Fixed the discount calculation when the quantity of an order item is subsequently changed.
 - Fixed identity options were not applied when they were changed in the backend.
 
-## Smartstore 6.4.0
+## BonakMarket 6.4.0
 
 
 ### Breaking Changes
@@ -217,7 +217,7 @@
   - Automatically added required products can no longer be removed separately from the cart.
   - Required products can now keep their quantity in sync with the main product.
   - Added a setting to show prices of automatically added required products below the main product price.
-- (DEV) Added `JsonLdBuilder` and `JsonLdFragment` to `Smartstore.Json` — a fluent, fragment-based API for contributing schema.org JSON-LD structured data from views, partials and components
+- (DEV) Added `JsonLdBuilder` and `JsonLdFragment` to `BonakMarket.Json` — a fluent, fragment-based API for contributing schema.org JSON-LD structured data from views, partials and components
 - #1469 Show password policy and live validation on customer registration.
 - #1141 Enable reward points to be awarded for subscribing to the newsletter.
 - Topics: added an option to disable the narrow prose container and render non-widget topic pages in full width (default remains prose/narrow layout).
@@ -306,7 +306,7 @@
 - After an order has been placed, the download of an uploaded checkout attribute file must no longer be marked as transient.
 
 
-## Smartstore 6.3.0
+## BonakMarket 6.3.0
 
 ### Breaking Changes
 
@@ -449,7 +449,7 @@
 - #1444 SQLite throws "'JULIANDAY' was constructed with 1 arguments, but the nullability was defined for 2 arguments"
 
 
-## Smartstore 6.2.0
+## BonakMarket 6.2.0
 
 ### Breaking Changes
 * **Web API:** The `PaymentMethods/GetAllPaymentMethods` endpoint has been enhanced to return all information about a payment provider.
@@ -569,7 +569,7 @@
 
 
 
-## Smartstore 6.1.0
+## BonakMarket 6.1.0
 
 ### New Features
 
@@ -709,7 +709,7 @@
 - Fixed bug preventing shopping cart migration after external login.
 
 
-## Smartstore 6.0.0
+## BonakMarket 6.0.0
 
 ### Breaking Changes
 - Removed Sofort provider from PayPal module (disabled by PayPal on 18.04.2024)
@@ -938,7 +938,7 @@
 - `ProductRuleEvaluatorTask` should also take unpublished categories into account.
 - Fixed the generic attributes grid always displayed only one data page.
 
-## Smartstore 5.1.0
+## BonakMarket 5.1.0
 
 ### New Features
 
@@ -1072,7 +1072,7 @@
 - Fixed MainPictureId not applied on product edit page if missing and if there is only one picture assigned to a product.
 - Fixed product image gallery issue where no image was displayed at all.
 - #843 Additional shipping charge displayed in product details even if free shipping is activated.
-- Fixed "The requested service 'Other (Smartstore.Core.Rules.IRuleProvider)' has not been registered" when creating a rule.
+- Fixed "The requested service 'Other (BonakMarket.Core.Rules.IRuleProvider)' has not been registered" when creating a rule.
 - Fixed #792 Downloaded language sometimes cannot be deleted when using SQLite.
 - Stripe: Fixed incorrect system name in several places.
 - Gift cards were not generated according to the order item quantity during order processing.
@@ -1092,7 +1092,7 @@
 - When using Stripe or PayPal on cart page checkout attributes were reseted.
 
 
-## Smartstore 5.0.5
+## BonakMarket 5.0.5
 
 ### Breaking Changes
 
@@ -1207,7 +1207,7 @@
 - Fixed rule assigned to payment method only applied after clearing the cache.
 - Admin dashboard: fixed percentage value for last 28 days in order and customer registrations statistics.
 
-## Smartstore 5.0.4
+## BonakMarket 5.0.4
 
 ### New Features
 
@@ -1255,7 +1255,7 @@
 - Fixed price adjustment of attributes was saved only with two decimal places.
 - Fixed missing inventory adjustment when the stock quantity was changed through product grid.
 - The link to remove a search filter must not contain a page index, otherwise inconsistent search results will occur.
-- Fixed InvalidCastException "Unable to cast object of type 'Newtonsoft.Json.Linq.JObject' to type 'Smartstore.Core.Search.Facets.FacetGroup'" when OutputCache is active.
+- Fixed InvalidCastException "Unable to cast object of type 'Newtonsoft.Json.Linq.JObject' to type 'BonakMarket.Core.Search.Facets.FacetGroup'" when OutputCache is active.
 - Category or manufacturer discount was not applied if no other changes were made to the category or manufacturer except for the discount assignment.
 - Cart rules assigned to a payment method were not applied in checkout.
 - MegaSearch: fixed a memory leak during indexing.
@@ -1269,7 +1269,7 @@
 - Links to assigned entities sometimes not displayed on rule edit page.
 
 
-## Smartstore 5.0.3
+## BonakMarket 5.0.3
 
 ### New Features
 
@@ -1315,7 +1315,7 @@
 - Billiger: fixed export profile configuration must not contain store scope selection
 
 
-## Smartstore 5.0.2
+## BonakMarket 5.0.2
 
 ### Breaking Changes
 
@@ -1370,7 +1370,7 @@
 - Fixed payment fee was always displayed in primary currency in checkout.
 - Several PayPal fixes
 
-## Smartstore 5.0.1
+## BonakMarket 5.0.1
 
 ### Breaking Changes
 
@@ -1464,16 +1464,16 @@
 - Fixed creating of SeoSlugs with special chars for installation 
 
 
-## Smartstore 5.0.0
+## BonakMarket 5.0.0
 
-Smartstore 5 is a port of Smartstore 4 - which is based on the classic .NET Framework 4.7.2 - to the new ASP.NET Core 6 platform.
+BonakMarket 5 is a port of BonakMarket 4 - which is based on the classic .NET Framework 4.7.2 - to the new ASP.NET Core 6 platform.
 
 ### Highlights
 
-- Smartstore 5 is now **cross-platform** and supports **Linux** and **macOS** alongside **Microsoft Windows**. This means that Smartstore can be run on almost any hosting server, whether dedicated, cloud or shared.
-- In addition to **Microsoft SQL Server**, Smartstore now supports **MySQL**. **PostgreSQL** is in planning and will follow soon.
-- Smartstore 5 is one of the **fastest out-of-the-box e-commerce solutions in the world**! A small store with less than 1,000 items and a few dozen categories can achieve an average *Time to First Byte* (TTFB) of far below 100 milliseconds... even without output cache or other performance measures.
-  - Compared to Smartstore 4, 10x faster in some areas
+- BonakMarket 5 is now **cross-platform** and supports **Linux** and **macOS** alongside **Microsoft Windows**. This means that BonakMarket can be run on almost any hosting server, whether dedicated, cloud or shared.
+- In addition to **Microsoft SQL Server**, BonakMarket now supports **MySQL**. **PostgreSQL** is in planning and will follow soon.
+- BonakMarket 5 is one of the **fastest out-of-the-box e-commerce solutions in the world**! A small store with less than 1,000 items and a few dozen categories can achieve an average *Time to First Byte* (TTFB) of far below 100 milliseconds... even without output cache or other performance measures.
+  - Compared to BonakMarket 4, 10x faster in some areas
   - Significantly less memory consumption (approx. 50%)
   - Even low-cost (cloud) hosting delivers high performance
 - Powerful **DataGrid** in the backend
@@ -1522,7 +1522,7 @@ Smartstore 5 is a port of Smartstore 4 - which is based on the classic .NET Fram
   - TinyImage
   - TrustedShops
   - UrlRewriter
-  - *Other commercial plugins developed by Smartstore will follow soon*
+  - *Other commercial plugins developed by BonakMarket will follow soon*
 - Obsolete plugins that will not be ported: 
   - AccardaKar
   - BizImporter

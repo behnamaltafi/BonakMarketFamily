@@ -1,6 +1,6 @@
 # Generic attributes
 
-Generic attributes are Smartstore's mechanism for attaching arbitrary metadata to existing entities. Instead of creating a new domain class and database table for every extra piece of information, plugins and customizations can persist key–value pairs that travel with the entity. This keeps the data model lean while still allowing unlimited extensibility.
+Generic attributes are BonakMarket's mechanism for attaching arbitrary metadata to existing entities. Instead of creating a new domain class and database table for every extra piece of information, plugins and customizations can persist key–value pairs that travel with the entity. This keeps the data model lean while still allowing unlimited extensibility.
 
 Each attribute is stored in the `GenericAttribute` table with the columns `EntityId`, `KeyGroup`, `Key`, `Value` and `StoreId`.  
 * **EntityId** – identifier of the record the attribute belongs to.  
@@ -25,7 +25,7 @@ Collections are cached for the current request. When an entity has not been save
 
 ## Reading and writing values
 
-`GenericAttributeCollection` makes attribute access feel like working with a dictionary. Use `Get<T>()` to read values and `Set()` to create, update or delete them. Internally Smartstore uses its type‑conversion utilities so that you do not need to parse strings yourself:
+`GenericAttributeCollection` makes attribute access feel like working with a dictionary. Use `Get<T>()` to read values and `Set()` to create, update or delete them. Internally BonakMarket uses its type‑conversion utilities so that you do not need to parse strings yourself:
 
 ```csharp
 var attrs = customer.GenericAttributes;                // shortcut for EntityWithAttributes

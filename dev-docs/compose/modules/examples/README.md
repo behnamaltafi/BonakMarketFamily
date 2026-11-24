@@ -6,7 +6,7 @@ description: Learn how to write a module and extend its functionality.
 
 ## How to use
 
-If you have never developed a Smartstore module before, we recommend that you read the [Getting started with modules](../getting-started-with-modules.md) first, and then start with the [Building a simple "Hello World" module](../tutorials/building-a-simple-hello-world-module.md) tutorial. Otherwise, you can jump right into [the topic](./#list-of-tutorials) you want to learn more about.
+If you have never developed a BonakMarket module before, we recommend that you read the [Getting started with modules](../getting-started-with-modules.md) first, and then start with the [Building a simple "Hello World" module](../tutorials/building-a-simple-hello-world-module.md) tutorial. Otherwise, you can jump right into [the topic](./#list-of-tutorials) you want to learn more about.
 
 {% hint style="info" %}
 We also provide links to additional information for specific topics covered in each tutorial. This way, you can quickly brush up on that topic and jump right back in.
@@ -14,15 +14,15 @@ We also provide links to additional information for specific topics covered in e
 
 ## Example Repository
 
-The source code for all the tutorials can be found in our [Code Examples Repository](https://github.com/smartstore/dev-docs-code-examples).
+The source code for all the tutorials can be found in our [Code Examples Repository](https://github.com/BonakMarket/dev-docs-code-examples).
 
-All tutorials are included in the [solution file](https://github.com/smartstore/dev-docs-code-examples/blob/main/Smartstore.CodeExamples.sln) located in the root of the repository. To run them, just follow the [instructions in the ReadMe](https://github.com/smartstore/dev-docs-code-examples#installation).
+All tutorials are included in the [solution file](https://github.com/BonakMarket/dev-docs-code-examples/blob/main/BonakMarket.CodeExamples.sln) located in the root of the repository. To run them, just follow the [instructions in the ReadMe](https://github.com/BonakMarket/dev-docs-code-examples#installation).
 
 ## List of Tutorials
 
 ### [Building a simple "Hello World" module](../tutorials/building-a-simple-hello-world-module.md)
 
-Start your journey here and build your first Smartstore module.
+Start your journey here and build your first BonakMarket module.
 
 ### [Adding tabs](adding-tabs.md)
 

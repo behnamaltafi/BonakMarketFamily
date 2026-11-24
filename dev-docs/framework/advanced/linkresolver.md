@@ -1,6 +1,6 @@
 # LinkResolver
 
-Smartstore stores navigation targets as compact link expressions like `product:123`, `topic:about-us|_blank` or `https://example.com`. `ILinkResolver` translates these expressions to concrete URLs and labels, ensuring store and ACL security and reusing results from a memory cache.
+BonakMarket stores navigation targets as compact link expressions like `product:123`, `topic:about-us|_blank` or `https://example.com`. `ILinkResolver` translates these expressions to concrete URLs and labels, ensuring store and ACL security and reusing results from a memory cache.
 
 ## Expression format
 

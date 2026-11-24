@@ -1,0 +1,13 @@
+{
+  "$schema": "../module.schema.json",
+  "Group": "Payment",
+  "SystemName": "BonakMarket.OfflinePayment",
+  "Icon": "hi:cashier-02?color=#00695C",
+  "FriendlyName": "Adds offline payment methods to the store",
+  "Description": "",
+  "Version": "6.4.0",
+  "MinAppVersion": "6.4.0",
+  "Author": "BonakMarket AG",
+  "Order": 1,
+  "ResourceRootKey": "Plugins.BonakMarket.OfflinePayment"
+}

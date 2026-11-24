@@ -2,13 +2,13 @@
 
 ## Deploying modules
 
-When a module is fully developed, it needs to be published to the store, so that it can be used. To do this, it is built in **release mode** and uploaded to the store using FTP or the **plugin-manager** in the backend. If the latter is chosen, the module must be packaged in a format that Smartstore can recognize and process. This functionality is provided by the **Smartstore Packager**.
+When a module is fully developed, it needs to be published to the store, so that it can be used. To do this, it is built in **release mode** and uploaded to the store using FTP or the **plugin-manager** in the backend. If the latter is chosen, the module must be packaged in a format that BonakMarket can recognize and process. This functionality is provided by the **BonakMarket Packager**.
 
 ### Versioning
 
-`module.json` provides properties for _versioning_. The `Version` property defines the version of the module and `MinAppVersion` specifies the lowest supported Smartstore version that can run the module.
+`module.json` provides properties for _versioning_. The `Version` property defines the version of the module and `MinAppVersion` specifies the lowest supported BonakMarket version that can run the module.
 
-By convention, that the version number should always reflect the current Smartstore version, for which the module was built. If a hotfix has been applied to the module, the revision part of the version number is incremented.
+By convention, that the version number should always reflect the current BonakMarket version, for which the module was built. If a hotfix has been applied to the module, the revision part of the version number is incremented.
 
 Let's say the release version of a module is `5.0.1`. A hotfix would make the version `5.0.1.1`, and the next revision would be `5.0.1.2`, and so on.
 
@@ -43,20 +43,20 @@ Because the modules are loaded by the running application, the page's app pool m
 
 If a module is to be distributed to a third party, the module should be provided in a format that allows the third party to install it in their store independently.
 
-This can be done using the **Smartstore Packager**. To use it, open the `Smartstore.Tools.sln` solution located in the Smartstore repository root. Build the `Smartstore.Packager` project from the _Tools_ directory. The resulting `Smartstore.Packager.exe` file can list all modules of a build directory. After starting the packager, select the directory in _Artifacts_, created by the batch file. Clicking on **ReadExtensions** will list all available modules. Now select the module you want to package, an output directory and press **Create Package**.
+This can be done using the **BonakMarket Packager**. To use it, open the `BonakMarket.Tools.sln` solution located in the BonakMarket repository root. Build the `BonakMarket.Packager` project from the _Tools_ directory. The resulting `BonakMarket.Packager.exe` file can list all modules of a build directory. After starting the packager, select the directory in _Artifacts_, created by the batch file. Clicking on **ReadExtensions** will list all available modules. Now select the module you want to package, an output directory and press **Create Package**.
 
-The packager creates a zip file using the naming pattern `Smartstore.Module.{module systemname}.{current module version}.zip` which will result in something like `Smartstore.Module.MyOrg.MyModule.5.0.zip`.
+The packager creates a zip file using the naming pattern `BonakMarket.Module.{module systemname}.{current module version}.zip` which will result in something like `BonakMarket.Module.MyOrg.MyModule.5.0.zip`.
 
-This packaged module can now be uploaded by any store owner. There is no need to stop the app pool, when using this method and Smartstore will automatically restart the application.
+This packaged module can now be uploaded by any store owner. There is no need to stop the app pool, when using this method and BonakMarket will automatically restart the application.
 
 ### Packager CLI
 
-For automated builds the same packages can be created without a user interface. Build the `Smartstore.Packager.Cli` project from the _Tools_ directory of `Smartstore.Tools.sln` and call the resulting `Smartstore.Packager.Cli.exe` with the `pack` command. GUI and CLI share their extension discovery and packaging code, so both produce identical packages.
+For automated builds the same packages can be created without a user interface. Build the `BonakMarket.Packager.Cli` project from the _Tools_ directory of `BonakMarket.Tools.sln` and call the resulting `BonakMarket.Packager.Cli.exe` with the `pack` command. GUI and CLI share their extension discovery and packaging code, so both produce identical packages.
 
 ```bash
-Smartstore.Packager.Cli pack --root <path> --output <path> --extension <name> [--extension <name>...]
-Smartstore.Packager.Cli pack --root <path> --output <path> --all
-Smartstore.Packager.Cli --help
+BonakMarket.Packager.Cli pack --root <path> --output <path> --extension <name> [--extension <name>...]
+BonakMarket.Packager.Cli pack --root <path> --output <path> --all
+BonakMarket.Packager.Cli --help
 ```
 
 | Option | Description |
@@ -72,26 +72,26 @@ Exactly one of `--extension` and `--all` must be given.
 Packaging a single extension:
 
 ```powershell
-Smartstore.Packager.Cli.exe pack `
+BonakMarket.Packager.Cli.exe pack `
   --root "D:\Build\Community.6.5.0.win-x64" `
   --output "D:\Build\packages" `
-  --extension "Smartstore.PayPal"
+  --extension "BonakMarket.PayPal"
 ```
 
 Packaging several extensions by repeating `--extension`:
 
 ```powershell
-Smartstore.Packager.Cli.exe pack `
+BonakMarket.Packager.Cli.exe pack `
   --root "D:\Build\Community.6.5.0.win-x64" `
   --output "D:\Build\packages" `
-  --extension "Smartstore.PayPal" `
-  --extension "Smartstore.Stripe"
+  --extension "BonakMarket.PayPal" `
+  --extension "BonakMarket.Stripe"
 ```
 
 Packaging every module and theme that was found:
 
 ```powershell
-Smartstore.Packager.Cli.exe pack `
+BonakMarket.Packager.Cli.exe pack `
   --root "D:\Build\Community.6.5.0.win-x64" `
   --output "D:\Build\packages" `
   --all

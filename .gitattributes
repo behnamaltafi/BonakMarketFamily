@@ -4,3 +4,5 @@
 /.github/*.py text eol=lf
 /build/wkhtml-tests/*.sh text eol=lf
 /build/wkhtml-tests/*.py text eol=lf
+# Keep sample PDF byte offsets intact across checkouts.
+/src/BonakMarket.Web/App_Data/Seed/media/download/*.pdf binary

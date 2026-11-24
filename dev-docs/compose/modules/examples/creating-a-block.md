@@ -1,6 +1,6 @@
 # Creating a Block
 
-A `Block` is used to quickly create content within the Page Builder. Smartstore has already implemented several blocks such as HTML output, images, iframes, product lists and many more. The possibilities for new blocks are endless.
+A `Block` is used to quickly create content within the Page Builder. BonakMarket has already implemented several blocks such as HTML output, images, iframes, product lists and many more. The possibilities for new blocks are endless.
 
 {% hint style="info" %}
 If you want to dive deeper into the topic, see [Blocks](../../../framework/content/page-builder-and-blocks.md).
@@ -9,7 +9,7 @@ If you want to dive deeper into the topic, see [Blocks](../../../framework/conte
 {% hint style="info" %}
 You can find well commented source code of a sample block at
 
-_Smartstore.DevTools/Blocks/SampleBlock.cs_
+_BonakMarket.DevTools/Blocks/SampleBlock.cs_
 {% endhint %}
 
 ## Write a simple Block
@@ -107,8 +107,8 @@ Your final code should look something like this:
 {% code title="HelloWorldBlock.cs" %}
 ```csharp
 using FluentValidation;
-using Smartstore.Core.Content.Blocks;
-using Smartstore.Web.Modelling;
+using BonakMarket.Core.Content.Blocks;
+using BonakMarket.Web.Modelling;
 
 namespace MyOrg.HelloWorld.Blocks
 {
@@ -407,5 +407,5 @@ namespace MyOrg.HelloWorld.Blocks
 In this tutorial, you created your own `Block`. You learned how to access the different view modes and how to use a widget as output for a block.
 
 {% hint style="info" %}
-The code for [the simple tutorial](https://github.com/smartstore/dev-docs-code-examples/tree/main/src/MyOrg.BlockTutorial) and [the advanced tutorial](https://github.com/smartstore/dev-docs-code-examples/tree/main/src/MyOrg.BlockTutorialAdvanced) can be found in the examples repository.
+The code for [the simple tutorial](https://github.com/BonakMarket/dev-docs-code-examples/tree/main/src/MyOrg.BlockTutorial) and [the advanced tutorial](https://github.com/BonakMarket/dev-docs-code-examples/tree/main/src/MyOrg.BlockTutorialAdvanced) can be found in the examples repository.
 {% endhint %}

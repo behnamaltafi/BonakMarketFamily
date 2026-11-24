@@ -48,7 +48,7 @@ internal sealed class Startup : StarterBase
         if (!builder.ApplicationContext.IsInstalled) return;
 
         builder.Configure(StarterOrdering.BeforeRoutingMiddleware, app =>
-            app.UseIdentitySwagger(builder.ApplicationContext.HostEnvironment));
+            app.UseIdentitySwagger(builder.ApplicationContext.HostEnvironment, builder.ApplicationContext.ModuleCatalog));
 
         builder.Configure(StarterOrdering.BeforeWorkContextMiddleware, app =>
             app.UseMiddleware<CustomerApiBearerMiddleware>());

@@ -1,5 +1,10 @@
 using System;
 using System.Linq;
+using System.Collections.Generic;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using BonakMarket.Engine.Modularity;
+using Moq;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
@@ -52,6 +57,25 @@ public class SwaggerContractTests
     {
         Assert.That(IdentitySwaggerConfiguration.IsDocumentPath(new PathString(path), "/docs/identity", "identity"), Is.EqualTo(identity));
         Assert.That(StorefrontSwaggerConfiguration.IsDocumentPath(new PathString(path)), Is.EqualTo(storefront));
+    }
+
+    [TestCase(true, "Development", false, true)]
+    [TestCase(true, "Production", true, true)]
+    [TestCase(true, "Production", false, false)]
+    [TestCase(false, "Development", true, false)]
+    [TestCase(false, "Production", true, false)]
+    public void Customer_portal_discovers_storefront_from_module_catalog_without_shared_swagger_options(
+        bool installed, string environmentName, bool optIn, bool expected)
+    {
+        var catalog = new Mock<IModuleCatalog>();
+        catalog.Setup(x => x.HasModule("BonakMarket.StorefrontApi")).Returns(installed);
+        var environment = new Mock<IHostEnvironment>();
+        environment.SetupGet(x => x.EnvironmentName).Returns(environmentName);
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string> { ["StorefrontApi:EnableSwagger"] = optIn.ToString() }).Build();
+
+        Assert.That(IdentitySwaggerConfiguration.IsStorefrontDocumentationEnabled(
+            catalog.Object, configuration, environment.Object), Is.EqualTo(expected));
     }
 
     [Test]

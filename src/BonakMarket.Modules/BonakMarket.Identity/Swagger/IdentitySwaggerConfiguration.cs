@@ -4,14 +4,14 @@ using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
+using BonakMarket.Engine.Modularity;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace BonakMarket.Identity.Swagger;
 
 /// <summary>Identity owns its document and the optional customer documentation portal.
-/// The portal discovers registered documents; it does not reference the commerce module.</summary>
+/// The portal discovers installed modules; it does not reference the commerce assembly.</summary>
 public static class IdentitySwaggerConfiguration
 {
     public const string DocumentName = "identity";
@@ -48,14 +48,18 @@ public static class IdentitySwaggerConfiguration
         return services;
     }
 
-    public static void UseIdentitySwagger(this IApplicationBuilder app, IHostEnvironment environment)
+    /// <summary>Use the host module catalog, not a module-local Swagger options instance.
+    /// Private Swashbuckle assemblies can be isolated by the module loader.</summary>
+    public static bool IsStorefrontDocumentationEnabled(IModuleCatalog catalog, IConfiguration configuration, IHostEnvironment environment)
+        => catalog.HasModule("BonakMarket.StorefrontApi") &&
+            (environment.IsDevelopment() || configuration.GetValue<bool>("StorefrontApi:EnableSwagger"));
+
+    public static void UseIdentitySwagger(this IApplicationBuilder app, IHostEnvironment environment, IModuleCatalog catalog)
     {
         var config = app.ApplicationServices.GetRequiredService<IConfiguration>();
         var identityEnabled = environment.IsDevelopment() || config.GetValue<bool>("Identity:EnableSwagger");
-        // Storefront is optional: inspect document registration rather than coupling module assemblies.
-        var documents = app.ApplicationServices.GetRequiredService<IOptions<SwaggerGeneratorOptions>>().Value.SwaggerDocs;
-        var storefrontEnabled = documents.ContainsKey("storefront") &&
-            (environment.IsDevelopment() || config.GetValue<bool>("StorefrontApi:EnableSwagger"));
+        // The native module catalog is shared across module load contexts.
+        var storefrontEnabled = IsStorefrontDocumentationEnabled(catalog, config, environment);
 
         // A module owns its JSON. The shared UI never serves an additional JSON route.
         app.UseWhen(ctx => ctx.Request.Path.StartsWithSegments("/docs/identity"), branch =>

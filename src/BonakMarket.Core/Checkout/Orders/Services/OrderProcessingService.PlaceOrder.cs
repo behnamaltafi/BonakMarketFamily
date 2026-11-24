@@ -34,7 +34,7 @@ public partial class OrderProcessingService : IOrderProcessingService
         {
             // Do not disclose the owner or existing order. The unique index is the final DB invariant;
             // this early check is not a substitute for serializing an external payment attempt.
-            return CreateFailure("order_already_exists");
+            return new OrderPlacementResult { Errors = ["order_already_exists"] };
         }
 
         var customer = await _db.Customers

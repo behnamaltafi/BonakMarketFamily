@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using BonakMarket.StorefrontApi.Services;
 
 namespace BonakMarket.StorefrontApi.Models;
 
@@ -35,9 +36,41 @@ public sealed class OrderDto
     public int OrderStatusId { get; set; }
     public int PaymentStatusId { get; set; }
     public int ShippingStatusId { get; set; }
+    public string CustomerCurrencyCode { get; set; }
+    public decimal CurrencyRate { get; set; }
+    public int ItemCount { get; set; }
+    public int TotalQuantity { get; set; }
+    public DateTime? PaidDateUtc { get; set; }
+    public OrderStatusDto OrderStatus => OrderStatusMapping.Order(OrderStatusId);
+    public OrderStatusDto PaymentStatus => OrderStatusMapping.Payment(PaymentStatusId);
+    public OrderStatusDto ShippingStatus => OrderStatusMapping.Shipping(ShippingStatusId);
+    public IReadOnlyList<OrderProductPreviewDto> PreviewProducts { get; set; } = [];
 }
-public sealed record OrderLineDto(int Id, int ProductId, int Quantity, decimal UnitPriceInclTax, decimal PriceInclTax);
-public sealed record OrderDetailDto(OrderDto Order, List<OrderLineDto> Items);
+public sealed record OrderLineDto(int Id, int ProductId, int Quantity, decimal UnitPriceInclTax, decimal PriceInclTax)
+{
+    public string Sku { get; init; }
+    public string CurrentProductName { get; init; }
+    public string CurrentImageUrl { get; init; }
+    public string AttributeDescriptionHtml { get; init; }
+    public decimal UnitPriceExclTax { get; init; }
+    public decimal PriceExclTax { get; init; }
+    public decimal DiscountAmountInclTax { get; init; }
+    public decimal DiscountAmountExclTax { get; init; }
+    public decimal TaxRate { get; init; }
+}
+public sealed record OrderDetailDto(OrderDto Order, List<OrderLineDto> Items)
+{
+    public OrderFinancialsDto Financials { get; init; }
+    public OrderAddressDto BillingAddress { get; init; }
+    public OrderAddressDto ShippingAddress { get; init; }
+    public string ShippingMethod { get; init; }
+    public string PaymentMethodSystemName { get; init; }
+    public string CustomerComment { get; init; }
+    public IReadOnlyList<ShipmentDto> Shipments { get; init; } = [];
+    public OrderActionsDto AllowedActions { get; init; }
+    public string BrowserInvoiceUrl { get; init; }
+    public string BrowserPaymentUrl { get; init; }
+}
 public sealed class CouponRequest
 {
     [Required, StringLength(200)] public string Code { get; set; }

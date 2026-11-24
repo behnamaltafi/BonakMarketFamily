@@ -135,7 +135,7 @@ public class SwaggerContractTests
             "/checkout/sessions/{id}/addresses", "/checkout/sessions/{id}/shipping-options",
             "/checkout/sessions/{id}/shipping-method", "/checkout/sessions/{id}/payment-methods",
             "/checkout/sessions/{id}/payment-method",
-            "/products/{productId}/reviews", "/orders/{id}/browser-actions", "/cart/gift-cards",
+            "/products/{productId}/reviews", "/orders/{id}/browser-actions", "/orders/{id}/payment-status", "/cart/gift-cards",
             "/products/{productId}/share", "/wishlist/share" })
         {
             var key = "/api/storefront/v1" + path;

@@ -24,6 +24,8 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
         operation.Tags = new List<OpenApiTag> { new() { Name =
             sms ? "Authentication - SMS" :
             route.StartsWith("me/security/") ? "Account Security" :
+            route.StartsWith("me/addresses") ? "Addresses" :
+            route == "guilds" ? "Guilds" :
             route.StartsWith("me/") ? "Profile" : "Authentication - Session" } };
         operation.OperationId = "Identity_" + method + "_" + route.Replace('/', '_');
         operation.Security = new List<OpenApiSecurityRequirement>();
@@ -56,7 +58,7 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
         {
             if (method != "GET" && method != "HEAD") AddCsrf(operation, false);
             AddResponse(operation, "400", "Invalid request, HTTPS requirement or invalid cookie antiforgery token.");
-            if (route.StartsWith("me/security/") || (route == "me/profile" && method == "PUT"))
+            if (route.StartsWith("me/security/"))
                 AddResponse(operation, "404", "Phone profile or SMS login capability disabled.");
             if (route == "me/profile" && method == "PUT")
                 AddResponse(operation, "422", "Profile validation failed (ProblemDetails).");

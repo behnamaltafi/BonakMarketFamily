@@ -41,8 +41,8 @@ public sealed class AuthApiController : CustomerAccountApiController
         var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
         return Ok(new IdentitySessionResponse(
             enabled, customer is not null,
-            enabled && customer is not null && await _otp.IsProfileIncompleteAsync(customer.Id, ct),
-            enabled && customer is not null ? await _otp.GetVerifiedPhoneAsync(customer.Id, ct) : null,
+            customer is not null && await _otp.IsProfileIncompleteAsync(customer.Id, ct),
+            customer is not null ? await _otp.GetVerifiedPhoneAsync(customer.Id, ct) : null,
             tokens.RequestToken, tokens.HeaderName));
     }
 

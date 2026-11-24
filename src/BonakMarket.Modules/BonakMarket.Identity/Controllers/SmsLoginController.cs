@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core.Messaging;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -128,30 +129,20 @@ public sealed class SmsLoginController : PublicController
 
     /// <summary>
     /// A verified new phone account reaches this page immediately after first login.
-    /// It is also available later so username can change without changing the login phone.
+    /// It is also available later for profile and guild updates.
     /// </summary>
     [HttpGet("profile")]
     public async Task<IActionResult> Profile(string returnUrl = null, CancellationToken ct = default)
     {
-        if (!await _otp.IsEnabledAsync())
-        {
-            return NotFound();
-        }
-
         var customer = await GetSignedInCustomerAsync();
-        if (customer is null || await _otp.GetVerifiedPhoneAsync(customer.Id, ct) is null)
-        {
-            return RedirectToRoute("Login");
-        }
-
+        if (customer is null) return RedirectToRoute("Login");
         return View(new SmsProfileModel
         {
-            Phone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct),
-            Username = customer.Username,
-            FirstName = customer.FirstName,
-            LastName = customer.LastName,
-            Email = customer.Email?.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase) == true
-                ? null : customer.Email,
+            Phone = await _profile.GetVerifiedPhoneAsync(customer.Id, ct),
+            FirstName = customer.FirstName, LastName = customer.LastName,
+            NationalCode = customer.NationalCode, GuildId = customer.GuildId,
+            Guilds = await GetGuildsAsync(ct),
+            Email = customer.Email?.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase) == true ? null : customer.Email,
             ReturnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null
         });
     }
@@ -160,37 +151,24 @@ public sealed class SmsLoginController : PublicController
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SaveProfile(SmsProfileModel model, CancellationToken ct)
     {
-        if (!await _otp.IsEnabledAsync())
-        {
-            return NotFound();
-        }
-
         var customer = await GetSignedInCustomerAsync();
-        if (customer is null || await _otp.GetVerifiedPhoneAsync(customer.Id, ct) is null)
-        {
-            return RedirectToRoute("Login");
-        }
-
+        if (customer is null) return RedirectToRoute("Login");
         model.ReturnUrl = Url.IsLocalUrl(model.ReturnUrl) ? model.ReturnUrl : null;
-        model.Phone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
-        if (!ModelState.IsValid)
-        {
-            return View("Profile", model);
-        }
-
-        var result = await _profile.CompleteProfileAsync(
-            customer, model.Username, model.FirstName, model.LastName, model.Email, ct);
+        model.Phone = await _profile.GetVerifiedPhoneAsync(customer.Id, ct);
+        model.Guilds = await GetGuildsAsync(ct);
+        if (!ModelState.IsValid) return View("Profile", model);
+        var result = await _profile.CompleteProfileAsync(customer, model.FirstName, model.LastName, model.Email, model.NationalCode, model.GuildId, ct);
         if (!result.Succeeded)
         {
-            foreach (var error in result.Errors)
-            {
-                ModelState.AddModelError(string.Empty, error.Description);
-            }
+            foreach (var error in result.Errors) ModelState.AddModelError(string.Empty, error.Description);
             return View("Profile", model);
         }
-
         return model.ReturnUrl is not null ? LocalRedirect(model.ReturnUrl) : RedirectToRoute("Homepage");
     }
+
+    private Task<List<GuildOptionDto>> GetGuildsAsync(CancellationToken ct) =>
+        _db.Guilds.AsNoTracking().Where(x => x.IsActive).OrderBy(x => x.DisplayOrder).ThenBy(x => x.Title)
+            .Select(x => new GuildOptionDto(x.Id, x.Title)).ToListAsync(ct);
 
     private async Task<Customer> GetSignedInCustomerAsync()
     {

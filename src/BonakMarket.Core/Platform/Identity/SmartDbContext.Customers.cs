@@ -5,6 +5,7 @@ namespace BonakMarket.Core.Data;
 public partial class SmartDbContext
 {
     public DbSet<Customer> Customers { get; set; }
+    public DbSet<Guild> Guilds { get; set; }
     public DbSet<CustomerRole> CustomerRoles { get; set; }
     public DbSet<CustomerRoleMapping> CustomerRoleMappings { get; set; }
     public DbSet<CustomerContent> CustomerContent { get; set; }

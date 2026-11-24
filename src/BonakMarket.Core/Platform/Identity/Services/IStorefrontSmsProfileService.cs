@@ -9,5 +9,5 @@ public interface IStorefrontSmsProfileService
 {
     Task<bool> IsProfileIncompleteAsync(int customerId, CancellationToken ct = default);
     Task<string> GetVerifiedPhoneAsync(int customerId, CancellationToken ct = default);
-    Task<IdentityResult> CompleteProfileAsync(Customer customer, string username, string firstName, string lastName, string email, CancellationToken ct = default);
+    Task<IdentityResult> CompleteProfileAsync(Customer customer, string firstName, string lastName, string email, string nationalCode, int? guildId, CancellationToken ct = default);
 }

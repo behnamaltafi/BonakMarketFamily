@@ -16,6 +16,8 @@ internal class CustomerMap : IEntityTypeConfiguration<Customer>
     {
         // Globally exclude soft-deleted entities from all queries.
         builder.HasQueryFilter(c => !c.Deleted);
+        builder.HasOne<Guild>().WithMany().HasForeignKey(c => c.GuildId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(c => c.GuildId);
 
         builder
             .HasMany(c => c.Addresses)
@@ -84,6 +86,13 @@ public partial class Customer : EntityWithAttributes, ISoftDeletable, IStoreRest
     /// </summary>
     [StringLength(500)]
     public string Username { get; set; }
+
+    // Optional until onboarding completes; not a permission or role.
+    [IgnoreDataMember]
+    public int? GuildId { get; set; }
+
+    [StringLength(10), IgnoreDataMember, System.Text.Json.Serialization.JsonIgnore]
+    public string NationalCode { get; set; }
 
     /// <summary>
     /// Gets or sets the email

@@ -21,11 +21,6 @@
                             <label asp-for="Phone">@T("Plugins.Identity.Customer.Otp.PhoneLabel")</label>
                         </div>
                         <div class="form-floating mb-3">
-                            <input asp-for="Username" class="form-control" maxlength="100" required />
-                            <label asp-for="Username">@T("Plugins.Identity.Customer.Otp.UsernameLabel")</label>
-                            <span asp-validation-for="Username" class="text-danger"></span>
-                        </div>
-                        <div class="form-floating mb-3">
                             <input asp-for="FirstName" class="form-control" maxlength="225" />
                             <label asp-for="FirstName">@T("Plugins.Identity.Customer.Otp.FirstNameLabel")</label>
                         </div>
@@ -38,6 +33,22 @@
                                    autocomplete="email" />
                             <label asp-for="Email">@T("Plugins.Identity.Customer.Otp.EmailOptionalLabel")</label>
                             <span asp-validation-for="Email" class="text-danger"></span>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <input asp-for="NationalCode" class="form-control" maxlength="10" inputmode="numeric" dir="ltr" />
+                            <label asp-for="NationalCode">کد ملی (اختیاری)</label>
+                            <span asp-validation-for="NationalCode" class="text-danger"></span>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="GuildId" class="form-label">صنف فعالیت</label>
+                            <select asp-for="GuildId" class="form-select" required>
+                                <option value="">انتخاب صنف</option>
+                                @foreach (var guild in Model.Guilds)
+                                {
+                                    <option value="@guild.Id">@guild.Title</option>
+                                }
+                            </select>
+                            <span asp-validation-for="GuildId" class="text-danger"></span>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">
                             @T("Plugins.Identity.Customer.Otp.SaveProfile")

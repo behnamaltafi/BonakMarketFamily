@@ -39,7 +39,7 @@ internal static class StorefrontScope
         Visible(db.Set<Manufacturer>(), db, customer, store).Where(x => x.Published && !x.Deleted);
     public static IQueryable<Order> Orders(SmartDbContext db, Customer customer, int store) =>
         db.Set<Order>().Where(x => !x.Deleted).ApplyStandardFilter(customer.Id, store);
-    public static IQueryable<ShoppingCartItem> Cart(SmartDbContext db, Customer customer, int store) =>
+    public static IQueryable<ShoppingCartItem> Cart(SmartDbContext db, Customer customer, int store, ShoppingCartType type = ShoppingCartType.ShoppingCart) =>
         db.Set<ShoppingCartItem>().Where(x => x.CustomerId == customer.Id && x.StoreId == store &&
-            x.ShoppingCartTypeId == (int)ShoppingCartType.ShoppingCart);
+            x.ShoppingCartTypeId == (int)type);
 }

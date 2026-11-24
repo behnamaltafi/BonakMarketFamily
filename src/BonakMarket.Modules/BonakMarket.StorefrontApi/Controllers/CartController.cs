@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using BonakMarket.Core.Checkout.Cart;
 using BonakMarket.Core.Security;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
@@ -43,6 +44,17 @@ public sealed class CartController(CartFacade cart) : StorefrontController
         await cart.RemoveCouponAsync(ct);
         return NoContent();
     }
+
+    [HttpPost("items/{id:int}/wishlist")]
+    [StorefrontPermission(StorefrontPermissions.Wishlist)]
+    [StorefrontPermission(Permissions.Cart.AccessWishlist)]
+    public async Task<ActionResult<List<CartItemDto>>> ToWishlist(int id, CancellationToken ct) =>
+        Result(await cart.TransferAsync(id, ShoppingCartType.ShoppingCart, ct));
+
+    [HttpPut("reward-points")]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> RewardPoints([FromBody] UseRewardPointsRequest input, CancellationToken ct) =>
+        await cart.SetRewardPointsAsync(input.Use, ct) ? NoContent() : Error(403, "reward_points_disabled");
 
     private ActionResult<List<CartItemDto>> Result(CartChange result)
     {

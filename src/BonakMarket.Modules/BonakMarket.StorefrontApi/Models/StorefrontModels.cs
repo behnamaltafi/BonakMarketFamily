@@ -2,11 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BonakMarket.StorefrontApi.Models;
 
-public sealed class ProductDto
+public class ProductDto
 {
     public int Id { get; set; }
     public string Name { get; set; }
     public string ShortDescription { get; set; }
+    public string Sku { get; set; }
     public int? MediaFileId { get; set; }
     public string ImageUrl { get; set; }
     public PriceDto Price { get; set; }

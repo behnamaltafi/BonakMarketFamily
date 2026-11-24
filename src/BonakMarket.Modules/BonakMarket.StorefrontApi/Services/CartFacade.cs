@@ -39,43 +39,12 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
             .Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductVariantAttributeValues)
             .FirstOrDefaultAsync(x => x.Id == input.ProductId, ct);
         if (product == null) return new(404, "product_not_found");
-        if (product.CustomerEntersPrice || product.IsGiftCard || product.CallForPrice || product.DisableBuyButton ||
-            product.ProductType != ProductType.SimpleProduct)
-            return new(409, "product_requires_configuration");
-
-        var query = new ProductVariantQuery();
-        var choices = input.Variants ?? new List<VariantChoice>();
-        if (choices.Count > 30 || choices.Any(x => x == null) ||
-            choices.Select(x => (x.VariantAttributeId, x.ValueId)).Distinct().Count() != choices.Count)
-            return new(400, "invalid_variants");
-        foreach (var group in choices.GroupBy(x => x.VariantAttributeId))
-        {
-            var attribute = product.ProductVariantAttributes.FirstOrDefault(x => x.Id == group.Key);
-            if (attribute == null || attribute.AttributeControlType is not (AttributeControlType.DropdownList or
-                AttributeControlType.RadioList or AttributeControlType.Boxes or AttributeControlType.Checkboxes))
-                return new(400, "invalid_variant_attribute");
-            if (attribute.AttributeControlType != AttributeControlType.Checkboxes && group.Count() > 1)
-                return new(400, "multiple_variant_values");
-            foreach (var choice in group)
-            {
-                if (!attribute.ProductVariantAttributeValues.Any(x => x.Id == choice.ValueId))
-                    return new(400, "invalid_variant_value");
-                query.AddVariant(new ProductVariantQueryItem { ProductId = product.Id, AttributeId = attribute.ProductAttributeId,
-                    VariantAttributeId = attribute.Id, Value = choice.ValueId.ToString(System.Globalization.CultureInfo.InvariantCulture) });
-            }
-        }
-        // Do not allow a client-supplied download GUID or other raw attributes.
-        if (product.ProductVariantAttributes.Any(x => x.IsRequired && x.AttributeControlType is
-            (AttributeControlType.FileUpload or AttributeControlType.TextBox or AttributeControlType.MultilineTextbox or AttributeControlType.Datepicker)))
-            return new(409, "unsupported_required_attribute");
-
-        var (selection, warnings) = await attributes.CreateAttributeSelectionAsync(query, product.ProductVariantAttributes,
-            product.Id, 0, getFilesFromRequest: false);
-        if (warnings.Count > 0) return new(422, "invalid_variants", warnings);
+        var selection = await ProductSelection.CreateAsync(product, input.Variants, attributes);
+        if (selection.Status != 200) return new(selection.Status, selection.Code, selection.Warnings);
         var context = new AddToCartContext
         {
             Customer = request.Customer, Product = product, StoreId = request.StoreId,
-            CartType = type, Quantity = input.Quantity, RawAttributes = selection.AsJson(),
+            CartType = type, Quantity = input.Quantity, RawAttributes = selection.Selection.AsJson(),
             AutomaticallyAddRequiredProducts = product.RequireOtherProducts && product.AutomaticallyAddRequiredProducts,
             AutomaticallyAddBundleProducts = true
         };

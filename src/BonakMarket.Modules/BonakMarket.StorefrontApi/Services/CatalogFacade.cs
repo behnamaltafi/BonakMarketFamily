@@ -6,6 +6,8 @@ using BonakMarket.Core.Catalog;
 using BonakMarket.Core.Catalog.Attributes;
 using BonakMarket.Core.Catalog.Search;
 using BonakMarket.Core.Catalog.Pricing;
+using BonakMarket.Core.Checkout.Cart;
+using BonakMarket.Core.Identity;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Security;
@@ -19,7 +21,8 @@ namespace BonakMarket.StorefrontApi.Services;
 public sealed class CatalogFacade(
     SmartDbContext db, ICatalogSearchService search, IPriceCalculationService prices,
     IMediaService media, IPermissionService permissions, IWorkContext work,
-    IStoreContext stores, IComponentContext components, CatalogSettings catalogSettings, StorefrontRequestContext request)
+    IStoreContext stores, IComponentContext components, CatalogSettings catalogSettings, StorefrontRequestContext request,
+    IProductAttributeMaterializer attributes, IShoppingCartValidator validator)
 {
     public Task<bool> CanDisplayPriceAsync() => permissions.AuthorizeAsync(Permissions.Catalog.DisplayPrice, request.Customer);
 
@@ -76,6 +79,109 @@ public sealed class CatalogFacade(
         return (await MapAsync(new[] { product }, true, false))[0];
     }
 
+    public async Task<ProductDetailDto> DetailAsync(int id, CancellationToken ct)
+    {
+        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
+            .AsNoTracking().Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductAttribute)
+            .Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductVariantAttributeValues)
+            .AsSplitQuery().FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (product == null) return null;
+
+        var summary = (await MapAsync(new[] { product }, true, false))[0];
+        var imageIds = await db.Set<ProductMediaFile>().AsNoTracking()
+            .Where(x => x.ProductId == id && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).Select(x => x.MediaFileId).ToListAsync(ct);
+        var images = new List<ProductImageDto>();
+        foreach (var imageId in imageIds.Distinct())
+            images.Add(new ProductImageDto(imageId, await media.GetUrlAsync(imageId, 800, doFallback: false)));
+
+        var specifications = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
+            .Where(x => x.ProductId == id &&
+                (x.ShowOnProductPage ?? x.SpecificationAttributeOption.SpecificationAttribute.ShowOnProductPage))
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id)
+            .Select(x => new ProductSpecificationDto(x.SpecificationAttributeOption.SpecificationAttributeId,
+                x.SpecificationAttributeOption.SpecificationAttribute.Name, x.SpecificationAttributeOptionId,
+                x.SpecificationAttributeOption.Name)).ToListAsync(ct);
+
+        var quantities = product.ParseAllowedQuantities();
+        var min = Math.Max(1, quantities.Length > 0 ? quantities[0] : product.OrderMinimumQuantity);
+        var max = Math.Max(min, quantities.Length > 0 ? quantities[^1] : product.OrderMaximumQuantity);
+        var supported = ProductSelection.UnsupportedCode(product) == null;
+        var priceAllowed = await CanDisplayPriceAsync();
+        var registered = request.Customer.IsRegistered();
+        var canCart = registered && supported &&
+            await permissions.AuthorizeAsync(StorefrontPermissions.Cart, request.Customer) &&
+            await permissions.AuthorizeAsync(Permissions.Cart.AccessShoppingCart, request.Customer);
+        var canWishlist = registered && supported && !product.DisableWishlistButton &&
+            await permissions.AuthorizeAsync(StorefrontPermissions.Wishlist, request.Customer) &&
+            await permissions.AuthorizeAsync(Permissions.Cart.AccessWishlist, request.Customer);
+
+        return new ProductDetailDto
+        {
+            Id = summary.Id, Name = summary.Name, Sku = summary.Sku, ShortDescription = summary.ShortDescription,
+            ImageUrl = summary.ImageUrl, MediaFileId = summary.MediaFileId, Price = summary.Price,
+            FullDescriptionHtml = product.FullDescription, ProductTypeId = product.ProductTypeId,
+            Images = images, Specifications = specifications,
+            Variants = product.ProductVariantAttributes.OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id)
+                .Select(x => new ProductDetailVariantDto(x.Id, x.ProductAttribute.Name, x.AttributeControlTypeId,
+                    x.IsRequired, x.TextPrompt, ProductSelection.SupportsControl(x.AttributeControlType),
+                    x.ProductVariantAttributeValues.OrderBy(v => v.DisplayOrder).ThenBy(v => v.Id)
+                        .Select(v => new ProductDetailVariantValueDto(v.Id, v.Name, v.IsPreSelected, v.Color)).ToList())).ToList(),
+            PurchaseRules = new ProductPurchaseRulesDto(min, Math.Min(1000, max), Math.Max(1, product.QuantityStep),
+                quantities.Where(q => q > 0 && q <= 1000).Distinct().ToArray(), product.HideQuantityControl,
+                !supported || min > 1000),
+            AllowedActions = new ProductCapabilitiesDto(supported && min <= 1000 && priceAllowed,
+                canCart && min <= 1000, canWishlist && min <= 1000),
+            RequiresShipping = product.IsShippingEnabled, IsPreOrder = product.AvailableForPreOrder,
+            ReviewCount = product.ApprovedTotalReviews,
+            AverageRating = product.ApprovedTotalReviews > 0
+                ? Math.Round((decimal)product.ApprovedRatingSum / product.ApprovedTotalReviews, 2) : null
+        };
+    }
+
+    public async Task<(int Status, string Code, ProductQuoteDto Quote)> QuoteAsync(int id, ProductQuoteRequest input, CancellationToken ct)
+    {
+        // Tracked product is required by native attribute validation. Never save this hypothetical item.
+        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
+            .Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductVariantAttributeValues)
+            .AsSplitQuery().FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (product == null) return (404, "product_not_found", null);
+        if (!await CanDisplayPriceAsync()) return (403, "price_access_denied", null);
+        var selection = await ProductSelection.CreateAsync(product, input.Variants, attributes);
+        if (selection.Status == 400) return (400, selection.Code, null);
+        if (selection.Status != 200)
+            return (200, null, new(id, input.Quantity, false, selection.Code, null,
+                selection.Warnings ?? [], product.RequireOtherProducts));
+
+        var item = new ShoppingCartItem
+        {
+            Product = product, ProductId = id, Customer = request.Customer, CustomerId = request.Customer.Id,
+            StoreId = request.StoreId, Quantity = input.Quantity, ShoppingCartType = ShoppingCartType.ShoppingCart,
+            RawAttributes = selection.Selection.AsJson()
+        };
+        var ctx = new AddToCartContext
+        {
+            Customer = request.Customer, Product = product, StoreId = request.StoreId,
+            CartType = ShoppingCartType.ShoppingCart, Quantity = input.Quantity, RawAttributes = item.RawAttributes
+        };
+
+        // Quote validates this selection in isolation, not the existing cart or dependent products.
+        // Native cart writes remain the final authority for aggregate stock, quantity and permissions.
+        var valid = await validator.ValidateAddToCartItemAsync(ctx, item, Array.Empty<OrganizedShoppingCartItem>());
+        if (!valid)
+            return (200, null, new(id, input.Quantity, false, "product_validation_failed", null,
+                ctx.Warnings, true));
+
+        var options = prices.CreateDefaultOptions(false, request.Customer);
+        options.ApplyPreselectedAttributes = false;
+        var calculation = await prices.CreateCalculationContextAsync(new OrganizedShoppingCartItem(item), options);
+        var (unit, subtotal) = await prices.CalculateSubtotalAsync(calculation);
+        return (200, null, new(id, input.Quantity, true, null,
+            new ProductQuotePricingDto(unit.FinalPrice.Currency.CurrencyCode, unit.FinalPrice.Amount,
+                unit.RegularPrice?.Amount, subtotal.FinalPrice.Amount, subtotal.DiscountAmount.Amount, options.TaxInclusive),
+            Array.Empty<string>(), true));
+    }
+
     public async Task<PriceDto> PriceAsync(int id, int quantity, CancellationToken ct)
     {
         var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
@@ -112,7 +218,7 @@ public sealed class CatalogFacade(
         var items = new List<ProductDto>(products.Count);
         foreach (var product in products)
         {
-            var item = new ProductDto { Id = product.Id, Name = product.Name, ShortDescription = product.ShortDescription };
+            var item = new ProductDto { Id = product.Id, Name = product.Name, ShortDescription = product.ShortDescription, Sku = product.Sku };
             if (lookup.TryGetValue(product.Id, out var picture))
             {
                 item.MediaFileId = picture;

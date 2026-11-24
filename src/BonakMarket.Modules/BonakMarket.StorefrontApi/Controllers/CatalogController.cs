@@ -19,11 +19,19 @@ public sealed class CatalogController(CatalogFacade catalog) : StorefrontControl
     }
 
     [HttpGet("{id:int}"), PublicCatalog]
-    public async Task<ActionResult<ProductDto>> Get(int id, CancellationToken ct)
+    public async Task<ActionResult<ProductDetailDto>> Get(int id, CancellationToken ct)
     {
-        var item = await catalog.FindAsync(id, ct);
+        var item = await catalog.DetailAsync(id, ct);
         if (item == null) return Error(404, "product_not_found");
         return Ok(item);
+    }
+
+    /// <summary>Read-only price and validation for an explicit selection; does not add items to the cart.</summary>
+    [HttpPost("{id:int}/quote"), PublicCatalog]
+    public async Task<ActionResult<ProductQuoteDto>> Quote(int id, [FromBody] ProductQuoteRequest input, CancellationToken ct)
+    {
+        var result = await catalog.QuoteAsync(id, input, ct);
+        return result.Status == 200 ? Ok(result.Quote) : Error(result.Status, result.Code);
     }
 
     [HttpGet("{id:int}/variants"), PublicCatalog]

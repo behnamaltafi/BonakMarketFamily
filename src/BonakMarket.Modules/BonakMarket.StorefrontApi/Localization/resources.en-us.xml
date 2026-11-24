@@ -1,0 +1,4 @@
+<Language Name="English" IsDefault="false" IsRightToLeft="false">
+  <LocaleResource Name="Plugins.Permissions.DisplayName.Storefront" AppendRootKey="false"><Value>Storefront API</Value></LocaleResource>
+  <LocaleResource Name="Plugins.FriendlyName.BonakMarket.StorefrontApi" AppendRootKey="false"><Value>Storefront API</Value></LocaleResource>
+</Language>

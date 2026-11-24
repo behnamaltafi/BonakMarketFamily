@@ -30,7 +30,7 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
 
     public async Task<CartChange> AddAsync(AddCartItem input, CancellationToken ct)
     {
-        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forSearch: true)
+        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
             .Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductVariantAttributeValues)
             .FirstOrDefaultAsync(x => x.Id == input.ProductId, ct);
         if (product == null) return new(404, "product_not_found");

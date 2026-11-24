@@ -33,6 +33,14 @@ internal sealed class StorefrontDocumentFilter : IDocumentFilter
                     // Browser cookie sessions are also supported; Swagger cannot set the HttpOnly cookie.
                     operation.Description = (operation.Description ?? "") + " Browser cookie authentication is also supported with the antiforgery request header on mutations.";
                 }
+                else if (path.Key.StartsWith("/api/storefront/v1/", StringComparison.OrdinalIgnoreCase))
+                {
+                    operation.Security.Add(new OpenApiSecurityRequirement
+                    {
+                        [new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }] = Array.Empty<string>()
+                    });
+                    operation.Security.Add(new OpenApiSecurityRequirement());
+                }
             }
         }
     }

@@ -1,79 +1,57 @@
-# Storefront REST API (phase 1)
+# Storefront REST API — Native First (phase 1)
 
-The independent module BonakMarket.StorefrontApi serves /api/storefront/v1. OData and the MVC storefront are unchanged. Install MultiSms and StorefrontApi through the module manager. The native SmartDbContext, shopping cart, order and pricing services remain authoritative.
+## Architecture decision
+BonakMarket.StorefrontApi is an in-process module; it is not a separate commerce service.
+Controllers return ASP.NET Core ActionResult<T>, HTTP status codes and ProblemDetails.
+CatalogFacade, CartFacade and ProfileFacade orchestrate existing native services; the Query classes contain only customer-facing projections and ownership queries. No generic repository, no Common package or private NuGet feed is required. OData controllers and the existing storefront remain unchanged.
 
-## Build / deployment
+Catalog uses ICatalogSearchService.PrepareQuery and CatalogSearchQuery, with the native LINQ search visitors and IPagedList<T>. A strict database base scope keeps ACL/store/visibility conditions mandatory, even when native settings can bypass them. This deliberately uses the native LINQ provider rather than SearchAsync with a potentially stale external index: the count and returned data are computed from the same scoped source. Index, facets and search events are not enabled on this route yet. Product pricing uses IPriceCalculationService and ProductBatchContext; price filters/sorting follow native catalog search price semantics, not guaranteed customer-specific final calculated price. Native order and cart services remain authoritative.
 
-Restore Common.Contracts 1.0.1 and Common.Paging.EntityFrameworkCore 1.0.0 from the organization's NuGet feed. Common.Data v1.0.0 declares the Foundation dependency range [1.0.1,2.0.0). Verify the actual released packages exist in Nexus; no credentials are committed. Supply BONAK_COMMON_NUGET_SOURCE as a non-secret feed URL, or configure the agent's NuGet sources. Version properties StorefrontCommonVersion and StorefrontPagingVersion can be overridden. The host EF Core references and SQL client are aligned to 10.0.12 and 7.1.0 respectively to avoid a second EF runtime in the module.
-
-Run:
+## Build and installation
 ```powershell
-$env:BONAK_COMMON_NUGET_SOURCE = 'https://YOUR-NEXUS/repository/nuget-hosted/index.json'
+git switch feature/storefront-api
 dotnet restore BonakMarket.sln
 dotnet build BonakMarket.sln --no-restore
-dotnet test test/BonakMarket.Core.Tests --no-build --filter FullyQualifiedName~StorefrontPagingTests
+dotnet test test/BonakMarket.Core.Tests --no-build --filter FullyQualifiedName~StorefrontContractTests
 ```
+Install MultiSms then StorefrontApi in the module manager and restart the application so native permission installation and the MultiSmsMobileApiSession migration run. Do not reset the database. No Common packages or Nexus configuration needed. EF Core and SQL Client versions are back to develop versions; JWT bearer remains referenced for the auth dependencies.
 
-Use HTTPS. When running behind a reverse proxy, configure trusted forwarded headers so ASP.NET sees HTTPS. Existing installation database requires the new MultiSmsMobileApiSession migration; never drop the database.
-
-## Authentication
-
-Cookie remains the native website login. Obtain CSRF request token/header with GET /api/sms-login/session, keep cookies, send the returned header for POST/PUT/DELETE. Read-only public catalog search POSTs do not require CSRF because they do not mutate state.
-For mobile, configure MobileApi__Enabled=true and MobileApi__SigningKey (base64 encoding of at least 32 random bytes, stored outside Git). 
+## Authentication / authorization
+Use HTTPS (behind a proxy configure trusted forwarded headers).
+Cookie: native sign-in. GET /api/sms-login/session returns a CSRF token/header; use it with the cookie on mutations.
+Mobile: set MobileApi__Enabled=true and MobileApi__SigningKey (base64 of at least 32 random bytes, from secret storage). 
 1. GET /api/sms-login/session
-2. POST /api/sms-login/request with phone, session cookie and CSRF header.
-3. POST /api/sms-login/verify with phone, code, issueTokens:true; preserve CSRF header. Response includes accessToken, refreshToken, expiresIn.
-4. Send Authorization: Bearer <accessToken> for storefront calls. The validated ticket is installed before WorkContext. No Basic fallback.
-5. POST /api/sms-login/refresh with refreshToken; rotate and replace both credentials; do not send concurrent refreshes.
-6. POST /api/storefront/v1/auth/logout with Bearer to revoke the session, or cookie + CSRF to sign out the native website.
-Access tokens last up to 10 minutes; absolute refresh expiry is 30 days. OTP controllers retain the existing response format for compatibility, while new Storefront actions use Common.ApiResult.
+2. POST /api/sms-login/request {phone}; keep cookie and returned CSRF header.
+3. POST /api/sms-login/verify {phone,code,issueTokens:true}; returns accessToken, refreshToken, expiresIn. Existing SMS response unchanged.
+4. Send Authorization: Bearer <accessToken> on /api/storefront/v1 endpoints.
+5. POST /api/sms-login/refresh {refreshToken}; replace both credentials, do not refresh concurrently.
+6. POST /api/storefront/v1/auth/logout (Bearer revokes session; cookie requires CSRF). Returns 204.
+Access expiry up to 10 minutes, refresh absolute lifetime 30 days. No Basic fallback. Authentication middleware sets the verified identity before WorkContext. Authorization filter validates identity, native permissions, HTTPS and cookie antiforgery. Ownership checks use the resolved customer and store; there is no client-supplied CustomerId.
+Native permission provider registers storefront.catalog (guest/registered), storefront.cart, storefront.orders, storefront.profile (registered), and storefront root (administrator). Existing AccessShop, DisplayPrice, AccessShoppingCart remain in force. Verify these assignments in admin after install. A role cannot use permissions to bypass order/address ownership.
 
-## Phase 1 endpoints
+## REST endpoints
+All paths below use /api/storefront/v1. Catalog is available to guests with native permissions.
+- GET /products?search=milk&categoryId=12&brandId=4&minPrice=10&maxPrice=100&inStock=true&hasDiscount=true&sort=PriceAsc&page=1&pageSize=20&includePrice=true
+- GET /products/{id}
+- GET /products/{id}/price?quantity=1
+- GET /products/{id}/variants
+- GET /categories?parentId=0&search=food&page=1&pageSize=20
+- GET /brands?search=name&page=1&pageSize=20
+- GET /orders?page=1&pageSize=20&orderStatusId=10 (authenticated)
+- GET /orders/{id}; POST /orders/{id}/reorder (native reorder can skip unavailable items; re-read cart)
+- GET /profile; PUT /profile; GET /profile/addresses (verified SMS profile modification, addresses read only)
+- GET /cart; GET /cart/total
+- POST /cart/items {productId:123,quantity:2,variants:[{variantAttributeId:1,valueId:2}]}
+- PUT /cart/items/{id} {quantity:3}; DELETE /cart/items/{id}
+- POST /cart/coupon {code:"..."}; DELETE /cart/coupon (204 on success)
+- POST /auth/logout
 
-Public catalog (guest permissions and ACL/store restrictions still apply):
-- POST /api/storefront/v1/products/search?categoryId=1&brandId=2&includePrice=true (optional parameters)
-- GET /api/storefront/v1/products/{id}
-- GET /api/storefront/v1/products/{id}/price?quantity=1
-- POST /api/storefront/v1/categories/search
-- POST /api/storefront/v1/brands/search
+Breaking changes against the unmerged earlier implementation: /products/search, /categories/search, /brands/search, /orders/search POST routes are replaced by GET collection routes, and dynamic Common filter bodies and ApiResult envelope are removed. Successful list responses are {items,page,pageSize,totalCount,totalPages}. Page size 1..100, page 1..10000. Errors use actual HTTP status plus ProblemDetails. No dynamic SQL fields, raw entity responses, export or aggregates.
 
-Authenticated:
-- GET /api/storefront/v1/profile
-- PUT /api/storefront/v1/profile (verified-phone account profile completion; native service)
-- GET /api/storefront/v1/profile/addresses (read only)
-- POST /api/storefront/v1/orders/search
-- GET /api/storefront/v1/orders/{id}
-- POST /api/storefront/v1/orders/{id}/reorder (native reorder can skip unavailable items; re-read cart)
-- GET /api/storefront/v1/cart
-- GET /api/storefront/v1/cart/total
-- POST /api/storefront/v1/cart/items { "productId": 123, "quantity": 2 }
-- PUT /api/storefront/v1/cart/items/{id} { "quantity": 3 }
-- DELETE /api/storefront/v1/cart/items/{id}
-- POST /api/storefront/v1/cart/coupon { "code": "..." }
-- DELETE /api/storefront/v1/cart/coupon
-- POST /api/storefront/v1/auth/logout
-
-Swagger: /docs/storefront (development; opt in outside development with StorefrontApi__EnableSwagger=true). The document is independent of the OData groups; it includes the existing SMS authentication actions.
-
-## Common paging contract
-
-Example body for products/search:
-```json
-{
-  "pageNumber": 1,
-  "pageSize": 20,
-  "sortingParams": [{"columnName":"Name","sortOrder":1}],
-  "filterParam": [{"columnName":"Name","filterValue":"milk","filterOption":9}],
-  "comparisonMode": 1,
-  "outputType": 1
-}
-```
-Use Common.Paging enums; 1 = Asc, 2 = Desc; Equal=5, Contain=9. Search applies owner/visibility constraints first, projects to DTO, then invokes Common.Paging.FilterPaging. Page size is capped at 100; no export, aggregates, full-text or arbitrary navigation fields. For a one-item page the native PagingFilter setter normalizes page size to 10. Product price is not a sortable SQL field; calculated discounts depend on the customer, currency, quantity and native pricing options. OrderTotal is the persisted primary-currency order total, not a converted display total. Cart total can be null until shipping/payment information is available.
-
-## Phase 1 boundaries / verification
-
-- Cart addition supports simple products without variant configuration; grouped/bundle/gift card/customer-entered-price products and custom attributes require further DTOs and native integration.
-- Profile modification is the existing verified-SMS profile flow; address editing and phone change via mobile bearer are not included. The legacy cookie enrollment endpoints remain available.
-- Checkout, payment, shipping selection, order creation, wishlist, CMS, recommendations, dedicated promotions discovery and advanced product filtering are later phases.
-- No API key is issued to a customer. Explicit order/cart customer and store filters are not bypassable by the supplied paging query. No OData source changes are necessary.
-- Test the installation/migration, package restore, Swagger, guest ACL/store isolation, expired/rotated/revoked tokens, cookie CSRF, cross-customer orders/cart including guessed IDs, pricing and coupon application before merging. Unit tests cover paging validation only. End-to-end verification has not yet been executed.
+Swagger: /docs/storefront (development; explicit opt-in in other environments with StorefrontApi__EnableSwagger=true).
+ 
+## Boundaries and validation
+- Simple products and list-based variants (dropdown, radio, boxes, checkbox) are supported via native attribute materializer. Bundles, grouped products, gift cards, user-entered price, text/date/file attributes are not fully supported. File GUIDs are not accepted.
+- Checkout, payment, shipping selection, order creation, wishlist, address editing, CMS, recommendations and facet discovery remain future work.
+- Native product details are projected to dedicated DTOs; MVC helpers are not called because they depend on UI and HTTP form state. Localization of catalog names and full native view model parity remain follow-up work.
+- No SDK or running SQL Server was available in the editing environment. Test source was added but no build, install or test was executed. Before merge verify restore, install, migrations, permission registration, anonymous guest catalog, JWT/cookie identity, CSRF, token rotation, revoked tokens, stale role/ACL changes, cross-customer/store resource requests, variant validation, pricing and coupon totals with SQL Server. Measure search latency before deciding whether to enable an index provider.

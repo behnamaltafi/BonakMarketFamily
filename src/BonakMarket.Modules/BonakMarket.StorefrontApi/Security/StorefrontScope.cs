@@ -25,11 +25,11 @@ internal static class StorefrontScope
         return query.Where(x => (!x.SubjectToAcl || acl.Contains(x.Id)) && (!x.LimitedToStores || stores.Contains(x.Id)));
     }
 
-    public static IQueryable<Product> Products(SmartDbContext db, Customer customer, int store, bool forSearch = false)
+    public static IQueryable<Product> Products(SmartDbContext db, Customer customer, int store, bool forSearch = false, bool forDetail = false)
     {
         var now = DateTime.UtcNow;
         return Visible(db.Set<Product>(), db, customer, store).ApplyStandardFilter()
-            .Where(x => !x.Deleted && (x.Visibility == ProductVisibility.Full || (forSearch && x.Visibility == ProductVisibility.SearchResults)) &&
+            .Where(x => !x.Deleted && (x.Visibility == ProductVisibility.Full || ((forSearch || forDetail) && x.Visibility == ProductVisibility.SearchResults) || (forDetail && x.Visibility == ProductVisibility.ProductPage)) &&
                 (x.AvailableStartDateTimeUtc == null || x.AvailableStartDateTimeUtc <= now) &&
                 (x.AvailableEndDateTimeUtc == null || x.AvailableEndDateTimeUtc >= now));
     }

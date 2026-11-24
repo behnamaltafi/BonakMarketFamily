@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Autofac;
 using BonakMarket.Core;
 using BonakMarket.Core.Catalog.Products;
+using BonakMarket.Core.Catalog;
 using BonakMarket.Core.Catalog.Attributes;
 using BonakMarket.Core.Catalog.Search;
 using BonakMarket.Core.Catalog.Pricing;
@@ -18,7 +19,7 @@ namespace BonakMarket.StorefrontApi.Services;
 public sealed class CatalogFacade(
     SmartDbContext db, ICatalogSearchService search, IPriceCalculationService prices,
     IMediaService media, IPermissionService permissions, IWorkContext work,
-    IStoreContext stores, IComponentContext components, StorefrontRequestContext request)
+    IStoreContext stores, IComponentContext components, CatalogSettings catalogSettings, StorefrontRequestContext request)
 {
     public Task<bool> CanDisplayPriceAsync() => permissions.AuthorizeAsync(Permissions.Catalog.DisplayPrice, request.Customer);
 
@@ -35,7 +36,8 @@ public sealed class CatalogFacade(
             var category = await StorefrontScope.Categories(db, request.Customer, request.StoreId)
                 .AsNoTracking().FirstOrDefaultAsync(x => x.Id == filter.CategoryId.Value, ct);
             if (category == null) return Empty(filter);
-            query.WithCategoryTreePath(category.TreePath, null);
+            if (catalogSettings.ShowProductsFromSubcategories) query.WithCategoryTreePath(category.TreePath, null);
+            else query.WithCategoryIds(null, category.Id);
         }
         if (filter.BrandId.HasValue)
         {
@@ -68,7 +70,7 @@ public sealed class CatalogFacade(
 
     public async Task<ProductDto> FindAsync(int id, CancellationToken ct)
     {
-        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forSearch: true)
+        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
             .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (product == null) return null;
         return (await MapAsync(new[] { product }, true, false))[0];
@@ -76,7 +78,7 @@ public sealed class CatalogFacade(
 
     public async Task<PriceDto> PriceAsync(int id, int quantity, CancellationToken ct)
     {
-        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forSearch: true)
+        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
             .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (product == null || product.CallForPrice || product.CustomerEntersPrice) return null;
         var options = prices.CreateDefaultOptions(false, request.Customer);
@@ -85,7 +87,7 @@ public sealed class CatalogFacade(
 
     public async Task<List<VariantDto>> VariantsAsync(int id, CancellationToken ct)
     {
-        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forSearch: true)
+        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
             .AsNoTracking().Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductAttribute)
             .Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductVariantAttributeValues)
             .AsSplitQuery().FirstOrDefaultAsync(x => x.Id == id, ct);

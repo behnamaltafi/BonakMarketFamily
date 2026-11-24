@@ -35,7 +35,8 @@ public sealed class StorefrontAuthorizationFilter(
     {
         var http = context.HttpContext;
         var action = context.ActionDescriptor as ControllerActionDescriptor;
-        var isPublic = action?.MethodInfo.IsDefined(typeof(PublicCatalogAttribute), true) == true;
+        if (action == null) { Deny(context, 403, "permission_denied"); return; }
+        var isPublic = action.MethodInfo.IsDefined(typeof(PublicCatalogAttribute), true);
         var bearer = http.Request.Headers.ContainsKey("Authorization");
         Customer identity = null;
         if (!http.Request.IsHttps) { Deny(context, 400, "https_required"); return; }

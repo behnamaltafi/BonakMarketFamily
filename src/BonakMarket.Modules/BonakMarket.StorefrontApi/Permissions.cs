@@ -9,7 +9,6 @@ public static class StorefrontPermissions
     public const string Catalog = "storefront.catalog";
     public const string Cart = "storefront.cart";
     public const string Orders = "storefront.orders";
-    public const string Profile = "storefront.profile";
 }
 
 public sealed class StorefrontPermissionProvider : IPermissionProvider
@@ -21,7 +20,7 @@ public sealed class StorefrontPermissionProvider : IPermissionProvider
     {
         yield return For(SystemCustomerRoleNames.Guests, StorefrontPermissions.Catalog);
         yield return For(SystemCustomerRoleNames.Registered, StorefrontPermissions.Catalog,
-            StorefrontPermissions.Cart, StorefrontPermissions.Orders, StorefrontPermissions.Profile);
+            StorefrontPermissions.Cart, StorefrontPermissions.Orders);
         yield return For(SystemCustomerRoleNames.Administrators, StorefrontPermissions.Self);
     }
 

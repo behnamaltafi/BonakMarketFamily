@@ -25,8 +25,6 @@ internal sealed class Startup : StarterBase
         services.AddScoped<CatalogQueries>();
         services.AddScoped<OrderQueries>();
         services.AddScoped<CartFacade>();
-        services.AddScoped<ProfileFacade>();
-        services.AddScoped<CustomerQueries>();
         // Register a separate document; never change OData routes or authentication.
         services.AddSwaggerGen(o =>
         {
@@ -43,9 +41,6 @@ internal sealed class Startup : StarterBase
     public override void BuildPipeline(RequestPipelineBuilder builder)
     {
         if (!builder.ApplicationContext.IsInstalled) return;
-
-        builder.Configure(StarterOrdering.BeforeWorkContextMiddleware, app =>
-            app.UseMiddleware<StorefrontBearerMiddleware>());
 
         builder.Configure(StarterOrdering.BeforeRoutingMiddleware, app =>
         {

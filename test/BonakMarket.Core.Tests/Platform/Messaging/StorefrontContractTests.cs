@@ -13,6 +13,9 @@ using BonakMarket.StorefrontApi.Controllers;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
+using BonakMarket.MultiSms.Controllers;
+using BonakMarket.MultiSms.Security;
+using Microsoft.AspNetCore.Http;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 
@@ -59,10 +62,39 @@ public class StorefrontContractTests
         Assert.That(registered.PermissionRecords.Select(x => x.SystemName), Does.Contain(StorefrontPermissions.Orders));
     }
 
+    [TestCase("/api/sms-login/profile", true)]
+    [TestCase("/api/sms-login/profile/phone/verify", true)]
+    [TestCase("/api/sms-login/session", true)]
+    [TestCase("/api/sms-login/logout", true)]
+    [TestCase("/api/sms-login/refresh", false)]
+    [TestCase("/api/sms-login/REQUEST/", false)]
+    [TestCase("/api/sms-login/verify", false)]
+    [TestCase("/api/storefront/v1/cart", true)]
+    [TestCase("/api/storefront/v10/cart", false)]
+    [TestCase("/odata/v1/Products", false)]
+    [TestCase("/api/sms-gateway/test", false)]
+    [TestCase("/login", false)]
+    public void BearerIsRestrictedToCustomerApi(string path, bool expected)
+    {
+        Assert.That(CustomerApiBearerMiddleware.UsesCustomerBearer(new PathString(path)), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void AccountRoutesAreOwnedByMultiSms()
+    {
+        var type = typeof(SmsLoginApiController);
+        Assert.That(type.GetCustomAttribute<RouteAttribute>()?.Template, Is.EqualTo("api/sms-login"));
+        Assert.That(type.GetMethod(nameof(SmsLoginApiController.GetProfile))?.GetCustomAttribute<HttpGetAttribute>()?.Template, Is.EqualTo("profile"));
+        Assert.That(type.GetMethod(nameof(SmsLoginApiController.UpdateProfile))?.GetCustomAttribute<HttpPutAttribute>()?.Template, Is.EqualTo("profile"));
+        Assert.That(type.GetMethod(nameof(SmsLoginApiController.Logout))?.GetCustomAttribute<HttpPostAttribute>()?.Template, Is.EqualTo("logout"));
+        Assert.That(typeof(StorefrontController).Assembly.GetType("BonakMarket.StorefrontApi.Controllers.ProfileController"), Is.Null);
+        Assert.That(typeof(StorefrontController).Assembly.GetType("BonakMarket.StorefrontApi.Controllers.AuthController"), Is.Null);
+    }
+
     [Test]
     public void PrivateControllersDoNotMarkActionsPublic()
     {
-        var types = new[] { typeof(OrdersController), typeof(CartController), typeof(ProfileController), typeof(AuthController) };
+        var types = new[] { typeof(OrdersController), typeof(CartController) };
         foreach (var type in types)
         {
             Assert.That(type.GetCustomAttributes<TypeFilterAttribute>(true).Any(x => x.ImplementationType == typeof(StorefrontAuthorizationFilter)), Is.True);

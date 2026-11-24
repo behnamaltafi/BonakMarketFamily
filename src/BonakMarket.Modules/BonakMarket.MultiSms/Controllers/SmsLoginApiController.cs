@@ -1,4 +1,8 @@
+using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using BonakMarket.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,8 +16,8 @@ using BonakMarket.MultiSms.Services;
 namespace BonakMarket.MultiSms.Controllers;
 
 /// <summary>
-/// JSON endpoints using native Customer cookies and the same OTP rules as the storefront.
-/// Obtain a CSRF token from Session and include it in all subsequent POST requests.
+/// Customer authentication and account endpoints. Cookie mutations require CSRF;
+/// authenticated Bearer requests use the same native Customer and OTP services.
 /// </summary>
 [ApiController]
 [Route("api/sms-login")]
@@ -49,6 +53,9 @@ public sealed class SmsLoginApiController : ControllerBase
     {
         bool enabled = await _otp.IsEnabledAsync();
         var customer = await GetCustomerAsync();
+        if (Request.Headers.ContainsKey("Authorization") && customer is null)
+            return Unauthorized();
+
         var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
         return Ok(new
         {
@@ -131,8 +138,8 @@ public sealed class SmsLoginApiController : ControllerBase
             refreshToken = pair.RefreshToken, expiresIn = pair.ExpiresIn, tokenType = "Bearer" });
     }
 
-    /// <summary>Updates the phone-linked Customer's optional profile using the auth cookie.</summary>
-    [HttpPost("profile")]
+    /// <summary>Updates the phone-linked Customer's optional profile.</summary>
+    [HttpPost("profile"), AllowAnonymous, IgnoreAntiforgeryToken]
     public async Task<IActionResult> CompleteProfile([FromBody] SmsProfileApiRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -140,11 +147,8 @@ public sealed class SmsLoginApiController : ControllerBase
             return NotFound();
         }
 
-        var customer = await GetCustomerAsync();
-        if (customer is null)
-        {
-            return Unauthorized();
-        }
+        var (customer, error) = await RequireAccountAsync();
+        if (error is not null) return error;
 
         var result = await _otp.CompleteProfileAsync(
             customer, request.Username, request.FirstName, request.LastName, request.Email, ct);
@@ -158,7 +162,7 @@ public sealed class SmsLoginApiController : ControllerBase
 
     /// <summary>Requests a phone binding for the currently signed-in account only.</summary>
     [HttpPost("enroll/request")]
-    [HttpPost("profile/phone/request")]
+    [HttpPost("profile/phone/request"), AllowAnonymous, IgnoreAntiforgeryToken]
     public async Task<IActionResult> RequestEnrollment([FromBody] SmsCodeRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -166,11 +170,8 @@ public sealed class SmsLoginApiController : ControllerBase
             return NotFound();
         }
 
-        var customer = await GetCustomerAsync();
-        if (customer is null)
-        {
-            return Unauthorized();
-        }
+        var (customer, error) = await RequireAccountAsync();
+        if (error is not null) return error;
 
         await _otp.RequestEnrollmentCodeAsync(customer, request.Phone, ct);
         return Ok(new { code = "code_requested" });
@@ -178,7 +179,7 @@ public sealed class SmsLoginApiController : ControllerBase
 
     /// <summary>Confirms a phone binding without accepting a client-supplied customer ID.</summary>
     [HttpPost("enroll/verify")]
-    [HttpPost("profile/phone/verify")]
+    [HttpPost("profile/phone/verify"), AllowAnonymous, IgnoreAntiforgeryToken]
     public async Task<IActionResult> ConfirmEnrollment([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -186,11 +187,8 @@ public sealed class SmsLoginApiController : ControllerBase
             return NotFound();
         }
 
-        var customer = await GetCustomerAsync();
-        if (customer is null)
-        {
-            return Unauthorized();
-        }
+        var (customer, error) = await RequireAccountAsync();
+        if (error is not null) return error;
 
         if (!await _otp.ConfirmEnrollmentAsync(customer, request.Phone, request.Code, ct))
         {
@@ -200,16 +198,102 @@ public sealed class SmsLoginApiController : ControllerBase
         return Ok(new { code = "phone_verified" });
     }
 
+    /// <summary>Returns the current customer's profile without accepting a customer identifier.</summary>
+    [HttpGet("profile"), AllowAnonymous]
+    public async Task<IActionResult> GetProfile(CancellationToken ct)
+    {
+        var (customer, error) = await RequireAccountAsync();
+        if (error is not null) return error;
+        return Ok(await ReadProfileAsync(customer, ct));
+    }
+
+    /// <summary>Updates the same native profile as POST profile and returns the current representation.</summary>
+    [HttpPut("profile"), AllowAnonymous, IgnoreAntiforgeryToken]
+    public async Task<IActionResult> UpdateProfile([FromBody] SmsProfileApiRequest request, CancellationToken ct)
+    {
+        var (customer, error) = await RequireAccountAsync();
+        if (error is not null) return error;
+        if (!await _otp.IsEnabledAsync()) return NotFound();
+        var result = await _otp.CompleteProfileAsync(customer, request.Username, request.FirstName, request.LastName, request.Email, ct);
+        if (!result.Succeeded)
+        {
+            var problem = new ProblemDetails { Status = 422, Title = "invalid_profile" };
+            problem.Extensions["errors"] = result.Errors.Select(x => x.Description).ToArray();
+            return new ObjectResult(problem) { StatusCode = 422, ContentTypes = { "application/problem+json" } };
+        }
+        return Ok(await ReadProfileAsync(customer, ct));
+    }
+
+    [HttpGet("profile/addresses"), AllowAnonymous]
+    public async Task<IActionResult> Addresses(CancellationToken ct)
+    {
+        var (customer, error) = await RequireAccountAsync();
+        if (error is not null) return error;
+        var addresses = await _db.Customers.AsNoTracking().Where(x => x.Id == customer.Id)
+            .SelectMany(x => x.Addresses).OrderBy(x => x.Id)
+            .Select(x => new SmsAccountAddressDto(x.Id, x.FirstName, x.LastName, x.CountryId, x.StateProvinceId,
+                x.City, x.Address1, x.Address2, x.ZipPostalCode, x.PhoneNumber)).ToListAsync(ct);
+        return Ok(addresses);
+    }
+
+    [HttpPost("logout"), AllowAnonymous, IgnoreAntiforgeryToken]
+    public async Task<IActionResult> Logout(CancellationToken ct)
+    {
+        var (_, error) = await RequireAccountAsync();
+        if (error is not null) return error;
+        if (Request.Headers.ContainsKey("Authorization"))
+        {
+            var tokens = HttpContext.RequestServices.GetService<IMobileApiTokenService>();
+            if (!AuthenticationHeaderValue.TryParse(Request.Headers.Authorization.ToString(), out var header) ||
+                tokens == null || !await tokens.RevokeAsync(header.Parameter, ct))
+                return Unauthorized();
+        }
+        else
+        {
+            await _signInManager.SignOutAsync();
+        }
+        return NoContent();
+    }
+
+    private async Task<SmsAccountProfileDto> ReadProfileAsync(Customer customer, CancellationToken ct)
+    {
+        var phone = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
+        var required = phone != null && await _otp.IsProfileIncompleteAsync(customer.Id, ct);
+        var email = customer.Email?.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase) == true ? null : customer.Email;
+        return new(customer.Id, customer.Username, customer.FirstName, customer.LastName, email, phone, required);
+    }
+
+    private async Task<(Customer Customer, IActionResult Error)> RequireAccountAsync()
+    {
+        if (!Request.IsHttps) return (null, BadRequest(new { code = "https_required" }));
+        var customer = await GetCustomerAsync();
+        if (customer is null) return (null, Unauthorized());
+        if (!Request.Headers.ContainsKey("Authorization") && !HttpMethods.IsGet(Request.Method) && !HttpMethods.IsHead(Request.Method))
+        {
+            try { await _antiforgery.ValidateRequestAsync(HttpContext); }
+            catch (AntiforgeryValidationException) { return (null, BadRequest(new { code = "invalid_antiforgery_token" })); }
+        }
+        return (customer, null);
+    }
+
     private async Task<Customer> GetCustomerAsync()
     {
-        if (!_signInManager.IsSignedIn(User))
+        Customer customer;
+        if (Request.Headers.ContainsKey("Authorization"))
         {
-            return null;
+            customer = HttpContext.Items.TryGetValue(typeof(IMobileApiTokenService), out var verified)
+                ? verified as Customer : null;
+        }
+        else
+        {
+            if (!_signInManager.IsSignedIn(User)) return null;
+            customer = await _userManager.GetUserAsync(User);
         }
 
-        var customer = await _userManager.GetUserAsync(User);
-        return customer is not null && customer.Active && !customer.Deleted && customer.IsRegistered()
-            ? customer
-            : null;
+        if (customer is null || !customer.Active || customer.Deleted || !customer.IsRegistered() || customer.IsSystemAccount)
+            return null;
+
+        var work = HttpContext.RequestServices.GetRequiredService<IWorkContext>();
+        return work.CurrentImpersonator == null && work.CurrentCustomer?.Id == customer.Id ? customer : null;
     }
 }

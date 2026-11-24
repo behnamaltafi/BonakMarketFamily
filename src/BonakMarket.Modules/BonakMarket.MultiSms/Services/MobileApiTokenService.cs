@@ -15,8 +15,8 @@ namespace BonakMarket.MultiSms.Services;
 /// <summary>JWT access tokens with SQL-backed, single-use refresh rotation.</summary>
 internal sealed class MobileApiTokenService : IMobileApiTokenService
 {
-    private const string Issuer = "BonakMarket.MultiSms";
-    private const string Audience = "BonakMarket.StorefrontApi";
+    private const string Issuer = "BonakMarket";
+    private const string Audience = "BonakMarket.CustomerApi";
     private const int AccessSeconds = 600;
     private readonly SmartDbContext _db;
     private readonly IConfiguration _configuration;
@@ -98,6 +98,7 @@ internal sealed class MobileApiTokenService : IMobileApiTokenService
             new Claim(JwtRegisteredClaimNames.Sub, session.CustomerId.ToString(System.Globalization.CultureInfo.InvariantCulture)),
             new Claim(JwtRegisteredClaimNames.Jti, session.AccessId.ToString("N")),
             new Claim("sid", session.SessionId.ToString("N")),
+            new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture), ClaimValueTypes.Integer64),
             new Claim("token_use", "mobile_access")
         };
         var token = new JwtSecurityToken(Issuer, Audience, claims, now, expires,

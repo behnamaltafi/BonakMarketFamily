@@ -22,9 +22,10 @@ internal sealed class StorefrontDocumentFilter : IDocumentFilter
             {
                 operation.Security.Clear();
                 if (path.Key.StartsWith("/api/storefront/v1/orders", StringComparison.OrdinalIgnoreCase) ||
-                    path.Key.StartsWith("/api/storefront/v1/profile", StringComparison.OrdinalIgnoreCase) ||
                     path.Key.StartsWith("/api/storefront/v1/cart", StringComparison.OrdinalIgnoreCase) ||
-                    path.Key.StartsWith("/api/storefront/v1/auth/logout", StringComparison.OrdinalIgnoreCase))
+                    path.Key.StartsWith("/api/sms-login/profile", StringComparison.OrdinalIgnoreCase) ||
+                    path.Key.StartsWith("/api/sms-login/enroll", StringComparison.OrdinalIgnoreCase) ||
+                    path.Key.Equals("/api/sms-login/logout", StringComparison.OrdinalIgnoreCase))
                 {
                     operation.Security.Add(new OpenApiSecurityRequirement
                     {
@@ -33,7 +34,8 @@ internal sealed class StorefrontDocumentFilter : IDocumentFilter
                     // Browser cookie sessions are also supported; Swagger cannot set the HttpOnly cookie.
                     operation.Description = (operation.Description ?? "") + " Browser cookie authentication is also supported with the antiforgery request header on mutations.";
                 }
-                else if (path.Key.StartsWith("/api/storefront/v1/", StringComparison.OrdinalIgnoreCase))
+                else if (path.Key.StartsWith("/api/storefront/v1/", StringComparison.OrdinalIgnoreCase) ||
+                    path.Key.Equals("/api/sms-login/session", StringComparison.OrdinalIgnoreCase))
                 {
                     operation.Security.Add(new OpenApiSecurityRequirement
                     {

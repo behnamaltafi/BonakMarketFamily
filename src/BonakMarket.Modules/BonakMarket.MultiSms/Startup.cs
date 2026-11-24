@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Builder;
+using BonakMarket.MultiSms.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using BonakMarket.Core.Data;
@@ -41,6 +43,14 @@ internal sealed class Startup : StarterBase
             .ForController("Identity")
             .ForAction("Login"));
         services.AddTransient<IDbContextConfigurationSource<SmartDbContext>, MultiSmsModelConfigurer>();
+    }
+
+    public override void BuildPipeline(RequestPipelineBuilder builder)
+    {
+        if (!builder.ApplicationContext.IsInstalled) return;
+
+        builder.Configure(StarterOrdering.BeforeWorkContextMiddleware, app =>
+            app.UseMiddleware<CustomerApiBearerMiddleware>());
     }
 
     private sealed class MultiSmsModelConfigurer : IDbContextConfigurationSource<SmartDbContext>

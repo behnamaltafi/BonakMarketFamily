@@ -6,17 +6,16 @@ using Microsoft.Extensions.DependencyInjection;
 using BonakMarket.Core.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace BonakMarket.StorefrontApi.Security;
+namespace BonakMarket.MultiSms.Security;
 
 // Run after native cookie authentication but before native WorkContext initialization.
-public sealed class StorefrontBearerMiddleware(RequestDelegate next)
+public sealed class CustomerApiBearerMiddleware(RequestDelegate next)
 {
-    internal static readonly object CustomerKey = new();
     internal const string Scheme = "StorefrontBearer";
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!context.Request.Path.StartsWithSegments("/api/storefront/v1") ||
+        if (!UsesCustomerBearer(context.Request.Path) ||
             !context.Request.Headers.ContainsKey("Authorization"))
         {
             await next(context);
@@ -49,8 +48,21 @@ public sealed class StorefrontBearerMiddleware(RequestDelegate next)
         {
             AuthenticateResult = AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme))
         });
-        context.Items[CustomerKey] = customer;
+        context.Items[typeof(IMobileApiTokenService)] = customer;
         await next(context);
+    }
+
+    // Keep ERP/OData, MVC, SMS provider administration and anonymous OTP/refresh flows outside this scheme.
+    public static bool UsesCustomerBearer(PathString path)
+    {
+        if (path.StartsWithSegments("/api/storefront/v1"))
+            return true;
+        if (!path.StartsWithSegments("/api/sms-login", out var remainder))
+            return false;
+        var endpoint = remainder.Value?.TrimEnd('/') ?? "";
+        return !endpoint.Equals("/request", StringComparison.OrdinalIgnoreCase)
+            && !endpoint.Equals("/verify", StringComparison.OrdinalIgnoreCase)
+            && !endpoint.Equals("/refresh", StringComparison.OrdinalIgnoreCase);
     }
 
     private sealed class AuthenticationFeature : IAuthenticateResultFeature

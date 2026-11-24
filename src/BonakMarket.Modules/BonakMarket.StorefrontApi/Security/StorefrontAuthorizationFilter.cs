@@ -43,7 +43,7 @@ public sealed class StorefrontAuthorizationFilter(
 
         if (bearer)
         {
-            identity = http.Items.TryGetValue(StorefrontBearerMiddleware.CustomerKey, out var verified) ? verified as Customer : null;
+            identity = http.Items.TryGetValue(typeof(IMobileApiTokenService), out var verified) ? verified as Customer : null;
             if (identity == null) { Deny(context, 401, "invalid_access_token"); return; }
         }
         else

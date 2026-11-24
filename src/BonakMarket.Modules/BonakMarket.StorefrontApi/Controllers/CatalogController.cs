@@ -26,6 +26,14 @@ public sealed class CatalogController(CatalogFacade catalog) : StorefrontControl
         return Ok(item);
     }
 
+    [HttpGet("{id:int}/variants"), PublicCatalog]
+    public async Task<ActionResult<List<VariantDto>>> Variants(int id, CancellationToken ct)
+    {
+        var variants = await catalog.VariantsAsync(id, ct);
+        if (variants == null) return Error(404, "product_not_found");
+        return Ok(variants);
+    }
+
     [HttpGet("{id:int}/price"), PublicCatalog]
     public async Task<ActionResult<PriceDto>> Price(int id, [FromQuery] int quantity = 1, CancellationToken ct = default)
     {

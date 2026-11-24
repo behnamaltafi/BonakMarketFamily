@@ -1,98 +1,51 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using BonakMarket.Core.Checkout.Cart;
-using BonakMarket.Core.Checkout.Orders;
-using BonakMarket.Core.Catalog.Products;
-using Common.DTO;
-using BonakMarket.Core.Data;
 using BonakMarket.Core.Security;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
+using BonakMarket.StorefrontApi.Services;
 
 namespace BonakMarket.StorefrontApi.Controllers;
 
 [Route("api/storefront/v1/cart")]
-public sealed class CartController(SmartDbContext db, IShoppingCartService cart, IOrderCalculationService calculations) : StorefrontController
+[StorefrontPermission(StorefrontPermissions.Cart)]
+[StorefrontPermission(Permissions.Cart.AccessShoppingCart)]
+public sealed class CartController(CartFacade cart) : StorefrontController
 {
-    private Task<bool> CanAccess() => PermissionsService.AuthorizeAsync(Permissions.Cart.AccessShoppingCart, Customer);
-    private Task<List<CartItemDto>> Items() => StorefrontScope.Cart(db, Customer, StoreId).AsNoTracking()
-        .OrderBy(x => x.Id).Select(x => new CartItemDto(x.Id, x.ProductId, x.Quantity, x.Active, x.ParentItemId)).ToListAsync();
-
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResult<List<CartItemDto>>), 200)]
-    public async Task<IActionResult> Get()
-    {
-        if (!await CanAccess()) return Error(403, "cart_access_denied");
-        return Success(await Items());
-    }
+    public async Task<ActionResult<List<CartItemDto>>> Get() => Ok(await cart.ItemsAsync());
+
     [HttpPost("items")]
-    public async Task<IActionResult> Add([FromBody] AddCartItem request)
-    {
-        if (!await CanAccess()) return Error(403, "cart_access_denied");
-        var product = await StorefrontScope.Products(db, Customer, StoreId)
-            .Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductAttribute)
-            .FirstOrDefaultAsync(x => x.Id == request.ProductId);
-        if (product == null) return Error(404, "product_not_found");
-        if (product.CustomerEntersPrice || product.IsGiftCard || product.CallForPrice ||
-            product.ProductVariantAttributes.Any() || product.DisableBuyButton || product.ProductType != ProductType.SimpleProduct)
-            return Error(409, "product_requires_configuration");
-        var ctx = new AddToCartContext { Customer = Customer, Product = product, StoreId = StoreId,
-            CartType = ShoppingCartType.ShoppingCart, Quantity = request.Quantity,
-            AutomaticallyAddRequiredProducts = product.RequireOtherProducts && product.AutomaticallyAddRequiredProducts,
-            AutomaticallyAddBundleProducts = true };
-        if (!await cart.AddToCartAsync(ctx))
-            return StatusCode(422, new Common.DTO.ApiResult("cart_validation_failed", false, ctx.Warnings, 422));
-        return Success(await Items());
-    }
+    public async Task<ActionResult<List<CartItemDto>>> Add([FromBody] AddCartItem request, CancellationToken ct) =>
+        Result(await cart.AddAsync(request, ct));
+
     [HttpPut("items/{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] UpdateCartItem request)
-    {
-        if (!await CanAccess()) return Error(403, "cart_access_denied");
-        if (!await StorefrontScope.Cart(db, Customer, StoreId).AnyAsync(x => x.Id == id && x.ParentItemId == null))
-            return Error(404, "cart_item_not_found");
-        var warnings = await cart.UpdateCartItemAsync(Customer, id, request.Quantity, null, true);
-        if (warnings.Count > 0)
-            return StatusCode(422, new Common.DTO.ApiResult("cart_validation_failed", false, warnings, 422));
-        return Success(await Items());
-    }
+    public async Task<ActionResult<List<CartItemDto>>> Update(int id, [FromBody] UpdateCartItem request, CancellationToken ct) =>
+        Result(await cart.UpdateAsync(id, request.Quantity, ct));
+
     [HttpDelete("items/{id:int}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        if (!await CanAccess()) return Error(403, "cart_access_denied");
-        var item = await StorefrontScope.Cart(db, Customer, StoreId).Include(x => x.Customer)
-            .FirstOrDefaultAsync(x => x.Id == id && x.ParentItemId == null);
-        if (item == null) return Error(404, "cart_item_not_found");
-        await cart.DeleteCartItemAsync(item, true, true);
-        return Success(await Items());
-    }
+    public async Task<ActionResult<List<CartItemDto>>> Delete(int id, CancellationToken ct) =>
+        Result(await cart.DeleteAsync(id, ct));
+
     [HttpGet("total")]
-    [ProducesResponseType(typeof(ApiResult<CartTotalDto>), 200)]
-    public async Task<IActionResult> Total()
-    {
-        if (!await CanAccess()) return Error(403, "cart_access_denied");
-        if (!await PermissionsService.AuthorizeAsync(Permissions.Catalog.DisplayPrice, Customer))
-            return Error(403, "price_access_denied");
-        var current = await cart.GetCartAsync(Customer, ShoppingCartType.ShoppingCart, StoreId);
-        var total = await calculations.GetShoppingCartTotalAsync(current, ShoppingCartTotalOptions.Default);
-        return Success(new CartTotalDto(total.Total?.Amount, total.DiscountAmount.Amount, total.DiscountAmount.Currency.CurrencyCode));
-    }
+    [StorefrontPermission(Permissions.Catalog.DisplayPrice)]
+    public async Task<ActionResult<CartTotalDto>> Total() => Ok(await cart.TotalAsync());
 
     [HttpPost("coupon")]
-    public async Task<IActionResult> ApplyCoupon([FromBody] CouponRequest request)
-    {
-        if (!await CanAccess()) return Error(403, "cart_access_denied");
-        var current = await cart.GetCartAsync(Customer, ShoppingCartType.ShoppingCart, StoreId);
-        var (applied, _) = await calculations.ApplyDiscountCouponAsync(current, request.Code);
-        await db.SaveChangesAsync();
-        return applied ? Ok(new ApiResult()) : Error(422, "coupon_not_applicable");
-    }
+    public async Task<IActionResult> ApplyCoupon([FromBody] CouponRequest request, CancellationToken ct) =>
+        await cart.ApplyCouponAsync(request.Code, ct) ? NoContent() : Error(422, "coupon_not_applicable");
 
     [HttpDelete("coupon")]
-    public async Task<IActionResult> RemoveCoupon()
+    public async Task<IActionResult> RemoveCoupon(CancellationToken ct)
     {
-        if (!await CanAccess()) return Error(403, "cart_access_denied");
-        Customer.GenericAttributes.DiscountCouponCode = null;
-        await db.SaveChangesAsync();
-        return Ok(new ApiResult());
+        await cart.RemoveCouponAsync(ct);
+        return NoContent();
+    }
+
+    private ActionResult<List<CartItemDto>> Result(CartChange result)
+    {
+        if (result.Status == 200) return Ok(result.Items);
+        var problem = new ProblemDetails { Status = result.Status, Title = result.Code };
+        if (result.Warnings?.Count > 0) problem.Extensions["warnings"] = result.Warnings;
+        return new ObjectResult(problem) { StatusCode = result.Status, ContentTypes = { "application/problem+json" } };
     }
 }

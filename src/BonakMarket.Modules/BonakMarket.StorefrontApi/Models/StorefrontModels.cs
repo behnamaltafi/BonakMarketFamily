@@ -57,6 +57,7 @@ public sealed class AddCartItem
 {
     [Range(1, int.MaxValue)] public int ProductId { get; set; }
     [Range(1, 1000)] public int Quantity { get; set; } = 1;
+    [MaxLength(30)] public List<VariantChoice> Variants { get; set; } = new();
 }
 public sealed class UpdateCartItem
 {
@@ -103,3 +104,11 @@ public sealed class OrderSearchRequest : PageRequest
     public int? PaymentStatusId { get; set; }
     public int? ShippingStatusId { get; set; }
 }
+
+public sealed class VariantChoice
+{
+    [Range(1, int.MaxValue)] public int VariantAttributeId { get; set; }
+    [Range(1, int.MaxValue)] public int ValueId { get; set; }
+}
+public sealed record VariantValueDto(int Id, string Name);
+public sealed record VariantDto(int Id, string Name, int ControlTypeId, bool Required, List<VariantValueDto> Values);

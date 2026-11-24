@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Autofac;
 using BonakMarket.Core;
 using BonakMarket.Core.Catalog.Products;
+using BonakMarket.Core.Catalog.Attributes;
 using BonakMarket.Core.Catalog.Search;
 using BonakMarket.Core.Catalog.Pricing;
 using BonakMarket.Core.Content.Media;
@@ -80,6 +81,18 @@ public sealed class CatalogFacade(
         if (product == null || product.CallForPrice || product.CustomerEntersPrice) return null;
         var options = prices.CreateDefaultOptions(false, request.Customer);
         return await Price(product, quantity, options);
+    }
+
+    public async Task<List<VariantDto>> VariantsAsync(int id, CancellationToken ct)
+    {
+        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forSearch: true)
+            .AsNoTracking().Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductAttribute)
+            .Include(x => x.ProductVariantAttributes).ThenInclude(x => x.ProductVariantAttributeValues)
+            .AsSplitQuery().FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (product == null) return null;
+        return product.ProductVariantAttributes.OrderBy(x => x.DisplayOrder)
+            .Select(x => new VariantDto(x.Id, x.ProductAttribute.Name, x.AttributeControlTypeId, x.IsRequired,
+                x.ProductVariantAttributeValues.OrderBy(v => v.DisplayOrder).Select(v => new VariantValueDto(v.Id, v.Name)).ToList())).ToList();
     }
 
     private async Task<List<ProductDto>> MapAsync(IList<Product> products, bool includePrice, bool forListing = true)

@@ -24,6 +24,9 @@ internal sealed class Startup : StarterBase
         services.AddScoped<CatalogFacade>();
         services.AddScoped<CatalogQueries>();
         services.AddScoped<OrderQueries>();
+        services.AddScoped<CartFacade>();
+        services.AddScoped<ProfileFacade>();
+        services.AddScoped<CustomerQueries>();
         // Register a separate document; never change OData routes or authentication.
         services.AddSwaggerGen(o =>
         {

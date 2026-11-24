@@ -1,5 +1,5 @@
 # Extend the exact production candidate; do not rebuild its base or provision wkhtml again.
-ARG IMAGE=smartstore-linux:test
+ARG IMAGE=BonakMarket-linux:test
 FROM ${IMAGE}
 WORKDIR /work
 RUN apt-get update && apt-get install -y --no-install-recommends python3 poppler-utils && apt-get clean

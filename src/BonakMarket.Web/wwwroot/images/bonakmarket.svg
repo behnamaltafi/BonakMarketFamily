@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="250" height="44.8" viewBox="0 0 250 44.8" role="img" aria-labelledby="brand-title">
+    <title id="brand-title">BonakMarket</title>
+    <path fill="#F7A833" d="M0.6 27.9h29.8V0.4C14.6 0.4 1.7 12.4 0.6 27.9" />
+    <path fill="#307ABE" d="M33 44.5c8.8 0 15.8-7 15.8-15.8S41.7 13 33 13v31.5Z" />
+    <path fill="#44B284" d="M30.3 37.5c0 3.8-3.2 7-7 7s-7-3.2-7-7 3.2-7 7-7 7 3.2 7 7Z" />
+    <path fill="#64C1C7" d="M33 0.4c5.5 0 9.9 4.4 9.9 9.6H33V0.4Z" />
+    <text x="58" y="33.5" fill="#FFFFFF" font-family="Arial, Helvetica, sans-serif" font-size="28.5" font-weight="700" textLength="188" lengthAdjust="spacingAndGlyphs">BonakMarket</text>
+</svg>

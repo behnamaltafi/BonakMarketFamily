@@ -1,6 +1,6 @@
 # DI best practices
 
-Smartstore relies on [Autofac](https://autofac.readthedocs.io/en/latest/) for dependency injection but modules typically register services in a `Startup` class derived from `StarterBase`. Inside `ConfigureServices` you can access the ASP.NET Core `IServiceCollection` and the `IApplicationContext`:
+BonakMarket relies on [Autofac](https://autofac.readthedocs.io/en/latest/) for dependency injection but modules typically register services in a `Startup` class derived from `StarterBase`. Inside `ConfigureServices` you can access the ASP.NET Core `IServiceCollection` and the `IApplicationContext`:
 
 ```csharp
 internal class Startup : StarterBase

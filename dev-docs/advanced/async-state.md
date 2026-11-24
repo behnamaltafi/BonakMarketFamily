@@ -72,7 +72,7 @@ $(function () {
         // Start throbber and display notifications.
         $.throbber.show({
             message: `
-                <div id="import-message">@T("Plugins.Smartstore.ProductImport.Wait").Value</div>
+                <div id="import-message">@T("Plugins.BonakMarket.ProductImport.Wait").Value</div>
                 <div id="import-progress" class="mt-2 mb-4"></div>`
             });
 

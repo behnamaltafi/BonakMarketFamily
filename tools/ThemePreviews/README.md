@@ -11,7 +11,7 @@ the backend theme list.
 ## Usage
 
 ```powershell
-# Render all themes into src/Smartstore.Web/Themes/<Theme>/wwwroot/images/preview.png
+# Render all themes into src/BonakMarket.Web/Themes/<Theme>/wwwroot/images/preview.png
 ./tools/ThemePreviews/render.ps1
 
 # Render selected themes into a scratch folder for review

@@ -1,11 +1,11 @@
 ---
-description: List of terms and concepts that you can find in Smartstore
+description: List of terms and concepts that you can find in BonakMarket
 icon: book-open
 ---
 
 # Glossary
 
-These terms appear throughout the Smartstore developer documentation. Terms are presented in alphabetical order.
+These terms appear throughout the BonakMarket developer documentation. Terms are presented in alphabetical order.
 
 #### Asset
 
@@ -13,7 +13,7 @@ A static file, like image, script, stylesheet, web font etc.
 
 #### Application
 
-The Smartstore application as a whole, including all modules.
+The BonakMarket application as a whole, including all modules.
 
 #### Backend
 

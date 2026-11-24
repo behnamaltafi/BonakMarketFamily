@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   web:
-    image: ghcr.io/smartstore/smartstore-linux
+    image: ghcr.io/behnamaltafi/bonakmarket-linux
     container_name: web
     ports:
       - "80:80"
@@ -14,10 +14,10 @@ services:
     image: mysql
     container_name: mysql
     environment:
-      #MYSQL_DATABASE: smartstore
+      #MYSQL_DATABASE: BonakMarket
       #MYSQL_USER: "root"
-      MYSQL_PASSWORD: "Smartstore2022!"
-      MYSQL_ROOT_PASSWORD: "Smartstore2022!"
+      MYSQL_PASSWORD: "BonakMarket2022!"
+      MYSQL_ROOT_PASSWORD: "BonakMarket2022!"
     ports:
       - '3307:3306'
     expose:

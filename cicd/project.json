@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "bonakmarketfamily",
-  "solution": "Smartstore.sln",
+  "solution": "BonakMarket.sln",
   "github": {
     "repository": "behnamaltafi/BonakMarketFamily"
   },
@@ -21,7 +21,7 @@
     {
       "type": "zip",
       "name": "web",
-      "project": "src/Smartstore.Web/Smartstore.Web.csproj"
+      "project": "src/BonakMarket.Web/BonakMarket.Web.csproj"
     }
   ],
   "nexus": {

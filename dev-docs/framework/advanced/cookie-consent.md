@@ -2,7 +2,7 @@
 
 In e-commerce, cookies are critical for tracking user sessions, maintaining shopping carts, and personalizing the user experience. They enable persistent state management across pages and sessions, enabling features such as user authentication, preference storage, and targeted marketing. Developers must handle cookies securely, implementing consent controls, proper encryption, and adhering to privacy regulations such as GDPR to protect user data and ensure compliance.
 
-As developers we can access cookie information using `Smartstore.Core.Identity.ICookieConsentManager` and provide our own information using `Smartstore.Core.Identity.ICookiePublisher`.
+As developers we can access cookie information using `BonakMarket.Core.Identity.ICookieConsentManager` and provide our own information using `BonakMarket.Core.Identity.ICookiePublisher`.
 
 `CookieType` categorizes cookies into six types:
 
@@ -17,7 +17,7 @@ As developers we can access cookie information using `Smartstore.Core.Identity.I
 
 ## Provide consent information
 
-In order for your module to provide cookie information, it must implement the `ICookiePublisher` interface. This allows Smartstore to retrieve this information using `CookieInfo`. It provides a `Name`, `Description`, `SelectedStoreIds` and `CookieType` for each.
+In order for your module to provide cookie information, it must implement the `ICookiePublisher` interface. This allows BonakMarket to retrieve this information using `CookieInfo`. It provides a `Name`, `Description`, `SelectedStoreIds` and `CookieType` for each.
 
 This information is displayed in the frontend via the cookie manager so that the user can personalize their consent.
 
@@ -76,7 +76,7 @@ When using JS to check for consent, you can use the following snippet:
 
 ```js
 // Use the lower case value of CookieType.
-let hasConsent = Smartstore.Cmp.checkConsent('analytics');
+let hasConsent = BonakMarket.Cmp.checkConsent('analytics');
 ```
 
 If a script is to be processed only after consent, add the `type` attribute with `text/plain` in conjunction with the `data-consent` attribute, the value of which must be in lower case.

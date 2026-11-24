@@ -1,0 +1,74 @@
+#nullable enable
+
+using FluentValidation;
+using BonakMarket.Admin.Components;
+using BonakMarket.Core.Localization;
+using BonakMarket.Core.Security;
+using BonakMarket.Core.Widgets;
+using BonakMarket.Core.Widgets.Dashboard;
+using BonakMarket.Engine.Modularity;
+using BonakMarket.Web.Modelling;
+
+namespace BonakMarket.Admin.Infrastructure.Dashboard;
+
+/// <summary>
+/// Describes and creates the dashboard widget that renders the top customers report.
+/// </summary>
+[SystemName(SystemName)]
+public sealed class TopCustomersDashboardWidget(
+    IPermissionService permissions,
+    IValidator<TopCustomersDashboardWidgetSettings> validator) : DashboardViewComponentWidget<DashboardTopCustomersViewComponent, TopCustomersDashboardWidgetSettings>(
+        permissions,
+        DashboardTopCustomersViewComponent.RequiredPermission,
+        validator)
+{
+    /// <summary>
+    /// Identifies the top customers dashboard widget type.
+    /// </summary>
+    public const string SystemName = "BonakMarket.Admin.Dashboard.TopCustomers";
+
+    private static readonly DashboardWidgetDescriptor _descriptor = new(SystemName, ResolvableText.Resource("Admin.SalesReport.TopCustomers"))
+    {
+        Group = KnownDashboardWidgetGroups.Customers,
+        IconName = "user-group",
+        CssClass = "report-top-customers",
+        Order = 400,
+        Policy = new() { AllowConfigure = true },
+        DefaultSize = new DashboardWidgetSize(4, 1),
+        MinSize = new DashboardWidgetSize(3, 1),
+        MaxSize = new DashboardWidgetSize(12)
+    };
+
+    /// <inheritdoc />
+    public override DashboardWidgetDescriptor Descriptor => _descriptor;
+
+    /// <inheritdoc />
+    public override TimeSpan? CacheDuration => TimeSpan.FromHours(12);
+
+    /// <inheritdoc />
+    public override Task<Widget?> CreateConfigurationWidgetAsync(DashboardWidgetContext context, DashboardWidgetInstance instance)
+        => Task.FromResult<Widget?>(new PartialViewWidget("Components/DashboardTopCustomers/Configure", LoadSettings(instance.Settings)));
+
+    /// <inheritdoc />
+    protected override object GetWidgetArguments(DashboardWidgetContext context, DashboardWidgetInstance instance, TopCustomersDashboardWidgetSettings settings)
+        => new { count = settings.Count, cacheDuration = CacheDuration, refresh = context.Refresh };
+}
+
+/// <summary>Contains the settings of the TopCustomers dashboard widget.</summary>
+[LocalizedDisplay("Admin.Dashboard.Widget.")]
+public class TopCustomersDashboardWidgetSettings
+{
+    /// <summary>Gets or sets the maximum number of items to display.</summary>
+    [LocalizedDisplay("*Count")]
+    public int Count { get; set; } = 7;
+}
+
+/// <summary>Validates settings of the TopCustomers dashboard widget.</summary>
+public class TopCustomersDashboardWidgetValidator : AbstractValidator<TopCustomersDashboardWidgetSettings>
+{
+    public TopCustomersDashboardWidgetValidator()
+    {
+        RuleFor(x => x.Count).InclusiveBetween(1, 50)
+            .WithMessage("The number of displayed items must be between 1 and 50.");
+    }
+}

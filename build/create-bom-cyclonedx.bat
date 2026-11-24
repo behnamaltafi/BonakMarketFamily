@@ -2,8 +2,8 @@
 setlocal enabledelayedexpansion
 
 REM ============================================================
-REM Generate CycloneDX SBOM for Smartstore Solution
-REM Output: Smartstore.{Edition}.{Version}.sbom.cyclone.json (in solution root)
+REM Generate CycloneDX SBOM for BonakMarket Solution
+REM Output: BonakMarket.{Edition}.{Version}.sbom.cyclone.json (in solution root)
 REM Script location: /build
 REM Compatible with Windows PowerShell 5.1
 REM ============================================================
@@ -14,8 +14,8 @@ set "APP_EDITION=Community"
 set "ROOT_DIR=%~dp0.."
 set "TOOLS_DIR=%~dp0.tools"
 set "CYCLONEDX_EXE=%TOOLS_DIR%\dotnet-CycloneDX.exe"
-set "SOLUTION_FILE=%ROOT_DIR%\Smartstore.sln"
-set "SBOM_FILE=%ROOT_DIR%\Smartstore.%APP_EDITION%.%APP_VERSION%.sbom.cyclone.json"
+set "SOLUTION_FILE=%ROOT_DIR%\BonakMarket.sln"
+set "SBOM_FILE=%ROOT_DIR%\BonakMarket.%APP_EDITION%.%APP_VERSION%.sbom.cyclone.json"
 set "SBOM_TMP=%SBOM_FILE%.tmp"
 
 echo.

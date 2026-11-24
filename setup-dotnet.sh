@@ -39,5 +39,5 @@ for tool in "${GLOBAL_TOOLS[@]}"; do
 done
 
 if [ -d "$APP_DIR" ]; then
-    (cd "$APP_DIR" && dotnet restore Smartstore.sln --verbosity quiet)
+    (cd "$APP_DIR" && dotnet restore BonakMarket.sln --verbosity quiet)
 fi

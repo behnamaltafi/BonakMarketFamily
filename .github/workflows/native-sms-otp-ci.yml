@@ -1,20 +1,20 @@
-name: Native Smartstore SMS OTP - build and tests
+name: Native BonakMarket SMS OTP - build and tests
 
 on:
   push:
     branches: [feature/native-sms-otp-login]
     paths:
-      - 'src/Smartstore.Modules/Smartstore.MultiSms/**'
-      - 'src/Smartstore.Core/Platform/Messaging/Services/ISmsSender.cs'
-      - 'test/Smartstore.Core.Tests/**'
+      - 'src/BonakMarket.Modules/BonakMarket.MultiSms/**'
+      - 'src/BonakMarket.Core/Platform/Messaging/Services/ISmsSender.cs'
+      - 'test/BonakMarket.Core.Tests/**'
       - '.github/workflows/native-sms-otp-ci.yml'
   pull_request:
     branches: [main]
     paths:
-      - 'src/Smartstore.Modules/Smartstore.MultiSms/**'
-      - 'src/Smartstore.Core/Platform/Messaging/Services/ISmsSender.cs'
-      - 'Smartstore.sln'
-      - 'test/Smartstore.Core.Tests/**'
+      - 'src/BonakMarket.Modules/BonakMarket.MultiSms/**'
+      - 'src/BonakMarket.Core/Platform/Messaging/Services/ISmsSender.cs'
+      - 'BonakMarket.sln'
+      - 'test/BonakMarket.Core.Tests/**'
       - '.github/workflows/native-sms-otp-ci.yml'
   workflow_dispatch:
 
@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Build full Smartstore solution and SMS module
-        run: dotnet build Smartstore.sln -c Release -p:SmartstoreBuildRuntime=linux-x64 --no-self-contained
+      - name: Build full BonakMarket solution and SMS module
+        run: dotnet build BonakMarket.sln -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-self-contained
       - name: Test OTP, provider failover, mock isolation, history helpers and API
-        run: dotnet test test/Smartstore.Core.Tests/Smartstore.Core.Tests.csproj -c Release -p:SmartstoreBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsMockAndHistoryTests|FullyQualifiedName~SmsHistoryTransportTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"
+        run: dotnet test test/BonakMarket.Core.Tests/BonakMarket.Core.Tests.csproj -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsMockAndHistoryTests|FullyQualifiedName~SmsHistoryTransportTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"

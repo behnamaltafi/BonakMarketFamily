@@ -13,7 +13,7 @@ The rules engine lets administrators target entities such as discounts, categori
 
 ## Built‑in rule providers
 
-Smartstore ships with several `IRuleProvider` implementations, each tied to a `RuleScope`:
+BonakMarket ships with several `IRuleProvider` implementations, each tied to a `RuleScope`:
 
 - **`CartRuleProvider`** (`RuleScope.Cart`) evaluates cart and checkout conditions for discounts, shipping rates and payment methods.
 - **`ProductRuleProvider`** (`RuleScope.Product`) exposes product‑related descriptors that drive catalog filtering and search.
@@ -31,8 +31,8 @@ Many domain entities, including discounts, categories and payment methods, imple
 Start by implementing a rule that inspects the cart context:
 
 ```csharp
-using Smartstore.Core.Checkout.Rules;
-using Smartstore.Core.Rules;
+using BonakMarket.Core.Checkout.Rules;
+using BonakMarket.Core.Rules;
 
 internal class ZipCodeRule : IRule<CartRuleContext>
 {

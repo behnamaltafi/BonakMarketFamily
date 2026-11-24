@@ -1,6 +1,6 @@
 # Performance guide
 
-High performance keeps stores responsive and lowers infrastructure cost. The following practices help you squeeze the most out of Smartstore.
+High performance keeps stores responsive and lowers infrastructure cost. The following practices help you squeeze the most out of BonakMarket.
 
 ## Build and deployment
 
@@ -10,7 +10,7 @@ High performance keeps stores responsive and lowers infrastructure cost. The fol
 
 ## Caching
 
-Smartstore provides static and request level caches through the [`ICache` abstractions](../framework/platform/caching.md). Cache expensive results and invalidate them when underlying data changes.
+BonakMarket provides static and request level caches through the [`ICache` abstractions](../framework/platform/caching.md). Cache expensive results and invalidate them when underlying data changes.
 
 ```csharp
 var key = CacheKey.With("homepage:featured-products");

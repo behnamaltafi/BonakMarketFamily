@@ -1,0 +1,1 @@
+﻿This folder contains tests for BonakMarket.Web.Common project

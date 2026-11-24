@@ -1,0 +1,33 @@
+﻿@using BonakMarket.Admin.Models.Affiliates
+
+@model AffiliateModel
+
+@{
+    ViewBag.Title = T("Admin.Affiliates.EditAffiliateDetails").Value;
+}
+
+<form asp-action="Edit">
+    <div class="section-header">
+        <div class="title">
+            <a sm-backto asp-action="List"></a>
+            <span>@T("Admin.Affiliates.EditAffiliateDetails") - @Model.Address.FirstName @Model.Address.LastName</span>
+        </div>
+        <div class="options">
+            <button type="submit" name="save" value="save" class="btn btn-primary">
+                <icon name="check" />
+                <span>@T("Admin.Common.Save")</span>
+            </button>
+            <button type="submit" name="save" value="save-continue" class="btn btn-secondary">
+                <span>@T("Admin.Common.SaveContinue")</span>
+            </button>
+            <button type="button" id="affiliate-delete" class="btn btn-secondary btn-destructive">
+                <icon name="trash" />
+                <span>@T("Admin.Common.Delete")</span>
+            </button>
+            <confirm button-id="affiliate-delete" />
+        </div>
+    </div>
+
+    <partial name="_CreateOrUpdate" model="Model" />
+</form>
+

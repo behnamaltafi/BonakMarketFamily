@@ -2,19 +2,19 @@
 
 ## Overview
 
-Migrations are a structured way to alter a database schema and are required when changes need to be made to Smartstore's database tables or when new tables need to be added. Migrations can be found in the Smartstore core or in a module, depending on who created the related entity.
+Migrations are a structured way to alter a database schema and are required when changes need to be made to BonakMarket's database tables or when new tables need to be added. Migrations can be found in the BonakMarket core or in a module, depending on who created the related entity.
 
-Smartstore uses [Fluent Migrator](https://fluentmigrator.github.io/) as a database migrations framework. Fluent Migrator supports many database systems such as SQL Server, MySQL or PostgreSQL, where migrations are described in C# classes that can be checked into the Fluent Migrator version control system.
+BonakMarket uses [Fluent Migrator](https://fluentmigrator.github.io/) as a database migrations framework. Fluent Migrator supports many database systems such as SQL Server, MySQL or PostgreSQL, where migrations are described in C# classes that can be checked into the Fluent Migrator version control system.
 
-Fluent Migrator can also write data to the database or update existing data, but this is more convenient using [IDataSeeder](../../../src/Smartstore/Data/Migrations/IDataSeeder.cs) or its abstract implementation [DataSeeder](../../../src/Smartstore.Core/Data/Migrations/DataSeeder%60T.cs).
+Fluent Migrator can also write data to the database or update existing data, but this is more convenient using [IDataSeeder](../../../src/BonakMarket/Data/Migrations/IDataSeeder.cs) or its abstract implementation [DataSeeder](../../../src/BonakMarket.Core/Data/Migrations/DataSeeder%60T.cs).
 
 {% hint style="info" %}
-Smartstore prefers Fluent Migrator over EF Core Migrations, because EF Migrations does not support database provider agnostic tooling and schema definition.
+BonakMarket prefers Fluent Migrator over EF Core Migrations, because EF Migrations does not support database provider agnostic tooling and schema definition.
 {% endhint %}
 
 ## Database Migrator
 
-[DbMigrator](../../../src/Smartstore.Core/Data/Migrations/DbMigrator%60T.cs) is responsible for performing migrations. `MigrateAsync` is used to migrate the database to a specified version, or to the latest, if none is specified.
+[DbMigrator](../../../src/BonakMarket.Core/Data/Migrations/DbMigrator%60T.cs) is responsible for performing migrations. `MigrateAsync` is used to migrate the database to a specified version, or to the latest, if none is specified.
 
 {% hint style="warning" %}
 `MigrateAsync` has an assembly parameter to perform only those migrations of a specific module. This should always be set. If it is `null`, the migrations of _all_ modules are executed!
@@ -44,13 +44,13 @@ internal class Module : ModuleBase
 
 A migration is an internal class inherited from the Fluent Migrator's abstract `Migration` class. The migration files should be named using the pattern `YYYYMMDDHHMMSS_<migration name>.cs`, so that they are ordered by date in ascending order.
 
-The migration class must be decorated with the [MigrationVersionAttribute](../../../src/Smartstore.Core/Data/Migrations/MigrationVersionAttribute.cs) to specify a version and a short description. The version is determined by a timestamp, that typically represents the date when the migration was created. The timestamp can have one of the following formats:
+The migration class must be decorated with the [MigrationVersionAttribute](../../../src/BonakMarket.Core/Data/Migrations/MigrationVersionAttribute.cs) to specify a version and a short description. The version is determined by a timestamp, that typically represents the date when the migration was created. The timestamp can have one of the following formats:
 
 * yyyy-MM-dd HH:mm:ss (recommended)
 * yyyy/MM/dd HH:mm:ss
 * yyyy.MM.dd HH:mm:ss
 
-To make the short description more uniform, we recommend the format `<module name>:<migration name>`, e.g. _Core: ProductComparePriceLabel_. The very first migration is usually named _Initial_, e.g. _MegaSearch: Initial_. A good example of a typical migration is [ProductComparePriceLabel](../../../src/Smartstore.Core/Migrations/20221103091500_ProductComparePriceLabel.cs).
+To make the short description more uniform, we recommend the format `<module name>:<migration name>`, e.g. _Core: ProductComparePriceLabel_. The very first migration is usually named _Initial_, e.g. _MegaSearch: Initial_. A good example of a typical migration is [ProductComparePriceLabel](../../../src/BonakMarket.Core/Migrations/20221103091500_ProductComparePriceLabel.cs).
 
 {% code title="20221103091500_ProductComparePriceLabel.cs" %}
 ```csharp
@@ -87,13 +87,13 @@ internal class ProductComparePriceLabel : Migration, ILocaleResourcesProvider, I
 
 <table><thead><tr><th width="352">Method or property</th><th>Description</th></tr></thead><tbody><tr><td><code>IMigration.Up</code></td><td>Collects the <em>up</em> migration expressions.</td></tr><tr><td><code>IMigration.Down</code></td><td>Collects the <em>down</em> migration expressions.</td></tr><tr><td><code>IDataSeeder.Stage</code></td><td>Gets a value that indicates the stage at which migration seeding is performed. Possible values are <code>Early</code> and <code>Late</code>.</td></tr><tr><td><code>IDataSeeder.AbortOnFailure</code></td><td>Gets a value indicating whether the migration should be completely rolled back if an error occurs during migration seeding.</td></tr><tr><td><code>IDataSeeder.SeedAsync</code></td><td>Seeds any data in the database.</td></tr><tr><td><code>ILocaleResourcesProvider.</code><br><code>MigrateLocaleResources</code></td><td>Seeds new or updated locale resources after a migration has been performed.</td></tr></tbody></table>
 
-More examples can be found in the [DevTools](https://github.com/smartstore/Smartstore/tree/main/src/Smartstore.Modules/Smartstore.DevTools/Migrations) module. They are for illustrative purposes only and are therefore commented out so that they are not executed.
+More examples can be found in the [DevTools](https://github.com/BonakMarket/BonakMarket/tree/main/src/BonakMarket.Modules/BonakMarket.DevTools/Migrations) module. They are for illustrative purposes only and are therefore commented out so that they are not executed.
 
 {% hint style="info" %}
 In the `ProductComparePriceLabel` migration, each statement is preceded by an existence check of the related resource (for a table, column, foreign key, field index, etc.). This is not mandatory but it is recommended. It makes your migration less vulnerable and ensures that in case of unpredictable events, the migration will still execute correctly, regardless of how many times it is executed. If your migration was only partially executed due to an error, it will not be able to run successfully again without these existence checks, and manual changes to of the database schema would be required.
 {% endhint %}
 
-In most cases, modules create migrations to extend the [domain model](../../compose/modules/examples/creating-a-domain-entity.md), i.e. to add their own entities. For example, the [Google Merchant Center](https://github.com/smartstore/Smartstore/tree/main/src/Smartstore.Modules/Smartstore.Google.MerchantCenter) module adds the `GoogleProduct` entity to the domain model and allows it to be edited via a data grid and a tab on the product editing page.
+In most cases, modules create migrations to extend the [domain model](../../compose/modules/examples/creating-a-domain-entity.md), i.e. to add their own entities. For example, the [Google Merchant Center](https://github.com/BonakMarket/BonakMarket/tree/main/src/BonakMarket.Modules/BonakMarket.Google.MerchantCenter) module adds the `GoogleProduct` entity to the domain model and allows it to be edited via a data grid and a tab on the product editing page.
 
 A migration can also inherit from `AutoReversingMigration`. In this case, no `Down` method is necessary, because FluentMigrator generates the necessary expressions automatically from the expressions of the `Up` method. This only works for some expressions like `CREATE TABLE`, but not for `DROP TABLE`.
 
@@ -110,12 +110,12 @@ Fluent Migrator keeps a version history of successfully executed migrations in t
 By deleting an entry in this history, it is possible to run the associated migration, the next time you start the application. For example, if I want to run the inital migration of the Google Merchant Center module again, I delete the row for that migration (see the highlighted row in the image above). I also delete the `GoogleProduct` table because it is created by this migration. Without deleting the table, the migration would be executed but do nothing because `GoogleProduct` already exists, or generate an error if it didn't first check if the table already existed.
 
 {% hint style="warning" %}
-Manual modifications to the database schema should only be done with great care and sufficient knowledge of Smartstore. They may cause the software to stop working correctly and may require restoring a database from a backup.
+Manual modifications to the database schema should only be done with great care and sufficient knowledge of BonakMarket. They may cause the software to stop working correctly and may require restoring a database from a backup.
 {% endhint %}
 
 ## Data seeding
 
-Data seeding allows you to add data to the database or to update existing data. If this is done in conjunction with a migration, you usually implement `IDataSeeder<SmartDbContext>` directly via its migration class, as shown earlier. Without a migration, or if larger amounts of data need to be transferred to the database, you use a separate class that inherits from `DataSeeder<SmartDbContext>`. For example, if you need to add sample data to the database during the installation of Smartstore or a module.
+Data seeding allows you to add data to the database or to update existing data. If this is done in conjunction with a migration, you usually implement `IDataSeeder<SmartDbContext>` directly via its migration class, as shown earlier. Without a migration, or if larger amounts of data need to be transferred to the database, you use a separate class that inherits from `DataSeeder<SmartDbContext>`. For example, if you need to add sample data to the database during the installation of BonakMarket or a module.
 
 ```csharp
 internal class MyInstallationDataSeeder : DataSeeder<SmartDbContext>
@@ -138,7 +138,7 @@ internal class MyInstallationDataSeeder : DataSeeder<SmartDbContext>
         
         if (_installContext.SeedSampleData == null || _installContext.SeedSampleData == true)
         {
-            // TODO: populate only if Smartstore or this module is installed.
+            // TODO: populate only if BonakMarket or this module is installed.
         }
     }
     
@@ -241,7 +241,7 @@ public async Task SeedAsync(SmartDbContext context, CancellationToken cancelToke
 
 ### SmartDbContextDataSeeder
 
-`SmartDbContextDataSeeder` is a special data seeder that Smartstore uses to collect seeding instructions until the next version is released, mostly used to add or update locale string resources. Immediately before a new version is released, these are moved to a new migration that finalizes the version. This is done to avoid having to create new migrations for small changes and to limit the number of migrations.
+`SmartDbContextDataSeeder` is a special data seeder that BonakMarket uses to collect seeding instructions until the next version is released, mostly used to add or update locale string resources. Immediately before a new version is released, these are moved to a new migration that finalizes the version. This is done to avoid having to create new migrations for small changes and to limit the number of migrations.
 
 ## Appendix
 

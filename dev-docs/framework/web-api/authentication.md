@@ -1,6 +1,6 @@
 # Authentication
 
-Smartstore Web API uses _Basic Authentication_ over _HTTPS authentication_ method to protect data from unauthorized access. It is recommended by the _OData protocol version 4.0_ for the highest level of interoperability with generic clients.
+BonakMarket Web API uses _Basic Authentication_ over _HTTPS authentication_ method to protect data from unauthorized access. It is recommended by the _OData protocol version 4.0_ for the highest level of interoperability with generic clients.
 
 The client sends the credentials by using the Authorization header. The credentials are formatted as the string `publicKey:secretKey` using UTF-8 and base64 encoding. The credentials are not encrypted, so HTTPS is required.
 
@@ -18,7 +18,7 @@ message.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentia
 ```
 {% endcode %}
 
-The API will respond with a `401 Unauthorized` status code if the user is not authorized to exchange data via the API. In this case, the response HTTP headers **Smartstore-Api-AuthResultId** (ID of the denied reason) and **Smartstore-Api-AuthResultDesc** (short description of the denied reason) are sent with details of the reason for denial. In addition, the **WWW-Authenticate** header is sent with the value `Basic realm="Smartstore.WebApi", charset="UTF-8"`.
+The API will respond with a `401 Unauthorized` status code if the user is not authorized to exchange data via the API. In this case, the response HTTP headers **BonakMarket-Api-AuthResultId** (ID of the denied reason) and **BonakMarket-Api-AuthResultDesc** (short description of the denied reason) are sent with details of the reason for denial. In addition, the **WWW-Authenticate** header is sent with the value `Basic realm="BonakMarket.WebApi", charset="UTF-8"`.
 
 ## Reasons for denial
 

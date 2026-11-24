@@ -23,7 +23,7 @@ RUN if [ "$MODE" = system ]; then bash /work/install-wkhtmltopdf.sh; \
 RUN apt-get update && apt-get install -y --no-install-recommends python3 poppler-utils && apt-get clean
 COPY --from=build /probe/ /work/.temp/probe/
 COPY build/wkhtml-tests/ /tests/
-COPY src/Smartstore.Web/wwwroot/admin/images/bg-mobile.jpg /tests/fixture.jpg
+COPY src/BonakMarket.Web/wwwroot/admin/images/bg-mobile.jpg /tests/fixture.jpg
 COPY --from=build /packages/.temp/nuget/ /packages/.temp/nuget/
 ENV NUGET_PACKAGES=/packages/.temp/nuget
 ENV WKHTML_PROBE_MODE=$MODE

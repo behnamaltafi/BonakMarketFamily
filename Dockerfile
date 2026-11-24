@@ -6,7 +6,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
 
 # Copy solution and source
-ARG SOLUTION=Smartstore.sln
+ARG SOLUTION=BonakMarket.sln
 WORKDIR /app
 COPY $SOLUTION ./
 COPY src/ ./src
@@ -14,14 +14,14 @@ COPY test/ ./test
 COPY nuget.config ./
 
 # Create Modules dir if missing
-RUN mkdir /app/src/Smartstore.Web/Modules -p -v
+RUN mkdir /app/src/BonakMarket.Web/Modules -p -v
 
 # Build
 RUN dotnet build $SOLUTION -c Release
 
 # Publish
-WORKDIR /app/src/Smartstore.Web
-RUN dotnet publish Smartstore.Web.csproj -c Release -o /app/release/publish \
+WORKDIR /app/src/BonakMarket.Web
+RUN dotnet publish BonakMarket.Web.csproj -c Release -o /app/release/publish \
 	--no-self-contained \
 	--no-restore
 
@@ -39,4 +39,4 @@ RUN chmod +x /tmp/install-wkhtmltopdf.sh && \
     /tmp/install-wkhtmltopdf.sh && \
     rm /tmp/install-wkhtmltopdf.sh
 
-ENTRYPOINT ["./Smartstore.Web", "--urls", "http://0.0.0.0:80"]
+ENTRYPOINT ["./BonakMarket.Web", "--urls", "http://0.0.0.0:80"]

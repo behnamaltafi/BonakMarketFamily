@@ -1,4 +1,4 @@
-"""Run the real Smartstore PDF probe and retain PDFs/page images for visual review."""
+"""Run the real BonakMarket PDF probe and retain PDFs/page images for visual review."""
 import hashlib
 import html
 import json
@@ -28,7 +28,7 @@ https_image = os.environ.get("WKHTML_HTTPS_IMAGE_URL", "")
 if not https_image.startswith("https://"):
     raise RuntimeError("Set WKHTML_HTTPS_IMAGE_URL to an accessible, trusted HTTPS PNG/JPEG URL.")
 
-# Small local PNG plus the existing Smartstore JPEG exercise both image decoders.
+# Small local PNG plus the existing BonakMarket JPEG exercise both image decoders.
 def chunk(kind, data):
     return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
 
@@ -41,7 +41,7 @@ rows = "".join(f"<tr><td>ROW-{n:03d}</td><td>Artikel {n} - Gr\u00f6\u00dfe \u00c
 style = "body {font-family: 'Liberation Sans', Arial; font-size: 12px;} table {width:100%;border-collapse:collapse;} td,th {border:1px solid #bbb;padding:7px;} thead {display:table-header-group;} tr {page-break-inside:avoid;}"
 (work / "invoice.html").write_text(
     f'<html><head><meta charset="utf-8"><style>{style}</style></head><body>'
-    f'<h1>Smartstore technical invoice fixture</h1><img width="96" src="{logo}">'
+    f'<h1>BonakMarket technical invoice fixture</h1><img width="96" src="{logo}">'
     f'<img width="96" src="{jpeg}"><p id="js">JS-NOT-RUN</p>'
     '<script>document.getElementById("js").innerHTML="JS-READY";</script>'
     f'<table><thead><tr><th>TABLE-COLUMNS</th><th>Artikel</th><th>Preis</th></tr></thead><tbody>{rows}</tbody></table>'

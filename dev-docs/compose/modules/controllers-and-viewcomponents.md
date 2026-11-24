@@ -1,8 +1,8 @@
 # Controllers & ViewComponents
 
-Smartstore modules are pure MVC projects. This means that normal controller classes can be implemented using the MVC pattern. Since varying fields of application often require repetitive tasks, we have created base controllers following the [DRY principle](https://en.wikipedia.org/wiki/Don't_repeat_yourself). These take care of many tasks and can of course be used to implement your own controllers.
+BonakMarket modules are pure MVC projects. This means that normal controller classes can be implemented using the MVC pattern. Since varying fields of application often require repetitive tasks, we have created base controllers following the [DRY principle](https://en.wikipedia.org/wiki/Don't_repeat_yourself). These take care of many tasks and can of course be used to implement your own controllers.
 
-The base controllers are located in the _Controllers_ directory of the Smartstore.Web.Common project. By including the most important attributes and implementing auxiliary methods, they keep controllers consistent and eliminate redundancy.
+The base controllers are located in the _Controllers_ directory of the BonakMarket.Web.Common project. By including the most important attributes and implementing auxiliary methods, they keep controllers consistent and eliminate redundancy.
 
 ## SmartController
 
@@ -48,7 +48,7 @@ Provides the `ICommonServices` service collection using the `Services` shortcut.
 var customer = Services.WorkContext.CurrentCustomer;
 ```
 
-For more information, see [ICommonServices](../../../src/Smartstore.Core/Platform/Common/ICommonServices.cs).
+For more information, see [ICommonServices](../../../src/BonakMarket.Core/Platform/Common/ICommonServices.cs).
 
 </details>
 
@@ -263,7 +263,7 @@ Provides the `ICommonServices` service collection using the `Services` shortcut.
 var customer = Services.WorkContext.CurrentCustomer;
 ```
 
-For more information, see [ICommonServices](../../../src/Smartstore.Core/Platform/Common/ICommonServices.cs).
+For more information, see [ICommonServices](../../../src/BonakMarket.Core/Platform/Common/ICommonServices.cs).
 
 </details>
 

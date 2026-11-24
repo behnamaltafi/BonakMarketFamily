@@ -1,6 +1,6 @@
 # SEO
 
-Search engine optimization in Smartstore revolves around human readable URLs, meta data and machine consumable resources such as `robots.txt` and the XML sitemap. The framework ships with sensible defaults but allows full customization through services and settings.
+Search engine optimization in BonakMarket revolves around human readable URLs, meta data and machine consumable resources such as `robots.txt` and the XML sitemap. The framework ships with sensible defaults but allows full customization through services and settings.
 
 ## URL slugs
 
@@ -70,4 +70,4 @@ Assets.JsonLd.Product.Obj("offers", offer);
 
 ## Character conversion
 
-To keep URLs readable across languages, Smartstore converts special characters according to `SeoNameCharConversion`. Set `ConvertNonWesternChars` to `false` or `AllowUnicodeCharsInUrls` to permit full Unicode slugs when appropriate.
+To keep URLs readable across languages, BonakMarket converts special characters according to `SeoNameCharConversion`. Set `ConvertNonWesternChars` to `false` or `AllowUnicodeCharsInUrls` to permit full Unicode slugs when appropriate.

@@ -5,10 +5,10 @@ icon: code-branch
 
 # Changelog
 
-Smartstore maintains human‑readable release notes to track new features, improvements, and bug fixes. The full history lives in the repository root as [`changelog.md`](../../changelog.md) and follows a simple structure:
+BonakMarket maintains human‑readable release notes to track new features, improvements, and bug fixes. The full history lives in the repository root as [`changelog.md`](../../changelog.md) and follows a simple structure:
 
 ```markdown
-## Smartstore 6.2.1
+## BonakMarket 6.2.1
 
 ### New Features
 - Add a payment provider for easyCredit purchase on account.
@@ -22,7 +22,7 @@ Smartstore maintains human‑readable release notes to track new features, impro
 
 ## Versioning
 
-Smartstore uses semantic versioning (`MAJOR.MINOR.PATCH`). A new major version introduces breaking changes, a minor version adds functionality, and patch versions contain only fixes.
+BonakMarket uses semantic versioning (`MAJOR.MINOR.PATCH`). A new major version introduces breaking changes, a minor version adds functionality, and patch versions contain only fixes.
 
 ## Updating the changelog
 

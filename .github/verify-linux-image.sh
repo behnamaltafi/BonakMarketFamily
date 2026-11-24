@@ -8,7 +8,7 @@ platform=$2
 # Exercise native dependencies in the unmodified production image, before test tools are added.
 docker run --rm --platform "$platform" --entrypoint /bin/bash "$image" -euo pipefail -c '
     dotnet --info
-    test -x /app/Smartstore.Web
+    test -x /app/BonakMarket.Web
     case "$(uname -m)" in x86_64) rid=linux-x64 ;; aarch64) rid=linux-arm64 ;; *) exit 1 ;; esac
     test -x "/app/runtimes/$rid/native/lightningcss"
     "/app/runtimes/$rid/native/lightningcss" --version

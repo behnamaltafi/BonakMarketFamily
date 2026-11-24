@@ -1,7 +1,7 @@
 # Pricing
 
 ## Overview
-Smartstore calculates product prices through a pipeline of **price calculators**. Each calculator adjusts the running price for a specific concern such as tier prices, discounts or attribute surcharges. The pipeline is orchestrated by `IPriceCalculationService` and produces a `CalculatedPrice` that contains final and regular amounts, discounts, taxes and more.
+BonakMarket calculates product prices through a pipeline of **price calculators**. Each calculator adjusts the running price for a specific concern such as tier prices, discounts or attribute surcharges. The pipeline is orchestrated by `IPriceCalculationService` and produces a `CalculatedPrice` that contains final and regular amounts, discounts, taxes and more.
 
 ## Calculating a product price
 Create default options, build a calculation context and ask the service to compute the price:

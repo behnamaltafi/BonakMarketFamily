@@ -1,0 +1,31 @@
+﻿@inherits BonakMarket.Web.Razor.SmartRazorPage<TModel>
+
+@using System
+@using System.Globalization
+@using System.Text.Encodings.Web
+@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Routing
+@using Microsoft.AspNetCore.Mvc.Razor
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
+@using BonakMarket
+@using BonakMarket.Web
+@using BonakMarket.Web.Models
+@using BonakMarket.Imaging
+@using BonakMarket.Core.Common
+@using BonakMarket.Core.Localization
+@using BonakMarket.Core.Widgets
+@using BonakMarket.Core.Content.Media
+@using BonakMarket.Core.Content.Menus
+@using BonakMarket.Web.Models.Diagnostics
+@using BonakMarket.Web.Models.Common
+@using BonakMarket.Web.Rendering
+@using BonakMarket.Web.Rendering.Choices
+@using BonakMarket.Web.TagHelpers.Shared
+@using BonakMarket.Web.TagHelpers.Admin
+@using BonakMarket.Admin
+@using BonakMarket.Admin.Models
+@using Humanizer
+
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@addTagHelper BonakMarket.Web.TagHelpers.Shared.*, BonakMarket.Web.Common
+@addTagHelper BonakMarket.Web.TagHelpers.Admin.*, BonakMarket.Web.Common

@@ -72,7 +72,7 @@ version=$(/usr/local/bin/wkhtmltopdf --version)
 printf 'Installed %s (%s), SHA-256 %s\n' "$version" "$architecture" "$binary_sha"
 
 # Catch headless startup/rendering failures during the image build, not in production.
-printf '<html><body><h1>Smartstore PDF installation check</h1></body></html>\n' > "$scratch/input.html"
+printf '<html><body><h1>BonakMarket PDF installation check</h1></body></html>\n' > "$scratch/input.html"
 timeout 30 /usr/local/bin/wkhtmltopdf --quiet "$scratch/input.html" "$scratch/output.pdf"
 [[ $(head -c 5 "$scratch/output.pdf") == '%PDF-' ]] || {
     echo 'wkhtmltopdf did not produce a PDF.' >&2

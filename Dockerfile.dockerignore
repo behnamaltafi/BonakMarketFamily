@@ -46,21 +46,21 @@ build/packages
 **/*.orig
 **/Kopie von*
 
-src/Smartstore.Web/Modules/*
-src/Smartstore.Web/App_Data/*
-!src/Smartstore.Web/App_Data/EmailTemplates/*
-!src/Smartstore.Web/App_Data/Geo/*
-!src/Smartstore.Web/App_Data/Seed/*
-!src/Smartstore.Web/App_Data/widgetzones.json
+src/BonakMarket.Web/Modules/*
+src/BonakMarket.Web/App_Data/*
+!src/BonakMarket.Web/App_Data/EmailTemplates/*
+!src/BonakMarket.Web/App_Data/Geo/*
+!src/BonakMarket.Web/App_Data/Seed/*
+!src/BonakMarket.Web/App_Data/widgetzones.json
 
-src/Smartstore.Web/wwwroot/[Ee]xchange/*
-src/Smartstore.Web/[Cc]onfig/usersettings*
+src/BonakMarket.Web/wwwroot/[Ee]xchange/*
+src/BonakMarket.Web/[Cc]onfig/usersettings*
 
 # Themes
-src/Smartstore.Web/Themes/*
-!src/Smartstore.Web/Themes/Flex/
-!src/Smartstore.Web/Themes/FlexBlue/
-!src/Smartstore.Web/Themes/FlexBlack/
+src/BonakMarket.Web/Themes/*
+!src/BonakMarket.Web/Themes/Flex/
+!src/BonakMarket.Web/Themes/FlexBlue/
+!src/BonakMarket.Web/Themes/FlexBlack/
 
 # Never send licensed local-only Font Awesome Pro assets to a Docker build.
 **/fontawesome-pro

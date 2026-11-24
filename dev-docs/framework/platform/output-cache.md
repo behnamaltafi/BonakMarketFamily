@@ -6,13 +6,13 @@ description: Improve performance and scalability
 
 ## Concept
 
-Output caching is a technique used to improve the performance and scalability of Smartstore by storing the generated output of pages on the server side in memory, relational database or in a REDIS database. When a client requests a store page, the server first checks if a cached copy of the page exists. If it does, the server can serve the cached copy to the client without generating the page again, reducing the processing and network overhead.
+Output caching is a technique used to improve the performance and scalability of BonakMarket by storing the generated output of pages on the server side in memory, relational database or in a REDIS database. When a client requests a store page, the server first checks if a cached copy of the page exists. If it does, the server can serve the cached copy to the client without generating the page again, reducing the processing and network overhead.
 
-Smartstore also ensures that cached content is invalidated or refreshed when it becomes stale or outdated, and that private or sensitive data is not inadvertently cached. Proper caching can significantly reduce the response time and resource usage of a store, improving the user experience and reducing server load.
+BonakMarket also ensures that cached content is invalidated or refreshed when it becomes stale or outdated, and that private or sensitive data is not inadvertently cached. Proper caching can significantly reduce the response time and resource usage of a store, improving the user experience and reducing server load.
 
 ### "Donut Hole" Caching
 
-Smartstore follows the so-called _Donut Hole Caching_ strategy. In this strategy, a dynamic web page is divided into two parts: a non-dynamic or semi-static outer layer, and a dynamic inner layer. The outer layer is cached, while the inner layer is not, and is generated on each request.
+BonakMarket follows the so-called _Donut Hole Caching_ strategy. In this strategy, a dynamic web page is divided into two parts: a non-dynamic or semi-static outer layer, and a dynamic inner layer. The outer layer is cached, while the inner layer is not, and is generated on each request.
 
 The term "donut hole" refers to the inner dynamic layer, which is surrounded by the static outer layer. The outer layer is cached in its entirety, including its HTML, CSS, and JavaScript files. When a user requests the web page, the server first checks the cache for the outer layer, and if it is found, returns it to the user. This can result in a significant performance improvement since the server does not need to generate the outer layer on each request.
 
@@ -22,9 +22,9 @@ Donut Hole Caching is a balance between the performance benefits of caching and 
 
 ### Availability
 
-In Smartstore, output caching is handled by a commercial module that is **not** part of the open-source Community Edition. The module builds on the caching infrastructure provided by the Smartstore core and provides all the necessary implementations to actually enable and operate the output cache.
+In BonakMarket, output caching is handled by a commercial module that is **not** part of the open-source Community Edition. The module builds on the caching infrastructure provided by the BonakMarket core and provides all the necessary implementations to actually enable and operate the output cache.
 
-However, when developing custom modules for Smartstore, it's important to take output caching into account. This means that you need to ensure that your module works properly with the output caching system. This may involve configuring the caching settings for the module or using cache tags to ensure that the cache is cleared when necessary.
+However, when developing custom modules for BonakMarket, it's important to take output caching into account. This means that you need to ensure that your module works properly with the output caching system. This may involve configuring the caching settings for the module or using cache tags to ensure that the cache is cleared when necessary.
 
 ## Cacheable routes
 
@@ -39,7 +39,7 @@ Clarification of the terminology relating to the [Donut Hole](output-cache.md#do
 
 A _cachable route_ represents the stringified route to a page or view component. It is the route identifier and structured as follows:
 
-<table><thead><tr><th width="181.33333333333331">Element</th><th width="231">Route pattern</th><th>Example</th></tr></thead><tbody><tr><td><strong>Full page</strong></td><td><code>[{Module}/]{ControllerShortName}/{Action}</code></td><td><code>Smartstore.Blog/Blog/List</code>, <code>Catalog/Category</code></td></tr><tr><td><strong>View component</strong></td><td><code>vc:[{Module}/]{ComponentShortName}</code></td><td><code>vc:SearchBox</code>, <code>vc:Smartstore.Blog/BlogSummary</code></td></tr></tbody></table>
+<table><thead><tr><th width="181.33333333333331">Element</th><th width="231">Route pattern</th><th>Example</th></tr></thead><tbody><tr><td><strong>Full page</strong></td><td><code>[{Module}/]{ControllerShortName}/{Action}</code></td><td><code>BonakMarket.Blog/Blog/List</code>, <code>Catalog/Category</code></td></tr><tr><td><strong>View component</strong></td><td><code>vc:[{Module}/]{ComponentShortName}</code></td><td><code>vc:SearchBox</code>, <code>vc:BonakMarket.Blog/BlogSummary</code></td></tr></tbody></table>
 
 {% hint style="warning" %}
 **Module must be omitted** if the controller / component is part of the application core.
@@ -71,7 +71,7 @@ Backend pages are **never** cached, only the frontend pages.
 
 ### Apply cacheable routes
 
-To specify cacheable routes for your module, simply add an `internal` class that implements the [ICacheableRouteProvider](../../../src/Smartstore.Core/Platform/OutputCache/ICacheableRouteProvider.cs). By convention, the class is called `CacheableRoutes`. No DI registration is required.
+To specify cacheable routes for your module, simply add an `internal` class that implements the [ICacheableRouteProvider](../../../src/BonakMarket.Core/Platform/OutputCache/ICacheableRouteProvider.cs). By convention, the class is called `CacheableRoutes`. No DI registration is required.
 
 Here is an example of a module’s cacheable routes:
 
@@ -105,7 +105,7 @@ The most complicated issue with output caching is determining when cached conten
 
 By **announcing** the display of entities, Output Cache can automate this invalidation. The best point to make this announcement is when you are preparing a view model to be rendered by a view.
 
-The [IDisplayControl](../../../src/Smartstore.Core/Platform/OutputCache/IDisplayControl.cs) service collects these announcements. You simply pass it to the constructor of your controller. After that, you call its `Announce` method wherever you need it, passing the entity instance you want to display as a parameter.
+The [IDisplayControl](../../../src/BonakMarket.Core/Platform/OutputCache/IDisplayControl.cs) service collects these announcements. You simply pass it to the constructor of your controller. After that, you call its `Announce` method wherever you need it, passing the entity instance you want to display as a parameter.
 
 ```csharp
 private readonly IDisplayControl _displayControl;
@@ -160,7 +160,7 @@ The invalidation observer provides handler registration for custom output cache 
 
 ### IOutputCacheInvalidationObserver
 
-[IOutputCacheInvalidationObserver](../../../src/Smartstore.Core/Platform/OutputCache/IOutputCacheInvalidationObserver.cs) is the required singleton service, which has two methods for registering observers.
+[IOutputCacheInvalidationObserver](../../../src/BonakMarket.Core/Platform/OutputCache/IOutputCacheInvalidationObserver.cs) is the required singleton service, which has two methods for registering observers.
 
 `ObserveEntity(Func<ObserveEntityContext, Task>)` registers an observer for an **entity type**. The passed observer is responsible for invalidating the cache by calling an invalidation method on the `IOutputCacheProvider` instance. The observer must set the `ObserveEntityContext.Handled` property to `true` to signal the framework to skip execution of subsequent observers.
 

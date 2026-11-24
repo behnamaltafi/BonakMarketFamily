@@ -19,4 +19,4 @@ ARG SOURCE=build/artifacts/${EDITION}.${VERSION}.${RUNTIME}
 WORKDIR /app
 COPY ${SOURCE} ./
 
-ENTRYPOINT ["dotnet", "./Smartstore.Web.dll"]
+ENTRYPOINT ["dotnet", "./BonakMarket.Web.dll"]

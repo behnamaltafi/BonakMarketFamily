@@ -134,7 +134,8 @@ public class SwaggerContractTests
             "/checkout/sessions", "/checkout/sessions/current", "/checkout/sessions/{id}",
             "/checkout/sessions/{id}/addresses", "/checkout/sessions/{id}/shipping-options",
             "/checkout/sessions/{id}/shipping-method", "/checkout/sessions/{id}/payment-methods",
-            "/checkout/sessions/{id}/payment-method",
+            "/checkout/sessions/{id}/payment-method", "/checkout/sessions/{id}/review",
+            "/checkout/sessions/{id}/confirm", "/checkout/sessions/{id}/confirmation",
             "/products/{productId}/reviews", "/orders/{id}/browser-actions", "/orders/{id}/payment-status", "/cart/gift-cards",
             "/products/{productId}/share", "/wishlist/share" })
         {

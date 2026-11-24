@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using BonakMarket.Core.Common.Services;
 using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core;
 using BonakMarket.Core.Checkout.Cart;
@@ -18,7 +20,7 @@ namespace BonakMarket.StorefrontApi.Controllers;
 [StorefrontPermission(StorefrontPermissions.Catalog)]
 public sealed class StorefrontExperienceController(SmartDbContext db, StorefrontRequestContext request,
     IWorkContext work, IStoreContext stores, IMediaService media,
-    ShoppingCartSettings cart, OrderSettings orders, RewardPointsSettings rewards, CustomerSettings customers) : StorefrontController
+    ShoppingCartSettings cart, OrderSettings orders, RewardPointsSettings rewards, CustomerSettings customers, ICurrencyService currencies, IConfiguration configuration) : StorefrontController
 {
     [HttpGet("bootstrap"), PublicCatalog]
     public async Task<ActionResult<StorefrontBootstrapDto>> Bootstrap()
@@ -26,7 +28,7 @@ public sealed class StorefrontExperienceController(SmartDbContext db, Storefront
         var store = stores.CurrentStore;
         var language = work.WorkingLanguage;
         var currency = work.WorkingCurrency;
-        var primary = store.DefaultCurrency;
+        var primary = currencies.PrimaryCurrency;
         var logo = store.LogoMediaFileId > 0
             ? await media.GetUrlAsync(store.LogoMediaFileId, 400, doFallback: false) : null;
         return Ok(new StorefrontBootstrapDto(store.Id, store.Name, logo,
@@ -34,7 +36,8 @@ public sealed class StorefrontExperienceController(SmartDbContext db, Storefront
             new(currency.CurrencyCode, currency.RoundNumDecimals),
             new(primary.CurrencyCode, primary.RoundNumDecimals),
             new(cart.ShowDiscountBox, cart.ShowGiftCardBox, rewards.Enabled, cart.AllowActivatableCartItems,
-                orders.ReturnRequestsEnabled, !customers.HideBackInStockSubscriptionsTab, false, false)));
+                orders.ReturnRequestsEnabled, !customers.HideBackInStockSubscriptionsTab,
+                configuration.GetValue<bool>("StorefrontApi:EnableOfflineCheckout") && db.Database.IsSqlServer(), false)));
     }
 
     // Match public MVC visibility; password-protected topics and widget-only content are not exposed.

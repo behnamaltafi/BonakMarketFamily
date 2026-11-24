@@ -30,10 +30,9 @@ public sealed class OrderQueries(SmartDbContext db, StorefrontRequestContext req
         var page = await Project(query.OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)).PageAsync(filter, ct);
         var ids = page.Items.Select(x => x.Id).ToArray();
         // Select at most four distinct previews per order; no per-order SQL query.
-        var rows = await db.Set<OrderItem>().AsNoTracking().Where(x => ids.Contains(x.OrderId))
-            .GroupBy(x => x.OrderId)
-            .SelectMany(g => g.Select(x => x.ProductId).Distinct().OrderBy(id => id).Take(4)
-                .Select(id => new { OrderId = g.Key, ProductId = id })).ToListAsync(ct);
+        var allRows = await db.Set<OrderItem>().AsNoTracking().Where(x => ids.Contains(x.OrderId))
+            .Select(x => new { x.OrderId, x.ProductId }).Distinct().ToListAsync(ct);
+        var rows = allRows.GroupBy(x => x.OrderId).SelectMany(g => g.OrderBy(x => x.ProductId).Take(4)).ToList();
         var previews = await CurrentProductsAsync(rows.Select(x => x.ProductId), ct);
         var grouped = rows.ToLookup(x => x.OrderId);
         foreach (var order in page.Items)

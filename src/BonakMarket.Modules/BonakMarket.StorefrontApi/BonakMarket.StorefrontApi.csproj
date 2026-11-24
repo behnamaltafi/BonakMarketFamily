@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+  <PropertyGroup>
+    <Product>BonakMarket Storefront API</Product>
+    <OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.StorefrontApi</OutputPath>
+    <OutDir>$(OutputPath)</OutDir>
+    <StorefrontCommonVersion Condition="'$(StorefrontCommonVersion)' == ''">1.0.1</StorefrontCommonVersion>
+    <StorefrontPagingVersion Condition="'$(StorefrontPagingVersion)' == ''">1.0.0</StorefrontPagingVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Common.Contracts" Version="$(StorefrontCommonVersion)" />
+    <PackageReference Include="Common.Paging.EntityFrameworkCore" Version="$(StorefrontPagingVersion)" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,12 @@
+{
+  "$schema": "../module.schema.json",
+  "Author": "BonakMarket",
+  "Group": "Mobile",
+  "SystemName": "BonakMarket.StorefrontApi",
+  "FriendlyName": "Storefront API",
+  "Description": "Customer-facing REST API using the native commerce services.",
+  "Version": "6.4.0",
+  "MinAppVersion": "6.4.0",
+  "Order": 3,
+  "ResourceRootKey": "Plugins.StorefrontApi"
+}

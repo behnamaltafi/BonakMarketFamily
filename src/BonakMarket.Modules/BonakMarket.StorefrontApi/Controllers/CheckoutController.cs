@@ -54,6 +54,7 @@ public sealed class CheckoutController(SmartDbContext db, StorefrontRequestConte
     }
 
     [HttpGet("shipping-options")]
+    [StorefrontPermission(Permissions.Catalog.DisplayPrice)]
     public async Task<ActionResult<List<CheckoutShippingOptionDto>>> ShippingOptions(int addressId, CancellationToken ct)
     {
         if (await CustomerGuildPolicy.RequiresGuildAsync(db, request.Customer, ct)) return Error(422, "profile_guild_required");

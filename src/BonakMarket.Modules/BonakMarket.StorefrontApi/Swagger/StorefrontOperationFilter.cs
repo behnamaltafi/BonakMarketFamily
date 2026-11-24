@@ -78,6 +78,8 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
         }
         if (section == "wishlist" && method == "POST") AddResponse(operation, "409", "Unsupported product configuration.");
 
+        if (route.StartsWith("checkout/sessions") && route != "checkout/sessions")
+            AddResponse(operation, "409", "Checkout expired, cart/address/rate changed, or stale draft revision.");
         if (tag == "Sharing") AddResponse(operation, "429", "Sharing rate limit exceeded.");
         foreach (var entry in operation.Responses)
         {

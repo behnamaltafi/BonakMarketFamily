@@ -131,6 +131,10 @@ public class SwaggerContractTests
         foreach (var path in new[] { "/wishlist", "/reward-points", "/stock-subscriptions", "/orders/{orderId}/shipments",
             "/shipments/{id}", "/recurring-payments", "/returns", "/orders/{id}/returns", "/downloads",
             "/checkout/readiness", "/checkout/start", "/checkout/shipping-options", "/checkout/payment-methods",
+            "/checkout/sessions", "/checkout/sessions/current", "/checkout/sessions/{id}",
+            "/checkout/sessions/{id}/addresses", "/checkout/sessions/{id}/shipping-options",
+            "/checkout/sessions/{id}/shipping-method", "/checkout/sessions/{id}/payment-methods",
+            "/checkout/sessions/{id}/payment-method",
             "/products/{productId}/reviews", "/orders/{id}/browser-actions", "/cart/gift-cards",
             "/products/{productId}/share", "/wishlist/share" })
         {

@@ -51,6 +51,7 @@ public partial class AddressModel : EntityModelBase
     [LocalizedDisplay("*Country")]
     public string CountryName { get; set; }
     public bool CountryEnabled { get; set; }
+    public bool CountryFixed { get; set; }
     public bool CountryRequired { get; set; }
 
     [LocalizedDisplay("*StateProvince")]

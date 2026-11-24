@@ -606,7 +606,7 @@ public partial class CheckoutWorkflow : ICheckoutWorkflow
             throw new InvalidOperationException("The checkout workflow is only applicable in the context of a HTTP request.");
         }
 
-        if (!_orderSettings.AnonymousCheckoutAllowed && !context.Cart.Customer.IsRegistered())
+        if (!context.Cart.Customer.IsRegistered())
         {
             return new ChallengeResult();
         }

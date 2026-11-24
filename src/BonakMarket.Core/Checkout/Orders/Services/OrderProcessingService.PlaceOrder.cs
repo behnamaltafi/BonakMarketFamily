@@ -252,7 +252,7 @@ public partial class OrderProcessingService : IOrderProcessingService
         }
 
         // Existing paid/recurring orders are not blocked by the onboarding rule.
-        if (!paymentRequest.IsRecurringPayment && await CustomerGuildPolicy.RequiresGuildAsync(_db, customer))
+        if (!paymentRequest.IsRecurringPayment && (!customer.IsRegistered() || await CustomerGuildPolicy.RequiresGuildAsync(_db, customer)))
         {
             warnings.Add("Complete your profile and select an active guild before purchasing.");
             return (warnings, cart);
@@ -364,6 +364,14 @@ public partial class OrderProcessingService : IOrderProcessingService
                 {
                     warnings.Add(T("Order.BillingAddressMissing"));
                 }
+                else if (!CustomerGuildPolicy.IsExempt(customer) &&
+                    (customer.BillingAddress.Country?.TwoLetterIsoCode != "IR" ||
+                     customer.BillingAddress.Country.Published != true ||
+                     !customer.Addresses.Any(a => a.Id == customer.BillingAddressId) ||
+                     (_addressService != null && !await _addressService.IsAddressValidAsync(customer.BillingAddress))))
+                {
+                    warnings.Add("A valid Iranian billing address is required.");
+                }
                 else if (isGuest && !customer.BillingAddress.Email.IsEmail())
                 {
                     warnings.Add(T("Common.Error.InvalidEmail"));
@@ -379,7 +387,14 @@ public partial class OrderProcessingService : IOrderProcessingService
                 if (customer.ShippingAddress == null)
                 {
                     warnings.Add(T("Order.ShippingAddressMissing"));
-                    throw new Exception();
+                }
+                else if (!CustomerGuildPolicy.IsExempt(customer) &&
+                    (customer.ShippingAddress.Country?.TwoLetterIsoCode != "IR" ||
+                     customer.ShippingAddress.Country.Published != true ||
+                     !customer.Addresses.Any(a => a.Id == customer.ShippingAddressId) ||
+                     (_addressService != null && !await _addressService.IsAddressValidAsync(customer.ShippingAddress))))
+                {
+                    warnings.Add("A valid Iranian shipping address is required.");
                 }
                 else if (isGuest && !customer.ShippingAddress.Email.IsEmail())
                 {
@@ -706,6 +721,13 @@ public partial class OrderProcessingService : IOrderProcessingService
 
             order.BillingAddress = billingAddressRequired ? (Address)ctx.Customer.BillingAddress?.Clone() : null;
             order.ShippingAddress = ctx.CartRequiresShipping ? (Address)ctx.Customer.ShippingAddress?.Clone() : null;
+            // Registered customers use their current profile email, never an outdated address email.
+            // The cloned order snapshots remain independent of later profile/address changes.
+            if (ctx.Customer.IsRegistered() && !CustomerGuildPolicy.IsExempt(ctx.Customer))
+            {
+                if (order.BillingAddress != null) order.BillingAddress.Email = ctx.Customer.Email;
+                if (order.ShippingAddress != null) order.ShippingAddress.Email = ctx.Customer.Email;
+            }
 
             ctx.IsRecurringCart = ctx.Cart.ContainsRecurringItem();
             if (ctx.IsRecurringCart)
@@ -1179,14 +1201,14 @@ public partial class OrderProcessingService : IOrderProcessingService
         {
             var email = ctx.Customer.Email ?? ctx.Customer.Addresses?.FirstOrDefault()?.Email;
 
-            if (addSubscription.ToBool())
+            if (!string.IsNullOrEmpty(email) && !email.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase) && addSubscription.ToBool())
             {
                 if (await _newsletterSubscriptionService.SubscribeAsync(email, ctx.Customer, false, order.StoreId))
                 {
                     notes.Add(T("Admin.OrderNotice.NewsletterSubscriptionAdded"));
                 }
             }
-            else
+            else if (!string.IsNullOrEmpty(email) && !email.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase))
             {
                 if (await _newsletterSubscriptionService.UnsubscribeAsync(email, true, order.StoreId))
                 {

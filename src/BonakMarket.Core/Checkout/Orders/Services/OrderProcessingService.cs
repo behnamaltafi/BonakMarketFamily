@@ -27,6 +27,7 @@ public partial class OrderProcessingService : IOrderProcessingService
 {
     private readonly SmartDbContext _db;
     private readonly IWorkContext _workContext;
+    private readonly IAddressService _addressService;
     private readonly IWebHelper _webHelper;
     private readonly ILocalizationService _localizationService;
     private readonly ICurrencyService _currencyService;
@@ -90,9 +91,11 @@ public partial class OrderProcessingService : IOrderProcessingService
         ShoppingCartSettings shoppingCartSettings,
         LocalizationSettings localizationSettings,
         TaxSettings taxSettings,
-        PaymentSettings paymentSettings)
+        PaymentSettings paymentSettings,
+        IAddressService addressService = null)
     {
         _db = db;
+        _addressService = addressService;
         _workContext = workContext;
         _webHelper = webHelper;
         _localizationService = localizationService;

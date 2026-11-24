@@ -90,7 +90,15 @@
         </div>
     </div>
 
-    <div sm-if="Model.CountryEnabled" class="form-group row">
+    <input sm-if="Model.CountryFixed" asp-for="CountryId" type="hidden" />
+    <div sm-if="Model.CountryFixed" class="form-group row">
+        <label class="col-@(breakpoint)-3 col-form-label">@T("Address.Fields.Country")</label>
+        <div class="col-@(breakpoint)-9">
+            <span class="form-control-plaintext">@Model.CountryName</span>
+            <span asp-validation-for="CountryId"></span>
+        </div>
+    </div>
+    <div sm-if="Model.CountryEnabled && !Model.CountryFixed" class="form-group row">
         <label id="address-country-label" asp-for="CountryId" class="col-@(breakpoint)-3 col-form-label@(Model.CountryRequired ? " required" : "")"></label>
         <div class="col-@(breakpoint)-9">
             @{
@@ -113,7 +121,7 @@
         </div>
     </div>
 
-    <div sm-if="Model.CountryEnabled && Model.StateProvinceEnabled" class="form-group row">
+    <div sm-if="(Model.CountryEnabled || Model.CountryFixed) && Model.StateProvinceEnabled" class="form-group row">
         <label id="address-state-province-label" asp-for="StateProvinceId" class="col-@(breakpoint)-3 col-form-label@(Model.StateProvinceRequired ? " required" : "")"></label>
         <div class="col-@(breakpoint)-9">
             <select asp-for="StateProvinceId"

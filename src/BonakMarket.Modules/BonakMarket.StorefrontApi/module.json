@@ -8,5 +8,21 @@
   "Version": "6.4.0",
   "MinAppVersion": "6.4.0",
   "Order": 3,
-  "ResourceRootKey": "Plugins.StorefrontApi"
+  "ResourceRootKey": "Plugins.StorefrontApi",
+  "DependsOn": [
+    "BonakMarket.MultiSms"
+  ],
+  "PrivateReferences": [
+    "Common.Contracts",
+    "Common.Core",
+    "Common.Paging.Core",
+    "Common.Paging.EntityFrameworkCore",
+    "MassTransit",
+    "MassTransit.Abstractions",
+    "Newtonsoft.Json",
+    "Microsoft.OpenApi",
+    "Swashbuckle.AspNetCore.Swagger",
+    "Swashbuckle.AspNetCore.SwaggerGen",
+    "Swashbuckle.AspNetCore.SwaggerUI"
+  ]
 }

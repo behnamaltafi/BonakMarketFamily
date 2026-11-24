@@ -34,8 +34,8 @@
         <PackageReference Include="HtmlSanitizer" Version="9.1.893-beta" />
         <PackageReference Include="Humanizer" Version="3.0.10" />
         <PackageReference Include="MailKit" Version="4.17.0" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.8" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
         <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="10.0.8" />
         <PackageReference Include="Microsoft.IdentityModel.Protocols.OpenIdConnect" Version="8.18.0" />
         <PackageReference Include="NCrontab.Signed" Version="3.4.0" />

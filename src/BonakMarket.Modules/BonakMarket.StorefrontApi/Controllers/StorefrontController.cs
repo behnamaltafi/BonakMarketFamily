@@ -1,4 +1,4 @@
-using System.Net.Http.Headers;
+using BonakMarket.StorefrontApi.Security;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -46,28 +46,20 @@ public abstract class StorefrontController : Controller
         }
         if (bearer)
         {
-            if (AuthenticationHeaderValue.TryParse(Request.Headers.Authorization.ToString(), out var header) &&
-                header.Scheme.Equals("Bearer", StringComparison.OrdinalIgnoreCase) &&
-                !string.IsNullOrEmpty(header.Parameter))
-            {
-                var tokens = sp.GetService<IMobileApiTokenService>();
-                if (tokens?.IsEnabled == true)
-                    identity = await tokens.ValidateAsync(header.Parameter, HttpContext.RequestAborted);
-            }
+            identity = HttpContext.Items.TryGetValue(StorefrontBearerMiddleware.CustomerKey, out var verified)
+                ? verified as Customer : null;
             if (identity == null)
             {
                 context.Result = Error(401, "invalid_access_token");
                 return;
             }
-            // A bearer request never falls back to the cookie or impersonated identity.
-            // Refuse impersonation context, then reset the native customer-dependent caches.
-            if (Work.CurrentImpersonator != null)
+            if (Work.CurrentImpersonator != null || Work.CurrentCustomer.Id != identity.Id)
             {
-                context.Result = Error(403, "impersonation_not_supported");
+                context.Result = Error(403, "identity_mismatch");
                 return;
             }
-            Work.CurrentCustomer = identity;
-            await Work.InitializeAsync();
+            // Use the native WorkContext populated from the validated ticket.
+            identity = Work.CurrentCustomer;
         }
         else
         {
@@ -108,6 +100,11 @@ public abstract class StorefrontController : Controller
         if (StoreId <= 0)
         {
             context.Result = Error(503, "store_unavailable");
+            return;
+        }
+        if (!context.ModelState.IsValid)
+        {
+            context.Result = Error(400, "invalid_request");
             return;
         }
         await next();

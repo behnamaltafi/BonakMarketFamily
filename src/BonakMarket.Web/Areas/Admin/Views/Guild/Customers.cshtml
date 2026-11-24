@@ -1,0 +1,22 @@
+@model List<BonakMarket.Core.Identity.Customer>
+@{ ViewBag.Title = "مشتریان صنف: " + ViewBag.Guild; }
+<div class="section-header"><div class="title">@ViewBag.Title (@ViewBag.Total)</div></div>
+<a asp-action="List" class="btn btn-secondary mb-3">بازگشت به صنوف</a>
+<table class="table">
+    <thead><tr><th>شناسه</th><th>نام</th><th>نام کاربری</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var customer in Model)
+    {
+        <tr><td>@customer.Id</td><td>@customer.FullName</td><td>@customer.Username</td>
+            <td><a asp-controller="Customer" asp-action="Edit" asp-route-id="@customer.Id">مشاهده</a></td></tr>
+    }
+    </tbody>
+</table>
+@if ((int)ViewBag.Page > 1)
+{
+    <a asp-action="Customers" asp-route-id="@ViewBag.GuildId" asp-route-page="@((int)ViewBag.Page - 1)">قبلی</a>
+}
+@if ((int)ViewBag.Page * 50 < (int)ViewBag.Total)
+{
+    <a asp-action="Customers" asp-route-id="@ViewBag.GuildId" asp-route-page="@((int)ViewBag.Page + 1)">بعدی</a>
+}

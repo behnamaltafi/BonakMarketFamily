@@ -1,0 +1,33 @@
+@model IdentityConfigurationModel
+@{
+    Layout = "_ConfigureModule";
+}
+<widget target-zone="admin_button_toolbar_before">
+    <button id="SaveConfigButton" type="submit" name="save" class="btn btn-primary" value="save" form="customer-identity-settings">
+        <icon name="check" />
+        <span>@T("Admin.Common.Save")</span>
+    </button>
+</widget>
+<form id="customer-identity-settings" asp-action="Configure" method="post" autocomplete="off">
+    <div asp-validation-summary="All"></div>
+    <div class="adminContent">
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="OtpLoginEnabled" />
+            </div>
+            <div class="adminData">
+                <setting-editor asp-for="OtpLoginEnabled" />
+                <span asp-validation-for="OtpLoginEnabled"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="SmsAsPrimaryLogin" />
+            </div>
+            <div class="adminData">
+                <setting-editor asp-for="SmsAsPrimaryLogin" />
+                <span asp-validation-for="SmsAsPrimaryLogin"></span>
+            </div>
+        </div>
+    </div>
+</form>

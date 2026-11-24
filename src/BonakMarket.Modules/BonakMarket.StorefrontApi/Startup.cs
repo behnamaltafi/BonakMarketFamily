@@ -29,7 +29,7 @@ internal sealed class Startup : StarterBase
         services.AddSwaggerGen(o =>
         {
             o.SwaggerDoc("storefront", new OpenApiInfo { Title = "BonakMarket Storefront API", Version = "v1",
-                Description = "Customer API. Use /api/sms-login/session, request, verify (issueTokens=true) and refresh for mobile authentication. Cookie mutations require the antiforgery header from session." });
+                Description = "Customer API. Identity module: use /api/sms-login/session, request, verify (issueTokens=true) and refresh for mobile authentication. Cookie mutations require the antiforgery header from session." });
             var existing = o.SwaggerGeneratorOptions.DocInclusionPredicate;
             o.DocInclusionPredicate((name, api) => name == "storefront"
                 ? api.GroupName == "storefront" || (api.RelativePath?.StartsWith("api/sms-login/", StringComparison.OrdinalIgnoreCase) == true)

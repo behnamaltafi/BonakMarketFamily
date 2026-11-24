@@ -1,5 +1,5 @@
 using NUnit.Framework;
-using BonakMarket.MultiSms.Services;
+using BonakMarket.Core.Messaging;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 

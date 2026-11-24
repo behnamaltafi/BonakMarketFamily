@@ -1,3 +1,4 @@
+using BonakMarket.Core.Messaging;
 using BonakMarket.MultiSms.Configuration;
 
 namespace BonakMarket.MultiSms.Services;

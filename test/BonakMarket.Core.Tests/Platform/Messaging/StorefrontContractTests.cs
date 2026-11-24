@@ -17,8 +17,8 @@ using BonakMarket.StorefrontApi.Controllers;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
-using BonakMarket.MultiSms.Controllers;
-using BonakMarket.MultiSms.Security;
+using BonakMarket.Identity.Controllers;
+using BonakMarket.Identity.Security;
 using Microsoft.AspNetCore.Http;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
@@ -147,9 +147,13 @@ public class StorefrontContractTests
     }
 
     [Test]
-    public void AccountRoutesAreOwnedByMultiSms()
+    public void AccountRoutesAreOwnedByIdentity()
     {
         var type = typeof(SmsLoginApiController);
+        Assert.That(type.Assembly.GetName().Name, Is.EqualTo("BonakMarket.Identity"));
+        Assert.That(typeof(CustomerApiBearerMiddleware).Assembly, Is.SameAs(type.Assembly));
+        Assert.That(type.Assembly.GetReferencedAssemblies().Any(x => x.Name == "BonakMarket.MultiSms"), Is.False);
+        Assert.That(typeof(BonakMarket.MultiSms.Services.SmsGatewaySender).Assembly.GetReferencedAssemblies().Any(x => x.Name == "BonakMarket.Identity"), Is.False);
         Assert.That(type.GetCustomAttribute<RouteAttribute>()?.Template, Is.EqualTo("api/sms-login"));
         Assert.That(type.GetMethod(nameof(SmsLoginApiController.GetProfile))?.GetCustomAttribute<HttpGetAttribute>()?.Template, Is.EqualTo("profile"));
         Assert.That(type.GetMethod(nameof(SmsLoginApiController.UpdateProfile))?.GetCustomAttribute<HttpPutAttribute>()?.Template, Is.EqualTo("profile"));

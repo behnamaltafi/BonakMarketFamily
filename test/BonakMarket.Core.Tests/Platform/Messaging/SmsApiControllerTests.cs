@@ -20,7 +20,11 @@ using BonakMarket.Core.Security;
 using BonakMarket.Events;
 using BonakMarket.MultiSms.Controllers;
 using BonakMarket.MultiSms.Models;
-using BonakMarket.MultiSms.Services;
+using BonakMarket.Identity.Services;
+using BonakMarket.Identity.Controllers;
+using BonakMarket.Identity.Models;
+using BonakMarket.Core;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 
@@ -74,7 +78,7 @@ public class SmsApiControllerTests
         users.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(customer);
         var signIn = CreateSignInManager(users);
         signIn.Setup(x => x.IsSignedIn(It.IsAny<ClaimsPrincipal>())).Returns(true);
-        var controller = CreateLoginController(otp, users, signIn);
+        var controller = CreateLoginController(otp, users, signIn, currentCustomer: customer);
 
         var result = await controller.RequestEnrollment(new SmsCodeRequest { Phone = "09123456789" }, default);
 
@@ -186,13 +190,18 @@ public class SmsApiControllerTests
     }
 
     private static SmsLoginApiController CreateLoginController(Mock<ISmsOtpLoginService> otp,
-        Mock<UserManager<Customer>> users = null, Mock<SignInManager<Customer>> signIn = null, SmartDbContext db = null)
+        Mock<UserManager<Customer>> users = null, Mock<SignInManager<Customer>> signIn = null, SmartDbContext db = null, Customer currentCustomer = null)
     {
         users ??= CreateUserManager();
         signIn ??= CreateSignInManager(users);
+        var work = new Mock<IWorkContext>();
+        work.SetupGet(x => x.CurrentCustomer).Returns(currentCustomer);
+        var services = new ServiceCollection().AddSingleton(work.Object).BuildServiceProvider();
+        var http = new DefaultHttpContext { RequestServices = services };
+        http.Request.Scheme = "https";
         return new SmsLoginApiController(otp.Object, signIn.Object, users.Object, db, Mock.Of<IAntiforgery>(), Mock.Of<IEventPublisher>())
         {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+            ControllerContext = new ControllerContext { HttpContext = http }
         };
     }
 

@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
 using BonakMarket.Core.Widgets;
-using BonakMarket.MultiSms.Components;
-using BonakMarket.MultiSms.Services;
+using BonakMarket.Identity.Components;
+using BonakMarket.Identity.Services;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 

@@ -142,12 +142,10 @@ public sealed class MultiSmsController : AdminController
         }
 
         settings.Enabled = model.Enabled;
-        settings.OtpLoginEnabled = model.OtpLoginEnabled;
         settings.MockEnabled = _environment.IsDevelopment() && model.MockEnabled;
         settings.HistoryEnabled = model.HistoryEnabled;
         settings.HistoryRetentionDays = model.HistoryRetentionDays;
         settings.StoreNonOtpMessageBody = model.StoreNonOtpMessageBody;
-        settings.SmsAsPrimaryLogin = model.SmsAsPrimaryLogin;
         settings.PrimaryProvider = model.PrimaryProvider;
         settings.EnableFailover = model.EnableFailover;
         settings.FallbackProvider = model.FallbackProvider;
@@ -250,8 +248,6 @@ public sealed class MultiSmsController : AdminController
             HistoryRetentionDays = settings.HistoryRetentionDays,
             StoreNonOtpMessageBody = settings.StoreNonOtpMessageBody,
             Enabled = settings.Enabled,
-            OtpLoginEnabled = settings.OtpLoginEnabled,
-            SmsAsPrimaryLogin = settings.SmsAsPrimaryLogin,
             PrimaryProvider = settings.PrimaryProvider,
             EnableFailover = settings.EnableFailover,
             FallbackProvider = settings.FallbackProvider,

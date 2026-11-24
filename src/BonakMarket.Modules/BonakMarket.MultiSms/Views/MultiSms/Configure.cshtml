@@ -38,24 +38,6 @@
                 <span asp-validation-for="Enabled"></span>
             </div>
         </div>
-        <div class="adminRow">
-            <div class="adminTitle">
-                <smart-label asp-for="OtpLoginEnabled" />
-            </div>
-            <div class="adminData">
-                <setting-editor asp-for="OtpLoginEnabled" />
-                <span asp-validation-for="OtpLoginEnabled"></span>
-            </div>
-        </div>
-        <div class="adminRow">
-            <div class="adminTitle">
-                <smart-label asp-for="SmsAsPrimaryLogin" />
-            </div>
-            <div class="adminData">
-                <setting-editor asp-for="SmsAsPrimaryLogin" />
-                <span asp-validation-for="SmsAsPrimaryLogin"></span>
-            </div>
-        </div>
         @if (Model.DevelopmentMode)
         {
             <div class="alert alert-warning">

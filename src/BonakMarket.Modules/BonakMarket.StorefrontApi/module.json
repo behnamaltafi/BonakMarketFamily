@@ -7,10 +7,10 @@
   "Description": "Customer-facing REST API using the native commerce services.",
   "Version": "6.4.0",
   "MinAppVersion": "6.4.0",
-  "Order": 3,
+  "Order": 4,
   "ResourceRootKey": "Plugins.StorefrontApi",
   "DependsOn": [
-    "BonakMarket.MultiSms"
+    "BonakMarket.Identity"
   ],
   "PrivateReferences": [
     "Microsoft.OpenApi",

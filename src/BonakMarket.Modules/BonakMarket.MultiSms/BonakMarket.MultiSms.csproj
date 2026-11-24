@@ -4,7 +4,4 @@
     <OutputPath>..\..\BonakMarket.Web\Modules\BonakMarket.MultiSms</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
   </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.8" />
-  </ItemGroup>
 </Project>

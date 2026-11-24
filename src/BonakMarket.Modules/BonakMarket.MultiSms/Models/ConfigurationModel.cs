@@ -6,13 +6,6 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*Enabled")]
     public bool Enabled { get; set; }
 
-    [LocalizedDisplay("*OtpLoginEnabled")]
-    public bool OtpLoginEnabled { get; set; }
-
-    /// <summary>Gets or sets whether SMS is the primary storefront sign-in method.</summary>
-    [LocalizedDisplay("*SmsAsPrimaryLogin")]
-    public bool SmsAsPrimaryLogin { get; set; }
-
     [LocalizedDisplay("*MockEnabled")]
     public bool MockEnabled { get; set; }
 

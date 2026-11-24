@@ -1,25 +1,17 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Builder;
-using BonakMarket.MultiSms.Security;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Mvc;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Messaging;
-using BonakMarket.Core.Identity;
-using BonakMarket.Core.Widgets;
 using BonakMarket.Data;
 using BonakMarket.Data.Providers;
 using BonakMarket.Engine;
-using BonakMarket.Engine.Builders;
 using BonakMarket.MultiSms.Domain;
-using BonakMarket.MultiSms.Filters;
 using BonakMarket.MultiSms.Services;
-using BonakMarket.Web.Controllers;
 
 namespace BonakMarket.MultiSms;
 
 /// <summary>
-/// Registers independent SMS transports and SQL-backed native Customer OTP.
+/// Registers SMS transport providers and SQL delivery history only.
 /// </summary>
 internal sealed class Startup : StarterBase
 {
@@ -33,31 +25,15 @@ internal sealed class Startup : StarterBase
         services.AddScoped<SmsHistoryStore>();
         services.AddScoped<ISmsHistoryWriter>(sp => sp.GetRequiredService<SmsHistoryStore>());
         services.AddScoped<ISmsSender, SmsGatewaySender>();
-        services.AddScoped<SmsOtpLoginService>();
-        services.AddScoped<IMobileApiTokenService, MobileApiTokenService>();
-        services.AddScoped<IStorefrontSmsProfileService>(sp => sp.GetRequiredService<SmsOtpLoginService>());
-        services.AddScoped<ISmsOtpLoginService>(services => services.GetRequiredService<SmsOtpLoginService>());
-        services.AddScoped<IWidgetSource, SmsLoginWidgetSource>();
-        services.Configure<MvcOptions>(options => options.Filters
-            .AddEndpointFilter<SmsPrimaryLoginFilter, PublicController>()
-            .ForController("Identity")
-            .ForAction("Login"));
+        services.AddScoped<ISmsDeliveryAvailability, SmsDeliveryAvailability>();
         services.AddTransient<IDbContextConfigurationSource<SmartDbContext>, MultiSmsModelConfigurer>();
-    }
-
-    public override void BuildPipeline(RequestPipelineBuilder builder)
-    {
-        if (!builder.ApplicationContext.IsInstalled) return;
-
-        builder.Configure(StarterOrdering.BeforeWorkContextMiddleware, app =>
-            app.UseMiddleware<CustomerApiBearerMiddleware>());
     }
 
     private sealed class MultiSmsModelConfigurer : IDbContextConfigurationSource<SmartDbContext>
     {
         public void Configure(IServiceProvider services, DbContextOptionsBuilder builder)
         {
-            builder.UseDbFactory(factory => factory.AddModelAssembly(typeof(SmsLoginPhone).Assembly));
+            builder.UseDbFactory(factory => factory.AddModelAssembly(typeof(SmsMessage).Assembly));
         }
     }
 }

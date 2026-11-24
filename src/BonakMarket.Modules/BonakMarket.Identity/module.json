@@ -1,0 +1,15 @@
+{
+  "$schema": "../module.schema.json",
+  "Author": "BonakMarket",
+  "Group": "Mobile",
+  "SystemName": "BonakMarket.Identity",
+  "FriendlyName": "Customer Identity",
+  "Description": "Native Customer OTP authentication, sessions, JWT and account management.",
+  "Version": "6.4.0",
+  "MinAppVersion": "6.4.0",
+  "Order": 3,
+  "ResourceRootKey": "Plugins.Identity.Customer",
+  "DependsOn": [
+    "BonakMarket.MultiSms"
+  ]
+}

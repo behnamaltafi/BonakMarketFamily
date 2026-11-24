@@ -26,6 +26,7 @@ public class CustomerImporter : EntityImporterBase
     private readonly PrivacySettings _privacySettings;
     private readonly DateTimeSettings _dateTimeSettings;
     private readonly ShoppingCartSettings _shoppingCartSettings;
+    private readonly IStorefrontSmsProfileService _smsProfile;
 
     public CustomerImporter(
         ICommonServices services,
@@ -38,7 +39,8 @@ public class CustomerImporter : EntityImporterBase
         TaxSettings taxSettings,
         PrivacySettings privacySettings,
         DateTimeSettings dateTimeSettings,
-        ShoppingCartSettings shoppingCartSettings)
+        ShoppingCartSettings shoppingCartSettings,
+        IStorefrontSmsProfileService smsProfile = null)
         : base(services, storeMappingService, urlService, seoSettings)
     {
         _mediaImporter = mediaImporter;
@@ -48,6 +50,7 @@ public class CustomerImporter : EntityImporterBase
         _privacySettings = privacySettings;
         _dateTimeSettings = dateTimeSettings;
         _shoppingCartSettings = shoppingCartSettings;
+        _smsProfile = smsProfile;
     }
 
     public static string[] SupportedKeyFields =>
@@ -243,7 +246,15 @@ public class CustomerImporter : EntityImporterBase
             row.Initialize(customer, email ?? id.ToString());
 
             row.SetProperty(context.Result, (x) => x.CustomerGuid);
-            row.SetProperty(context.Result, (x) => x.Username);
+            if (customer.Id > 0 && _smsProfile != null && !CustomerGuildPolicy.IsExempt(customer) &&
+                await _smsProfile.GetVerifiedPhoneAsync(customer.Id, context.CancelToken) != null)
+            {
+                context.Result.AddInfo("Security. Username is managed by verified mobile identity.", row.RowInfo, nameof(Customer.Username));
+            }
+            else
+            {
+                row.SetProperty(context.Result, (x) => x.Username);
+            }
             row.SetProperty(context.Result, (x) => x.Email);
             row.SetProperty(context.Result, (x) => x.Salutation);
             row.SetProperty(context.Result, (x) => x.FullName);

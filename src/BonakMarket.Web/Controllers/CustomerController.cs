@@ -127,7 +127,7 @@ public class CustomerController : PublicController
         var profile = HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>();
         if (profile != null && !CustomerGuildPolicy.IsExempt(customer) &&
             (await profile.GetVerifiedPhoneAsync(customer.Id) != null || await profile.IsProfileIncompleteAsync(customer.Id)))
-            return RedirectToAction("Profile", "SmsLogin");
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         var model = new CustomerInfoModel();
         await PrepareCustomerInfoModelAsync(model, customer, false);
@@ -148,7 +148,7 @@ public class CustomerController : PublicController
         var profile = HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>();
         if (profile != null && !CustomerGuildPolicy.IsExempt(customer) &&
             (await profile.GetVerifiedPhoneAsync(customer.Id) != null || await profile.IsProfileIncompleteAsync(customer.Id)))
-            return RedirectToAction("Profile", "SmsLogin");
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         if (model.Email.IsEmpty())
         {
@@ -380,6 +380,9 @@ public class CustomerController : PublicController
             return ChallengeOrForbid();
         }
 
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
+
         var models = await customer.Addresses.MapAsync(customer, _shoppingCartSettings.QuickCheckoutEnabled);
 
         return View(models);
@@ -397,6 +400,9 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         // Find address and ensure that it belongs to the current customer.
         var address = customer.Addresses.Where(a => a.Id == id).FirstOrDefault();
@@ -419,6 +425,9 @@ public class CustomerController : PublicController
             return ChallengeOrForbid();
         }
 
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
+
         var model = await new Address().MapAsync(customer, _shoppingCartSettings.QuickCheckoutEnabled);
 
         return View(model);
@@ -432,6 +441,9 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         var address = new Address();
 
@@ -462,6 +474,9 @@ public class CustomerController : PublicController
             return ChallengeOrForbid();
         }
 
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
+
         // Find address and ensure that it belongs to the current customer.
         var address = customer.Addresses.Where(a => a.Id == id).FirstOrDefault();
         if (address == null)
@@ -482,6 +497,9 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         // Find address and ensure that it belongs to the current customer.
         var address = customer.Addresses.FirstOrDefault(x => x.Id == id);
@@ -511,6 +529,9 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         var address = customer.Addresses.FirstOrDefault(x => x.Id == id);
         if (address != null)

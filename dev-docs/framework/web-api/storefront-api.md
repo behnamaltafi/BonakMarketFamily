@@ -100,3 +100,8 @@ Validation on staging: check both JSON documents, verify their path sets, tags, 
 - `BonakMarket.StorefrontApi`: commerce-only routes, authorization, DTOs and native adapters. Module dependencies: StorefrontApi -> Identity -> MultiSms; no direct implementation assembly references.
 - Configure OTP and primary login in the Customer Identity module configuration page; provider settings remain in MultiSms. Legacy global switches are seeded at Identity installation, and old setting rows are not deleted. Old `/sms-login` and `/api/sms-login` routes, JWT signing configuration, issuer/audience, Data Protection purpose, and SQL names are preserved. Existing sessions and challenges should remain compatible if keys and settings are preserved; verify against an upgraded staging database.
 - Clean stale module build/publish output (especially old MultiSms login views and DLL) without deleting App_Data, key rings or SQL data. Do not uninstall MultiSms to upgrade. Verify installation order, settings migration, fresh/upgrade SQL migration behavior, no duplicate routes, MVC and mobile login, refresh, phone enrollment, cart/orders, and disabling the gateway. No live migration or build executed in this editing environment.
+
+
+## Customer onboarding
+
+See [Customer onboarding and address management](customer-onboarding.md) for the current Identity v1 contracts, guild setup, checkout restrictions and phone-change workflow. Native customer address actions delegate to the unified profile page when Identity is installed.

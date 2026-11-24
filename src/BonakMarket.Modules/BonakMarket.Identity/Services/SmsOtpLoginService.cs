@@ -327,6 +327,12 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         try
         {
+            if (binding != null && !await _db.Set<SmsLoginPhone>().AsNoTracking()
+                .AnyAsync(x => x.CustomerId == binding.CustomerId && x.Phone == canonical, ct))
+            {
+                await transaction.RollbackAsync(ct);
+                return null;
+            }
             var deleted = await _db.Set<SmsOtpChallenge>()
                 .Where(x => x.Id == challenge.Id && x.Version == challenge.Version &&
                     x.ExpiresOnUtc > DateTime.UtcNow)

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core.Common;
 using BonakMarket.Core.Common.Configuration;
+using BonakMarket.Core.Common.Services;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Localization;
@@ -9,7 +10,7 @@ using BonakMarket.Identity.Models;
 
 namespace BonakMarket.Identity.Services;
 
-public sealed class CustomerAddressService(SmartDbContext db, AddressSettings settings, IStoreContext store)
+public sealed class CustomerAddressService(SmartDbContext db, AddressSettings settings, IStoreContext store, IAddressService addressService)
 {
     private IQueryable<Address> Owned(Customer customer) =>
         db.Customers.Where(c => c.Id == customer.Id).SelectMany(c => c.Addresses);
@@ -74,6 +75,7 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
     public async Task<(CustomerAddressDto Address, Dictionary<string, string[]> Errors, int Status)> SaveAsync(
         Customer customer, int? id, AddressUpdateRequest input, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         var country = await IranAsync(ct);
         if (country == null) return (null, Error("country", "iran_not_configured"), 409);
         var row = id.HasValue ? await Owned(customer).FirstOrDefaultAsync(a => a.Id == id.Value, ct) : new Address();
@@ -108,7 +110,6 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
         var makeDefault = input.IsDefault || !await Owned(customer).AnyAsync(ct);
         if (makeDefault && (!country.AllowsBilling || !country.AllowsShipping))
             return (null, Error("isDefault", "country_not_allowed"), 422);
-        using var transaction = await db.Database.BeginTransactionAsync(ct);
         row.FirstName = first; row.LastName = last; row.PhoneNumber = phone;
         row.CountryId = country.Id; row.StateProvinceId = province; row.City = city;
         row.Address1 = address1; row.Address2 = address2; row.ZipPostalCode = zip;
@@ -130,7 +131,7 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
         var row = await Owned(customer).Include(a => a.Country).FirstOrDefaultAsync(a => a.Id == id, ct);
         if (row == null) return 404;
         if (row.Country?.TwoLetterIsoCode != "IR" || !row.Country.Published ||
-            !row.Country.AllowsBilling || !row.Country.AllowsShipping) return 422;
+            !row.Country.AllowsBilling || !row.Country.AllowsShipping || !await addressService.IsAddressValidAsync(row)) return 422;
         SetDefault(customer, id);
         await db.SaveChangesAsync(ct);
         return 200;
@@ -138,9 +139,9 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
 
     public async Task<int> DeleteAsync(Customer customer, int id, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         var row = await Owned(customer).FirstOrDefaultAsync(a => a.Id == id, ct);
         if (row == null) return 404;
-        using var transaction = await db.Database.BeginTransactionAsync(ct);
         var ga = customer.GenericAttributes;
         var wasDefault = ga.DefaultBillingAddressId == id || ga.DefaultShippingAddressId == id;
         customer.RemoveAddress(row);
@@ -148,9 +149,14 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
         // Never delete or mutate an order snapshot.
         if (wasDefault)
         {
-            var replacement = await Owned(customer).Where(a => a.Id != id && a.Country != null &&
+            var candidates = await Owned(customer).Where(a => a.Id != id && a.Country != null &&
                 a.Country.TwoLetterIsoCode == "IR" && a.Country.Published && a.Country.AllowsBilling && a.Country.AllowsShipping)
-                .OrderBy(a => a.Id).Select(a => (int?)a.Id).FirstOrDefaultAsync(ct);
+                .Include(a => a.Country).Include(a => a.StateProvince).OrderBy(a => a.Id).ToListAsync(ct);
+            int? replacement = null;
+            foreach (var candidate in candidates)
+            {
+                if (await addressService.IsAddressValidAsync(candidate)) { replacement = candidate.Id; break; }
+            }
             SetDefault(customer, replacement);
         }
         await db.SaveChangesAsync(ct);

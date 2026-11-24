@@ -10,6 +10,7 @@ using BonakMarket.Core.Identity;
 using BonakMarket.Core.Messaging;
 using BonakMarket.Identity.Configuration;
 using BonakMarket.Identity.Domain;
+using BonakMarket.Identity.Security;
 
 namespace BonakMarket.Identity.Services;
 
@@ -25,6 +26,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     private readonly ISmsDeliveryAvailability _delivery;
     private readonly IStorefrontSmsProfileService _profile;
     private readonly IDataProtector _codeProtector;
+    private readonly MobileOtpChallengeTicket _mobileTicket;
     private readonly UserManager<Customer> _userManager;
     private readonly SignInManager<Customer> _signInManager;
     private readonly IEventPublisher _events;
@@ -46,6 +48,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         _delivery = delivery;
         _profile = profile;
         _codeProtector = protection.CreateProtector("BonakMarket.MultiSms.Otp.v1");
+        _mobileTicket = new MobileOtpChallengeTicket(protection);
         _userManager = userManager;
         _signInManager = signInManager;
         _events = events;
@@ -129,13 +132,31 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         // A consumed login challenge no longer stores its own cooldown.
         // Keep per-phone quota separately to prevent unlimited resend cycles
         // after repeated successful logins or registrations.
-        if (!await ConsumeQuotaAsync("login-phone:" + canonical, TimeSpan.FromMinutes(2), ct))
+        if (!await ConsumeQuotaAsync("login-phone:" + canonical, TimeSpan.FromSeconds(MobileOtpChallengeTicket.ResendAfterSeconds), ct))
         {
             return;
         }
 
         await IssueCodeAsync(canonical, "login", ct);
     }
+
+    /// <summary>Reuses the existing per-phone quota and active login challenge, including resend suppression.</summary>
+    public async Task<string> RequestMobileChallengeAsync(string canonicalPhone, CancellationToken ct)
+    {
+        await RequestLoginCodeAsync(canonicalPhone, ct);
+        var now = DateTime.UtcNow;
+        var sent = await _db.Set<SmsOtpChallenge>().AsNoTracking()
+            .Where(x => x.Phone == canonicalPhone && x.Purpose == "login" && x.ExpiresOnUtc > now &&
+                x.FailedAttempts < 5)
+            .Select(x => (DateTime?)x.LastSentOnUtc).SingleOrDefaultAsync(ct);
+        // The public response is the same when no OTP was issued, or a quota suppressed delivery.
+        return _mobileTicket.Create(canonicalPhone, sent?.Ticks ?? 0);
+    }
+
+    public Task<Customer> ConfirmMobileLoginAsync(string ticket, string code, CancellationToken ct)
+        => _mobileTicket.TryRead(ticket, out var phone, out var sentTicks)
+            ? ConfirmLoginCoreAsync(phone, code, sentTicks, ct)
+            : Task.FromResult<Customer>(null);
 
     public Task<bool> ConfirmEnrollmentAsync(Customer customer, string phone, string code, CancellationToken ct = default)
         => ConfirmPhoneChangeAsync(customer, phone, code, null, ct);
@@ -255,8 +276,10 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     /// Customer after code verification, never before it. Existing accounts are
     /// matched exclusively through the verified phone binding (no untrusted profile-phone lookup).
     /// </summary>
-    public async Task<Customer> ConfirmLoginAsync(string phone, string code,
-        CancellationToken ct = default)
+    public Task<Customer> ConfirmLoginAsync(string phone, string code, CancellationToken ct = default)
+        => ConfirmLoginCoreAsync(phone, code, null, ct);
+
+    private async Task<Customer> ConfirmLoginCoreAsync(string phone, string code, long? sentTicks, CancellationToken ct)
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
         if (canonical is null || !await IsEnabledAsync())
@@ -316,7 +339,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             }
         }
 
-        var challenge = await ValidateCodeAsync(canonical, "login", code, ct);
+        var challenge = await ValidateCodeAsync(canonical, "login", code, ct, sentTicks);
         if (challenge is null)
         {
             return null;
@@ -500,7 +523,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         if (current is not null)
         {
             // Two minutes between sends, maximum 10 sends in a rolling 24h.
-            if (current.LastSentOnUtc > now.AddMinutes(-2))
+            if (current.LastSentOnUtc > now.AddSeconds(-MobileOtpChallengeTicket.ResendAfterSeconds))
             {
                 return false;
             }
@@ -526,7 +549,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         };
 
         record.ProtectedCode = _codeProtector.Protect(code);
-        record.ExpiresOnUtc = now.AddMinutes(5);
+        record.ExpiresOnUtc = now.AddSeconds(MobileOtpChallengeTicket.LifetimeSeconds);
         record.LastSentOnUtc = now;
         record.FailedAttempts = 0;
         record.SentInWindow++;
@@ -552,7 +575,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         try
         {
             await _sms.SendAsync(new SmsSendRequest(phone,
-                $"Your BonakMarket verification code is {code}. Valid for 5 minutes.", SmsMessageKind.Otp), ct);
+                $"Your BonakMarket verification code is {code}. Valid for {MobileOtpChallengeTicket.LifetimeSeconds / 60} minutes.", SmsMessageKind.Otp), ct);
             return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -564,7 +587,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     }
 
     private async Task<SmsOtpChallenge> ValidateCodeAsync(
-        string phone, string purpose, string code, CancellationToken ct)
+        string phone, string purpose, string code, CancellationToken ct, long? sentTicks = null)
     {
         if (code is not { Length: 6 } || !code.All(char.IsAsciiDigit))
         {
@@ -574,7 +597,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         var record = await _db.Set<SmsOtpChallenge>().FirstOrDefaultAsync(
             x => x.Phone == phone && x.Purpose == purpose, ct);
         if (record is null || record.ExpiresOnUtc <= DateTime.UtcNow ||
-            record.FailedAttempts >= 5 || string.IsNullOrWhiteSpace(record.ProtectedCode))
+            record.FailedAttempts >= 5 || string.IsNullOrWhiteSpace(record.ProtectedCode) ||
+            (sentTicks.HasValue && record.LastSentOnUtc.Ticks != sentTicks.Value))
         {
             return null;
         }

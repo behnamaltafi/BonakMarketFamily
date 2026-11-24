@@ -77,6 +77,8 @@ public class StorefrontContractTests
     [TestCase("/api/identity/v1/auth/refresh", false)]
     [TestCase("/api/identity/v1/auth/sms/request", false)]
     [TestCase("/api/identity/v1/auth/sms/verify", false)]
+    [TestCase("/api/identity/v1/auth/mobile/sms/request", false)]
+    [TestCase("/api/identity/v1/auth/mobile/sms/verify", false)]
     [TestCase("/api/identity/v10/me/profile", false)]
     [TestCase("/api/sms-login/profile", true)]
     [TestCase("/api/sms-login/profile/phone/verify", true)]

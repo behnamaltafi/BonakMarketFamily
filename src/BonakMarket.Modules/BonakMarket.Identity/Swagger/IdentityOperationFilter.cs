@@ -17,11 +17,13 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
         var route = path.Substring("api/identity/v1/".Length).TrimEnd('/').ToLowerInvariant();
         var method = context.ApiDescription.HttpMethod;
         var sms = route.StartsWith("auth/sms/");
+        var mobileSms = route.StartsWith("auth/mobile/sms/");
         var session = route == "auth/session";
         var refresh = route == "auth/refresh";
         var privateAccount = route.StartsWith("me/") || route == "auth/logout";
 
         operation.Tags = new List<OpenApiTag> { new() { Name =
+            mobileSms ? "Authentication - Mobile SMS" :
             sms ? "Authentication - SMS" :
             route.StartsWith("me/security/") ? "Account Security" :
             route.StartsWith("me/addresses") ? "Addresses" :
@@ -37,7 +39,14 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
             AddResponse(operation, "401", "Missing or invalid customer identity / token.");
         }
 
-        if (sms)
+        if (mobileSms)
+        {
+            operation.Description = (operation.Description ?? "") + " Token-only JSON over HTTPS. No cookie or CSRF token required.";
+            AddResponse(operation, "400", "Invalid phone, challenge, OTP or HTTPS requirement.");
+            AddResponse(operation, "404", "SMS login is disabled.");
+            AddResponse(operation, "503", "Mobile token issuance unavailable.");
+        }
+        else if (sms)
         {
             AddCsrf(operation, true);
             AddResponse(operation, "400", "Invalid request, OTP or antiforgery token.");

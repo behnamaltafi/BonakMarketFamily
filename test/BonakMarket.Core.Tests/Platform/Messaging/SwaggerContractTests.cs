@@ -155,6 +155,14 @@ public class SwaggerContractTests
         Assert.That(request.Security, Is.Empty);
         Assert.That(request.Parameters.Any(p => p.Name == "X-Test-CSRF" && p.Required), Is.True);
         Assert.That(request.Responses["200"].Content, Is.Not.Empty);
+        foreach (var path in new[] { "/api/identity/v1/auth/mobile/sms/request", "/api/identity/v1/auth/mobile/sms/verify" })
+        {
+            var mobile = identity.Paths[path].Operations[OperationType.Post];
+            Assert.That(mobile.Security, Is.Empty);
+            Assert.That(mobile.Parameters.Any(p => p.Name == "X-Test-CSRF"), Is.False);
+            Assert.That(mobile.Responses["200"].Content, Is.Not.Empty);
+            Assert.That(mobile.Responses.ContainsKey("503"), Is.True);
+        }
         var refresh = identity.Paths["/api/identity/v1/auth/refresh"].Operations[OperationType.Post];
         Assert.That(refresh.Security, Is.Empty);
         Assert.That(refresh.Parameters.Any(p => p.Name == "X-Test-CSRF"), Is.False);

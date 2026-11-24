@@ -39,7 +39,7 @@
   },
   "credentials": {
     "platformReader": "cicd-platform-read",
-    "nexusPublisher": "bonakmarketfamily-nexus-publish",
+    "nexusPublisher": "common-nexus-admin",
     "githubPublisher": "bonakmarketfamily-github-release"
   }
 }

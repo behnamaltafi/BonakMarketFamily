@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Mvc;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Messaging;
+using BonakMarket.Core.Identity;
 using BonakMarket.Core.Widgets;
 using BonakMarket.Data;
 using BonakMarket.Data.Providers;
@@ -31,6 +32,7 @@ internal sealed class Startup : StarterBase
         services.AddScoped<ISmsHistoryWriter>(sp => sp.GetRequiredService<SmsHistoryStore>());
         services.AddScoped<ISmsSender, SmsGatewaySender>();
         services.AddScoped<SmsOtpLoginService>();
+        services.AddScoped<IMobileApiTokenService, MobileApiTokenService>();
         services.AddScoped<ISmsOtpLoginService>(services => services.GetRequiredService<SmsOtpLoginService>());
         services.AddScoped<IWidgetSource, SmsLoginWidgetSource>();
         services.Configure<MvcOptions>(options => options.Filters

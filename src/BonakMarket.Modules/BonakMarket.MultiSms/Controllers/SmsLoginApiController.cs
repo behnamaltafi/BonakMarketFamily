@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Identity;
 using BonakMarket.Events;
@@ -83,6 +84,10 @@ public sealed class SmsLoginApiController : ControllerBase
             return NotFound();
         }
 
+        var tokenService = request.IssueTokens ? HttpContext.RequestServices.GetService<IMobileApiTokenService>() : null;
+        if (request.IssueTokens && (!Request.IsHttps || tokenService?.IsEnabled != true))
+            return StatusCode(503, new { code = "mobile_tokens_unavailable" });
+
         var customer = await _otp.ConfirmLoginAsync(request.Phone, request.Code, ct);
         if (customer is null || customer.Deleted || !customer.Active || !customer.IsRegistered() ||
             !await _signInManager.CanSignInAsync(customer) ||
@@ -92,12 +97,38 @@ public sealed class SmsLoginApiController : ControllerBase
             return BadRequest(new { code = "invalid_code" });
         }
 
+        MobileApiTokenPair pair = null;
+        if (request.IssueTokens)
+        {
+            pair = await tokenService.IssueAsync(customer, ct);
+            if (pair == null)
+                return Unauthorized(new { code = "mobile_tokens_unavailable" });
+        }
+
         await _signInManager.SignInAsync(customer, isPersistent: false);
         await _events.PublishAsync(new CustomerSignedInEvent { Customer = customer });
         customer.LastLoginDateUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         bool profileRequired = await _otp.IsProfileIncompleteAsync(customer.Id, ct);
+        if (request.IssueTokens)
+        {
+            return Ok(new { code = "signed_in", profileRequired, profilePath = "/sms-login/profile",
+                accessToken = pair.AccessToken, refreshToken = pair.RefreshToken,
+                expiresIn = pair.ExpiresIn, tokenType = "Bearer" });
+        }
         return Ok(new { code = "signed_in", profileRequired, profilePath = "/sms-login/profile" });
+    }
+
+    /// <summary>Rotates a mobile refresh credential. Does not use the web cookie.</summary>
+    [HttpPost("refresh"), AllowAnonymous, IgnoreAntiforgeryToken]
+    public async Task<IActionResult> Refresh([FromBody] MobileRefreshRequest request, CancellationToken ct)
+    {
+        if (!Request.IsHttps || !await _otp.IsEnabledAsync())
+            return Unauthorized();
+        var service = HttpContext.RequestServices.GetService<IMobileApiTokenService>();
+        var pair = service?.IsEnabled == true ? await service.RefreshAsync(request.RefreshToken, ct) : null;
+        return pair == null ? Unauthorized() : Ok(new { accessToken = pair.AccessToken,
+            refreshToken = pair.RefreshToken, expiresIn = pair.ExpiresIn, tokenType = "Bearer" });
     }
 
     /// <summary>Updates the phone-linked Customer's optional profile using the auth cookie.</summary>

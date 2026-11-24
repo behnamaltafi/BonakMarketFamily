@@ -17,6 +17,7 @@ using BonakMarket.Core.Checkout.Shipping;
 using BonakMarket.Core.Common;
 using BonakMarket.Core.Common.Services;
 using BonakMarket.Core.Data;
+using BonakMarket.Data;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Security;
 using BonakMarket.StorefrontApi.Models;
@@ -42,7 +43,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     private const string DraftKey = "BonakMarket.Storefront.CheckoutDraft.v1";
     private const int RevisionConflict = 409;
     private const string AttemptKey = "BonakMarket.Storefront.OrderAttempt.v1";
-    private bool OfflineEnabled => configuration.GetValue<bool>("StorefrontApi:EnableOfflineCheckout") && db.Database.IsSqlServer();
+    private bool OfflineEnabled => configuration.GetValue<bool>("StorefrontApi:EnableOfflineCheckout") && db.DataProvider.ProviderType == DbSystemType.SqlServer;
     private Task<ShoppingCart> NativeCart() => carts.GetCartAsync(request.Customer, ShoppingCartType.ShoppingCart, request.StoreId);
 
     private CheckoutDraft? ReadDraft()

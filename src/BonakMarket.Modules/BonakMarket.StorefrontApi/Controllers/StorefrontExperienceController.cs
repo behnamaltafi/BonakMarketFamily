@@ -8,6 +8,7 @@ using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Content.Topics;
 using BonakMarket.Core.Data;
+using BonakMarket.Data;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Localization;
 using BonakMarket.Core.Stores;
@@ -37,7 +38,7 @@ public sealed class StorefrontExperienceController(SmartDbContext db, Storefront
             new(primary.CurrencyCode, primary.RoundNumDecimals),
             new(cart.ShowDiscountBox, cart.ShowGiftCardBox, rewards.Enabled, cart.AllowActivatableCartItems,
                 orders.ReturnRequestsEnabled, !customers.HideBackInStockSubscriptionsTab,
-                configuration.GetValue<bool>("StorefrontApi:EnableOfflineCheckout") && db.Database.IsSqlServer(), false)));
+                configuration.GetValue<bool>("StorefrontApi:EnableOfflineCheckout") && db.DataProvider.ProviderType == DbSystemType.SqlServer, false)));
     }
 
     // Match public MVC visibility; password-protected topics and widget-only content are not exposed.

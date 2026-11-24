@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using BonakMarket.Core.Configuration;
 using BonakMarket.Core.Checkout.Orders;
+using BonakMarket.Core.Checkout.Payment;
 using BonakMarket.Core.Security;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
@@ -11,7 +12,7 @@ namespace BonakMarket.StorefrontApi.Controllers;
 [Route("api/storefront/v1/orders")]
 [StorefrontPermission(StorefrontPermissions.Orders)]
 public sealed class OrdersController(OrderQueries orders, IOrderProcessingService processing, ISettingFactory settings,
-    StorefrontRequestContext request) : StorefrontController
+    StorefrontRequestContext request, IPaymentService payments) : StorefrontController
 {
     [HttpGet]
     public async Task<ActionResult<PageDto<OrderDto>>> Get([FromQuery] OrderSearchRequest filter, CancellationToken ct) =>
@@ -23,6 +24,15 @@ public sealed class OrdersController(OrderQueries orders, IOrderProcessingServic
         var order = await orders.DetailAsync(id, ct);
         if (order == null) return Error(404, "order_not_found");
         return Ok(order);
+    }
+
+    [HttpGet("{id:int}/browser-actions")]
+    public async Task<ActionResult<OrderBrowserActionsDto>> BrowserActions(int id, CancellationToken ct)
+    {
+        var order = await orders.FindOwnedAsync(id, ct);
+        if (order == null) return Error(404, "order_not_found");
+        return Ok(new OrderBrowserActionsDto(Url.Action("Print", "Order", new { id, pdf = true }),
+            Url.Action("Details", "Order", new { id }), await payments.CanRePostProcessPaymentAsync(order), true));
     }
 
     [HttpPost("{id:int}/reorder")]

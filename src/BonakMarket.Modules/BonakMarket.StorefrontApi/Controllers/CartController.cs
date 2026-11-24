@@ -51,7 +51,18 @@ public sealed class CartController(CartFacade cart) : StorefrontController
     public async Task<ActionResult<List<CartItemDto>>> ToWishlist(int id, CancellationToken ct) =>
         Result(await cart.TransferAsync(id, ShoppingCartType.ShoppingCart, ct));
 
+    [HttpPost("gift-cards")]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> ApplyGiftCard([FromBody] CouponRequest input, CancellationToken ct) =>
+        await cart.ApplyGiftCardAsync(input.Code, ct) ? NoContent() : Error(422, "gift_card_not_applicable");
+
+    [HttpDelete("gift-cards/{id:int}")]
+    [ProducesResponseType(204)]
+    public async Task<IActionResult> RemoveGiftCard(int id, CancellationToken ct) =>
+        await cart.RemoveGiftCardAsync(id, ct) ? NoContent() : Error(404, "gift_card_not_applied");
+
     [HttpPut("reward-points")]
+    [StorefrontPermission(StorefrontPermissions.RewardPoints)]
     [ProducesResponseType(204)]
     public async Task<IActionResult> RewardPoints([FromBody] UseRewardPointsRequest input, CancellationToken ct) =>
         await cart.SetRewardPointsAsync(input.Use, ct) ? NoContent() : Error(403, "reward_points_disabled");

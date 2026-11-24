@@ -19,15 +19,26 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
         var route = path.Substring("api/storefront/v1/".Length).TrimEnd('/').ToLowerInvariant();
         var method = context.ApiDescription.HttpMethod;
         var section = route.Split('/')[0];
-        operation.Tags = new List<OpenApiTag> { new() { Name = section switch
+        var tag = route.Contains("/reviews") ? "Reviews" :
+            route.Contains("/return-options") || route.Contains("/returns") ? "Returns" :
+            route.Contains("/shipments") ? "Shipments" : null;
+        operation.Tags = new List<OpenApiTag> { new() { Name = tag ?? (section switch
         {
             "products" => "Products",
             "categories" => "Categories",
             "brands" => "Brands",
             "cart" => "Cart",
             "orders" => "Orders",
+            "wishlist" => "Wishlist",
+            "reward-points" => "Reward Points",
+            "stock-subscriptions" => "Stock Subscriptions",
+            "checkout" => "Checkout",
+            "returns" => "Returns",
+            "shipments" => "Shipments",
+            "recurring-payments" => "Recurring Payments",
+            "downloads" => "Downloads",
             _ => "Commerce"
-        } } };
+        }) } };
         // Use the route template and verb (not overloaded CLR method names).
         operation.OperationId = "Storefront_" + method + "_" +
             route.Replace('/', '_').Replace("{", "").Replace("}", "").Replace(":", "_");
@@ -52,6 +63,13 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
             AddResponse(operation, "422", "Cart or coupon validation failed.");
         if (route == "cart/items" && method == "POST")
             AddResponse(operation, "409", "Product configuration is not supported by this API.");
+
+        if (section is "wishlist" or "checkout" or "returns" or "shipments" or "recurring-payments" or "downloads" or "stock-subscriptions" || tag != null)
+        {
+            AddResponse(operation, "404", "Resource not found in the current customer/store scope.");
+            AddResponse(operation, "422", "Native business validation failed.");
+        }
+        if (section == "wishlist" && method == "POST") AddResponse(operation, "409", "Unsupported product configuration.");
 
         foreach (var status in new[] { "400", "401", "403", "404", "409", "422", "503" })
         {

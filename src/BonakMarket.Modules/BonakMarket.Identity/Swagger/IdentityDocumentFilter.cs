@@ -11,8 +11,8 @@ internal sealed class IdentityDocumentFilter : IDocumentFilter
     {
         if (document.Info.Title != IdentitySwaggerConfiguration.DocumentTitle) return;
 
-        document.SecurityRequirements.Clear();
-        document.Components.SecuritySchemes.Clear();
+        document.SecurityRequirements = new List<OpenApiSecurityRequirement>();
+        document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme>();
         document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",

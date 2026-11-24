@@ -62,8 +62,8 @@ public class SmsApiControllerTests
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
         var controller = CreateSecurityController(otp);
 
-        Assert.That(await controller.RequestEnrollment(new SmsCodeRequest(), default), Is.TypeOf<UnauthorizedResult>());
-        Assert.That(await controller.ConfirmEnrollment(new SmsCodeVerificationRequest(), default), Is.TypeOf<UnauthorizedResult>());
+        Assert.That(await controller.RequestEnrollment(new PhoneChangeRequest(), default), Is.TypeOf<UnauthorizedResult>());
+        Assert.That(await controller.ConfirmEnrollment(new PhoneChangeVerificationRequest(), default), Is.TypeOf<UnauthorizedResult>());
         otp.Verify(x => x.RequestEnrollmentCodeAsync(It.IsAny<Customer>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         otp.Verify(x => x.ConfirmEnrollmentAsync(It.IsAny<Customer>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -80,10 +80,28 @@ public class SmsApiControllerTests
         signIn.Setup(x => x.IsSignedIn(It.IsAny<ClaimsPrincipal>())).Returns(true);
         var controller = CreateSecurityController(otp, users, signIn, currentCustomer: customer);
 
-        var result = await controller.RequestEnrollment(new SmsCodeRequest { Phone = "09123456789" }, default);
+        var result = await controller.RequestEnrollment(new PhoneChangeRequest { Phone = "09123456789" }, default);
 
         Assert.That(result, Is.TypeOf<OkObjectResult>());
         otp.Verify(x => x.RequestEnrollmentCodeAsync(customer, "09123456789", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task Bound_phone_change_without_reauth_cannot_use_initial_enrollment()
+    {
+        var otp = new Mock<ISmsOtpLoginService>();
+        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        var customer = RegisteredCustomer();
+        otp.Setup(x => x.GetVerifiedPhoneAsync(customer.Id, It.IsAny<CancellationToken>())).ReturnsAsync("+989123456789");
+        var users = CreateUserManager();
+        users.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(customer);
+        var signIn = CreateSignInManager(users);
+        signIn.Setup(x => x.IsSignedIn(It.IsAny<ClaimsPrincipal>())).Returns(true);
+        var controller = CreateSecurityController(otp, users, signIn, currentCustomer: customer);
+        Assert.That(await controller.RequestEnrollment(new PhoneChangeRequest { Phone = "09351234567" }, default), Is.TypeOf<BadRequestObjectResult>());
+        Assert.That(await controller.ConfirmEnrollment(new PhoneChangeVerificationRequest { Phone = "09351234567", Code = "123456" }, default), Is.TypeOf<BadRequestObjectResult>());
+        otp.Verify(x => x.RequestEnrollmentCodeAsync(It.IsAny<Customer>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        otp.Verify(x => x.ConfirmEnrollmentAsync(It.IsAny<Customer>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [TestCase("locked")]
@@ -238,7 +256,12 @@ public class SmsApiControllerTests
             ControllerContext = new ControllerContext { HttpContext = http }
         };
         Assert.That(await controller.GetProfile(default), Is.TypeOf<UnauthorizedResult>());
-        Assert.That(await controller.Addresses(default), Is.TypeOf<UnauthorizedResult>());
+        var addresses = new CustomerAddressApiController(null, signIn.Object, users.Object, Mock.Of<IAntiforgery>())
+        {
+            ControllerContext = new ControllerContext { HttpContext = http }
+        };
+        Assert.That(await addresses.List(ct: default), Is.TypeOf<UnauthorizedResult>());
+        Assert.That(await addresses.Get(99, default), Is.TypeOf<UnauthorizedResult>());
         users.Verify(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
     }
 

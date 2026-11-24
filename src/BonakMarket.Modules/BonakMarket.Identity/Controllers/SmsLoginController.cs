@@ -178,8 +178,9 @@ public sealed class SmsLoginController : PublicController
         }
 
         var customer = await _userManager.GetUserAsync(User);
-        return customer is not null && customer.Active && !customer.Deleted &&
-            customer.IsRegistered() ? customer : null;
+        return customer is not null && customer.Active && !customer.Deleted && !customer.IsSystemAccount &&
+            customer.IsRegistered() && Services.WorkContext.CurrentImpersonator == null &&
+            Services.WorkContext.CurrentCustomer?.Id == customer.Id ? customer : null;
     }
 
     /// <summary>

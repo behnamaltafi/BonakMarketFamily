@@ -48,7 +48,7 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
     /// <summary>Requests a phone binding for the currently signed-in account only.</summary>
     [HttpPost("request"), HttpPost("~/api/sms-login/enroll/request"), HttpPost("~/api/sms-login/profile/phone/request"), AllowAnonymous, IgnoreAntiforgeryToken]
     [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
-    public async Task<IActionResult> RequestEnrollment([FromBody] SmsCodeRequest request, CancellationToken ct)
+    public async Task<IActionResult> RequestEnrollment([FromBody] PhoneChangeRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
         {
@@ -73,8 +73,8 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
 
     /// <summary>Confirms a phone binding without accepting a client-supplied customer ID.</summary>
     [HttpPost("verify"), HttpPost("~/api/sms-login/enroll/verify"), HttpPost("~/api/sms-login/profile/phone/verify"), AllowAnonymous, IgnoreAntiforgeryToken]
-    [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
-    public async Task<IActionResult> ConfirmEnrollment([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
+    [ProducesResponseType(typeof(PhoneChangeResponse), 200)]
+    public async Task<IActionResult> ConfirmEnrollment([FromBody] PhoneChangeVerificationRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
         {
@@ -94,6 +94,6 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
         }
 
         await _signInManager.SignOutAsync();
-        return Ok(new IdentityCodeResponse("phone_verified_relogin_required"));
+        return Ok(new PhoneChangeResponse("phone_verified", true));
     }
 }

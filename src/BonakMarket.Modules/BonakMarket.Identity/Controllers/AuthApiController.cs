@@ -39,11 +39,12 @@ public sealed class AuthApiController : CustomerAccountApiController
             return Unauthorized();
 
         var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
+        var profileRequired = customer is not null && await _otp.IsProfileIncompleteAsync(customer.Id, ct);
         return Ok(new IdentitySessionResponse(
             enabled, customer is not null,
-            customer is not null && await _otp.IsProfileIncompleteAsync(customer.Id, ct),
+            profileRequired,
             customer is not null ? await _otp.GetVerifiedPhoneAsync(customer.Id, ct) : null,
-            tokens.RequestToken, tokens.HeaderName));
+            tokens.RequestToken, tokens.HeaderName, profileRequired ? new[] { "guildId" } : Array.Empty<string>()));
     }
 
     /// <summary>Rotates a mobile refresh credential. Does not use the web cookie.</summary>

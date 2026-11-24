@@ -11,8 +11,8 @@ internal sealed class StorefrontDocumentFilter : IDocumentFilter
     {
         if (document.Info.Title != StorefrontSwaggerConfiguration.DocumentTitle) return;
 
-        document.SecurityRequirements.Clear();
-        document.Components.SecuritySchemes.Clear();
+        document.SecurityRequirements = new List<OpenApiSecurityRequirement>();
+        document.Components.SecuritySchemes = new Dictionary<string, OpenApiSecurityScheme>();
         document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",

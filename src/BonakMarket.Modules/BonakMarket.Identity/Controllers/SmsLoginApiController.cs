@@ -85,11 +85,12 @@ public sealed class SmsLoginApiController : ControllerBase
         customer.LastLoginDateUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
         bool profileRequired = await _otp.IsProfileIncompleteAsync(customer.Id, ct);
+        var missing = profileRequired ? new[] { "guildId" } : Array.Empty<string>();
         if (request.IssueTokens)
         {
             return Ok(new SmsSignInResponse("signed_in", profileRequired, "/sms-login/profile",
-                pair.AccessToken, pair.RefreshToken, pair.ExpiresIn, "Bearer"));
+                pair.AccessToken, pair.RefreshToken, pair.ExpiresIn, "Bearer", missing));
         }
-        return Ok(new SmsSignInResponse("signed_in", profileRequired, "/sms-login/profile"));
+        return Ok(new SmsSignInResponse("signed_in", profileRequired, "/sms-login/profile", MissingRequiredFields: missing));
     }
 }

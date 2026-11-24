@@ -25,6 +25,26 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
         _otp = otp;
     }
 
+    [HttpPost("reauth/request"), AllowAnonymous, IgnoreAntiforgeryToken]
+    public async Task<IActionResult> RequestReauth(CancellationToken ct)
+    {
+        var (customer, error) = await RequireAccountAsync();
+        if (error != null) return error;
+        if (!await _otp.IsEnabledAsync()) return NotFound();
+        return await _otp.RequestReauthAsync(customer, ct) ? Ok(new IdentityCodeResponse("code_requested")) : BadRequest(new IdentityCodeResponse("reauth_unavailable"));
+    }
+
+    [HttpPost("reauth/verify"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [ProducesResponseType(typeof(PhoneReauthResponse), 200)]
+    public async Task<IActionResult> VerifyReauth([FromBody] PhoneReauthRequest request, CancellationToken ct)
+    {
+        var (customer, error) = await RequireAccountAsync();
+        if (error != null) return error;
+        if (!await _otp.IsEnabledAsync()) return NotFound();
+        var proof = await _otp.ConfirmReauthAsync(customer, request.Code, ct);
+        return proof == null ? BadRequest(new IdentityCodeResponse("invalid_code")) : Ok(new PhoneReauthResponse(proof, 600));
+    }
+
     /// <summary>Requests a phone binding for the currently signed-in account only.</summary>
     [HttpPost("request"), HttpPost("~/api/sms-login/enroll/request"), HttpPost("~/api/sms-login/profile/phone/request"), AllowAnonymous, IgnoreAntiforgeryToken]
     [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
@@ -38,7 +58,16 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
         var (customer, error) = await RequireAccountAsync();
         if (error is not null) return error;
 
-        await _otp.RequestEnrollmentCodeAsync(customer, request.Phone, ct);
+        var old = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
+        if (old != null)
+        {
+            if (!await _otp.RequestPhoneChangeAsync(customer, request.Phone, request.ReauthToken, ct))
+                return BadRequest(new IdentityCodeResponse("reauth_required_or_phone_unavailable"));
+        }
+        else
+        {
+            await _otp.RequestEnrollmentCodeAsync(customer, request.Phone, ct);
+        }
         return Ok(new IdentityCodeResponse("code_requested"));
     }
 
@@ -55,11 +84,16 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
         var (customer, error) = await RequireAccountAsync();
         if (error is not null) return error;
 
-        if (!await _otp.ConfirmEnrollmentAsync(customer, request.Phone, request.Code, ct))
+        var old = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
+        var success = old == null
+            ? await _otp.ConfirmEnrollmentAsync(customer, request.Phone, request.Code, ct)
+            : await _otp.ConfirmPhoneChangeAsync(customer, request.Phone, request.Code, request.ReauthToken, ct);
+        if (!success)
         {
             return BadRequest(new IdentityCodeResponse("invalid_code"));
         }
 
-        return Ok(new IdentityCodeResponse("phone_verified"));
+        await _signInManager.SignOutAsync();
+        return Ok(new IdentityCodeResponse("phone_verified_relogin_required"));
     }
 }

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using BonakMarket.Identity.Security;
@@ -27,6 +29,9 @@ internal sealed class Startup : StarterBase
     public override void ConfigureServices(IServiceCollection services, IApplicationContext appContext)
     {
         services.AddIdentitySwagger();
+        services.AddScoped<IUserValidator<Customer>, PhoneUsernameValidator>();
+        if (appContext.IsInstalled)
+            services.PostConfigure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, VerifiedPhoneCookie.Configure);
         services.AddScoped<SmsOtpLoginService>();
         services.AddScoped<IMobileApiTokenService, MobileApiTokenService>();
         services.AddScoped<CustomerProfileService>();

@@ -51,7 +51,7 @@ public sealed class AuthApiController : CustomerAccountApiController
     [ProducesResponseType(typeof(IdentityTokenResponse), 200)]
     public async Task<IActionResult> Refresh([FromBody] MobileRefreshRequest request, CancellationToken ct)
     {
-        if (!Request.IsHttps || !await _otp.IsEnabledAsync())
+        if (!Request.IsHttps)
             return Unauthorized();
         var service = HttpContext.RequestServices.GetService<IMobileApiTokenService>();
         var pair = service?.IsEnabled == true ? await service.RefreshAsync(request.RefreshToken, ct) : null;

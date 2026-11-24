@@ -59,7 +59,7 @@ internal sealed class MobileApiTokenService : IMobileApiTokenService
 
     private async Task<Customer> EligibleAsync(int id, CancellationToken ct)
     {
-        if (!IsEnabled || !await _otp.IsEnabledAsync()) return null;
+        if (!IsEnabled) return null;
         var customer = await _db.Customers.IncludeCustomerRoles().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (customer == null || customer.Deleted || !customer.Active || customer.IsSystemAccount ||
             !customer.IsRegistered() || customer.IsAdmin() || customer.IsSuperAdmin() ||

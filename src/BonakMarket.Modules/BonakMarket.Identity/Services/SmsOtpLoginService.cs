@@ -60,7 +60,10 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     public Task<string> GetVerifiedPhoneAsync(int customerId, CancellationToken ct = default)
         => _profile.GetVerifiedPhoneAsync(customerId, ct);
 
-    public async Task<bool> RequestEnrollmentCodeAsync(Customer customer, string phone, CancellationToken ct = default)
+    public Task<bool> RequestEnrollmentCodeAsync(Customer customer, string phone, CancellationToken ct = default)
+        => RequestPhoneChangeAsync(customer, phone, null, ct);
+
+    public async Task<bool> RequestPhoneChangeAsync(Customer customer, string phone, string proof, CancellationToken ct = default)
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
         if (canonical is null || customer is null || !customer.Active || customer.Deleted ||
@@ -74,6 +77,13 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         {
             return false;
         }
+
+        var existing = await GetVerifiedPhoneAsync(customer.Id, ct);
+        if (existing != null && (existing == canonical || await GetReauthProofAsync(customer.Id, existing, proof, ct) == null))
+            return false;
+        if (!CustomerGuildPolicy.IsExempt(customer) &&
+            await _db.Customers.IgnoreQueryFilters().AnyAsync(x => x.Id != customer.Id && x.Username == SmsPhoneNormalizer.ToProviderPhone(canonical), ct))
+            return false;
 
         if (!await ConsumeEnrollmentQuotaAsync(customer.Id, ct))
         {
@@ -127,61 +137,117 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         await IssueCodeAsync(canonical, "login", ct);
     }
 
-    public async Task<bool> ConfirmEnrollmentAsync(Customer customer, string phone, string code,
-        CancellationToken ct = default)
+    public Task<bool> ConfirmEnrollmentAsync(Customer customer, string phone, string code, CancellationToken ct = default)
+        => ConfirmPhoneChangeAsync(customer, phone, code, null, ct);
+
+    public async Task<bool> RequestReauthAsync(Customer customer, CancellationToken ct = default)
     {
-        var canonical = SmsPhoneNormalizer.Normalize(phone);
-        if (canonical is null || customer is null || !customer.Active || customer.Deleted ||
-            !customer.IsRegistered() || !await IsEnabledAsync())
-        {
-            return false;
-        }
+        if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered() || !await IsEnabledAsync()) return false;
+        var phone = await GetVerifiedPhoneAsync(customer.Id, ct);
+        if (phone == null || !await ConsumeQuotaAsync("reauth-account:" + customer.Id, TimeSpan.FromMinutes(2), ct)) return false;
+        return await IssueCodeAsync(phone, "reauth:" + customer.Id, ct);
+    }
 
-        var challenge = await ValidateCodeAsync(canonical, "enroll:" + customer.Id, code, ct);
-        if (challenge is null)
-        {
-            return false;
-        }
-
-        if (await _db.Set<SmsLoginPhone>().AsNoTracking().AnyAsync(
-            x => x.Phone == canonical && x.CustomerId != customer.Id, ct))
-        {
-            return false;
-        }
-
-        var binding = await _db.Set<SmsLoginPhone>().FirstOrDefaultAsync(
-            x => x.CustomerId == customer.Id, ct);
-        if (binding is null)
-        {
-            _db.Set<SmsLoginPhone>().Add(new SmsLoginPhone
-            {
-                CustomerId = customer.Id,
-                Phone = canonical,
-                VerifiedOnUtc = DateTime.UtcNow,
-                ProfileCompletedOnUtc = DateTime.UtcNow
-            });
-        }
-        else
-        {
-            binding.Phone = canonical;
-            binding.VerifiedOnUtc = DateTime.UtcNow;
-            binding.ProfileCompletedOnUtc ??= DateTime.UtcNow;
-        }
-
-        // Profile contact phone follows the verified authentication number.
-        // A profile form submission alone never changes the SMS login binding.
-        customer.GenericAttributes.Phone = SmsPhoneNormalizer.ToProviderPhone(canonical);
-        _db.Set<SmsOtpChallenge>().Remove(challenge);
+    public async Task<string> ConfirmReauthAsync(Customer customer, string code, CancellationToken ct = default)
+    {
+        if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered() || !await IsEnabledAsync()) return null;
+        var phone = await GetVerifiedPhoneAsync(customer.Id, ct);
+        if (phone == null) return null;
+        var challenge = await ValidateCodeAsync(phone, "reauth:" + customer.Id, code, ct);
+        if (challenge == null) return null;
+        var proof = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+        var now = DateTime.UtcNow;
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
         try
         {
+            var deleted = await _db.Set<SmsOtpChallenge>().Where(x => x.Id == challenge.Id && x.Version == challenge.Version &&
+                x.ExpiresOnUtc > now).ExecuteDeleteAsync(ct);
+            if (deleted != 1) return null;
+            _db.Entry(challenge).State = EntityState.Detached;
+            await _db.Set<SmsOtpChallenge>().Where(x => x.Purpose == "reauth-proof:" + customer.Id).ExecuteDeleteAsync(ct);
+            _db.Set<SmsOtpChallenge>().Add(new SmsOtpChallenge
+            {
+                Phone = phone, Purpose = "reauth-proof:" + customer.Id,
+                ProtectedCode = _codeProtector.Protect(proof), ExpiresOnUtc = now.AddMinutes(10),
+                LastSentOnUtc = now, WindowStartUtc = now, Version = 1
+            });
             await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+            return proof;
+        }
+        catch (DbUpdateException) { await transaction.RollbackAsync(ct); _db.ChangeTracker.Clear(); return null; }
+    }
+
+    private async Task<SmsOtpChallenge> GetReauthProofAsync(int id, string phone, string proof, CancellationToken ct)
+    {
+        if (proof is not { Length: 64 }) return null;
+        var row = await _db.Set<SmsOtpChallenge>().AsNoTracking().FirstOrDefaultAsync(x =>
+            x.Phone == phone && x.Purpose == "reauth-proof:" + id && x.ExpiresOnUtc > DateTime.UtcNow, ct);
+        if (row == null) return null;
+        try
+        {
+            return CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(_codeProtector.Unprotect(row.ProtectedCode)),
+                Encoding.UTF8.GetBytes(proof)) ? row : null;
+        }
+        catch (CryptographicException) { return null; }
+    }
+
+    public async Task<bool> ConfirmPhoneChangeAsync(Customer customer, string phone, string code, string proof, CancellationToken ct = default)
+    {
+        var canonical = SmsPhoneNormalizer.Normalize(phone);
+        if (canonical == null || customer == null || !customer.Active || customer.Deleted ||
+            !customer.IsRegistered() || !await IsEnabledAsync()) return false;
+        var binding = await _db.Set<SmsLoginPhone>().FirstOrDefaultAsync(x => x.CustomerId == customer.Id, ct);
+        var old = binding?.Phone;
+        var grant = old == null ? null : await GetReauthProofAsync(customer.Id, old, proof, ct);
+        if (old != null && (grant == null || old == canonical)) return false;
+        var challenge = await ValidateCodeAsync(canonical, "enroll:" + customer.Id, code, ct);
+        if (challenge == null) return false;
+        var username = SmsPhoneNormalizer.ToProviderPhone(canonical);
+        var exempt = CustomerGuildPolicy.IsExempt(customer);
+        var placeholder = "sms-" + canonical[1..] + "@accounts.invalid";
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        try
+        {
+            if (await _db.Set<SmsLoginPhone>().AnyAsync(x => x.Phone == canonical && x.CustomerId != customer.Id, ct) ||
+                (!exempt && await _db.Customers.IgnoreQueryFilters().AnyAsync(x => x.Id != customer.Id && x.Username == username, ct)))
+                return false;
+            // Recheck the old binding under the transaction before consuming proof.
+            var current = await _db.Set<SmsLoginPhone>().AsNoTracking().Where(x => x.CustomerId == customer.Id)
+                .Select(x => x.Phone).FirstOrDefaultAsync(ct);
+            if (current != old) return false;
+            var now = DateTime.UtcNow;
+            if (grant != null && await _db.Set<SmsOtpChallenge>().Where(x => x.Id == grant.Id && x.Version == grant.Version &&
+                x.ExpiresOnUtc > now).ExecuteDeleteAsync(ct) != 1) return false;
+            if (await _db.Set<SmsOtpChallenge>().Where(x => x.Id == challenge.Id && x.Version == challenge.Version &&
+                x.ExpiresOnUtc > now).ExecuteDeleteAsync(ct) != 1) return false;
+            _db.Entry(challenge).State = EntityState.Detached;
+            if (binding == null)
+            {
+                binding = new SmsLoginPhone { CustomerId = customer.Id };
+                _db.Set<SmsLoginPhone>().Add(binding);
+            }
+            binding.Phone = canonical;
+            binding.VerifiedOnUtc = now;
+            if (!exempt) customer.Username = username;
+            if (string.IsNullOrEmpty(customer.Email) || customer.Email.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase))
+                customer.Email = placeholder;
+            customer.GenericAttributes.Phone = username;
+            // UserManager runs the same native uniqueness checks and the phone username validator.
+            var result = await _userManager.UpdateAsync(customer);
+            if (!result.Succeeded)
+            {
+                await transaction.RollbackAsync(ct);
+                _db.ChangeTracker.Clear();
+                return false;
+            }
+            await _db.Set<MobileApiSession>().Where(x => x.CustomerId == customer.Id && x.RevokedOnUtc == null)
+                .ExecuteUpdateAsync(x => x.SetProperty(y => y.RevokedOnUtc, now), ct);
+            await _db.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
             return true;
         }
-        catch (DbUpdateException)
-        {
-            _db.ChangeTracker.Clear();
-            return false;
-        }
+        catch (DbUpdateException) { await transaction.RollbackAsync(ct); _db.ChangeTracker.Clear(); return false; }
     }
 
     /// <summary>
@@ -258,7 +324,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
         // Consume the code atomically before adding the new Customer and phone binding.
         // The transaction rolls everything back if account creation fails.
-        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         try
         {
             var deleted = await _db.Set<SmsOtpChallenge>()
@@ -324,6 +390,27 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                 await _db.SaveChangesAsync(ct);
             }
 
+            if (binding != null && !CustomerGuildPolicy.IsExempt(customer))
+            {
+                var expected = SmsPhoneNormalizer.ToProviderPhone(canonical);
+                if (customer.Username != expected)
+                {
+                    if (await _db.Customers.IgnoreQueryFilters().AnyAsync(x => x.Id != customer.Id && x.Username == expected, ct))
+                    {
+                        await transaction.RollbackAsync(ct);
+                        _db.ChangeTracker.Clear();
+                        return null;
+                    }
+                    customer.Username = expected;
+                    var update = await _userManager.UpdateAsync(customer);
+                    if (!update.Succeeded)
+                    {
+                        await transaction.RollbackAsync(ct);
+                        _db.ChangeTracker.Clear();
+                        return null;
+                    }
+                }
+            }
             await transaction.CommitAsync(ct);
             if (binding is null)
             {

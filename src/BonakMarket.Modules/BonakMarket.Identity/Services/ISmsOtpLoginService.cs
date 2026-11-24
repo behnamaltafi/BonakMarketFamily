@@ -18,6 +18,11 @@ public interface ISmsOtpLoginService
     /// <summary>Requests verification of a mobile number for an existing account.</summary>
     Task<bool> RequestEnrollmentCodeAsync(Customer customer, string phone, CancellationToken ct = default);
 
+    Task<bool> RequestReauthAsync(Customer customer, CancellationToken ct = default);
+    Task<string?> ConfirmReauthAsync(Customer customer, string code, CancellationToken ct = default);
+    Task<bool> RequestPhoneChangeAsync(Customer customer, string phone, string? proof, CancellationToken ct = default);
+    Task<bool> ConfirmPhoneChangeAsync(Customer customer, string phone, string code, string? proof, CancellationToken ct = default);
+
     /// <summary>Requests a login code without disclosing whether the number is registered.</summary>
     Task RequestLoginCodeAsync(string phone, CancellationToken ct = default);
 

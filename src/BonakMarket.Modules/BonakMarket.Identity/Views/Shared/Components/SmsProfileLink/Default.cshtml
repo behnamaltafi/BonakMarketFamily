@@ -6,12 +6,15 @@
     var sessionUrl = Url.Content("~/api/identity/v1/auth/session");
     var requestUrl = Url.Content("~/api/identity/v1/me/security/phone/request");
     var verifyUrl = Url.Content("~/api/identity/v1/me/security/phone/verify");
+    var reauthRequestUrl = Url.Content("~/api/identity/v1/me/security/phone/reauth/request");
+    var reauthVerifyUrl = Url.Content("~/api/identity/v1/me/security/phone/reauth/verify");
 }
 
 <div id="multi-sms-phone-settings" class="card mb-4"
      data-session-url="@sessionUrl"
      data-request-url="@requestUrl"
      data-verify-url="@verifyUrl"
+     data-reauth-request="@reauthRequestUrl" data-reauth-verify="@reauthVerifyUrl" data-bound="@(!string.IsNullOrEmpty(Model) ? "true" : "false")" data-login-url="@Url.Content("~/login")"
      data-requested="@T("Plugins.Identity.Customer.Otp.ChangePhoneRequested")"
      data-success="@T("Plugins.Identity.Customer.Otp.ChangePhoneSucceeded")"
      data-error="@T("Plugins.Identity.Customer.Otp.ChangePhoneFailed")"
@@ -26,6 +29,14 @@
                 @(Model ?? T("Plugins.Identity.Customer.Otp.UnverifiedLoginPhone").Value)
             </span>
         </div>
+        @if (!string.IsNullOrEmpty(Model))
+        {
+            <div class="mb-3">
+                <button type="button" id="sms-reauth-request" class="btn btn-outline-primary">ارسال کد به موبایل فعلی</button>
+                <input id="sms-reauth-code" class="form-control mt-2" inputmode="numeric" maxlength="6" placeholder="کد موبایل فعلی" />
+                <button type="button" id="sms-reauth-verify" class="btn btn-outline-primary mt-2">تأیید موبایل فعلی</button>
+            </div>
+        }
         <div class="mb-3">
             <label for="multi-sms-new-phone" class="form-label">@T("Plugins.Identity.Customer.Otp.NewPhoneLabel")</label>
             <input id="multi-sms-new-phone" class="form-control" type="tel"
@@ -65,6 +76,8 @@
         const verifyButton = root.querySelector("#multi-sms-verify-phone");
         const verification = root.querySelector("#multi-sms-verify-controls");
         let pendingPhone = "";
+        let reauthToken = null;
+        if(root.dataset.bound === "true") requestButton.disabled = true;
 
         function normalized(value) {
             return (value || "").trim()
@@ -113,6 +126,11 @@
             return result.json();
         }
 
+        const oldRequest=root.querySelector("#sms-reauth-request"), oldVerify=root.querySelector("#sms-reauth-verify");
+        if(oldRequest && oldVerify){
+            oldRequest.onclick=async()=>{oldRequest.disabled=true;try{await otpRequest(root.dataset.reauthRequest,{});setStatus("کد به موبایل فعلی ارسال شد.",true);}catch(_){setStatus(root.dataset.error,false);}finally{oldRequest.disabled=false;}};
+            oldVerify.onclick=async()=>{oldVerify.disabled=true;try{const code=normalized(root.querySelector("#sms-reauth-code").value);const r=await otpRequest(root.dataset.reauthVerify,{code});reauthToken=r.reauthToken;requestButton.disabled=false;setStatus("موبایل فعلی تأیید شد.",true);}catch(_){setStatus(root.dataset.error,false);}finally{oldVerify.disabled=false;}};
+        }
         requestButton.addEventListener("click", async function () {
             const value = normalized(phoneInput.value);
             if (!/^(09[0-9]{9}|989[0-9]{9}|\+989[0-9]{9})$/.test(value)) {
@@ -124,7 +142,7 @@
             codeInput.value = "";
             pendingPhone = "";
             try {
-                await otpRequest(root.dataset.requestUrl, { phone: value });
+                await otpRequest(root.dataset.requestUrl, { phone: value, reauthToken });
                 pendingPhone = value;
                 verification.hidden = false;
                 setStatus(root.dataset.requested, true);
@@ -143,19 +161,8 @@
             }
             verifyButton.disabled = true;
             try {
-                await otpRequest(root.dataset.verifyUrl, { phone: pendingPhone, code });
-                const sessionResponse = await fetch(root.dataset.sessionUrl, {
-                    credentials: "same-origin", cache: "no-store"
-                });
-                const session = await sessionResponse.json();
-                const newVerified = localPhone(session.phone || pendingPhone);
-                currentPhone.textContent = newVerified;
-                if (nativePhone && !root.contains(nativePhone)) nativePhone.value = newVerified;
-                phoneInput.value = "";
-                codeInput.value = "";
-                pendingPhone = "";
-                verification.hidden = true;
-                setStatus(root.dataset.success, true);
+                await otpRequest(root.dataset.verifyUrl, { phone: pendingPhone, code, reauthToken });
+                window.location.assign(root.dataset.loginUrl);
             } catch (_) {
                 setStatus(root.dataset.error, false);
             } finally {

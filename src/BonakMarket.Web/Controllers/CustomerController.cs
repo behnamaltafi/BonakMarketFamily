@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 ﻿using System.Linq.Expressions;
 using Humanizer;
 using Microsoft.AspNetCore.Http;
@@ -123,6 +124,11 @@ public class CustomerController : PublicController
             return ChallengeOrForbid();
         }
 
+        var profile = HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>();
+        if (profile != null && !CustomerGuildPolicy.IsExempt(customer) &&
+            (await profile.GetVerifiedPhoneAsync(customer.Id) != null || await profile.IsProfileIncompleteAsync(customer.Id)))
+            return RedirectToAction("Profile", "SmsLogin");
+
         var model = new CustomerInfoModel();
         await PrepareCustomerInfoModelAsync(model, customer, false);
 
@@ -138,6 +144,11 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        var profile = HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>();
+        if (profile != null && !CustomerGuildPolicy.IsExempt(customer) &&
+            (await profile.GetVerifiedPhoneAsync(customer.Id) != null || await profile.IsProfileIncompleteAsync(customer.Id)))
+            return RedirectToAction("Profile", "SmsLogin");
 
         if (model.Email.IsEmpty())
         {

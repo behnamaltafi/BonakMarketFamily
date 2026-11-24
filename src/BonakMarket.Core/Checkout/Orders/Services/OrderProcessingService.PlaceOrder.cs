@@ -251,6 +251,13 @@ public partial class OrderProcessingService : IOrderProcessingService
             return (warnings, cart);
         }
 
+        // Existing paid/recurring orders are not blocked by the onboarding rule.
+        if (!paymentRequest.IsRecurringPayment && await CustomerGuildPolicy.RequiresGuildAsync(_db, customer))
+        {
+            warnings.Add("Complete your profile and select an active guild before purchasing.");
+            return (warnings, cart);
+        }
+
         var isGuest = customer.IsGuest();
 
         // Check whether guest checkout is allowed.

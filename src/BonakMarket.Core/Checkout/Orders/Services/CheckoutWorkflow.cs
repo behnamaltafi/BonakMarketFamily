@@ -1,3 +1,4 @@
+using BonakMarket.Core.Identity;
 ﻿using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -79,7 +80,7 @@ public partial class CheckoutWorkflow : ICheckoutWorkflow
         var warnings = new List<string>();
         var cart = context.Cart;
 
-        var preliminaryResult = Preliminary(context);
+        var preliminaryResult = await PreliminaryAsync(context);
         if (preliminaryResult != null)
         {
             return new(preliminaryResult);
@@ -145,7 +146,7 @@ public partial class CheckoutWorkflow : ICheckoutWorkflow
     {
         Guard.NotNull(context);
 
-        var preliminaryResult = Preliminary(context);
+        var preliminaryResult = await PreliminaryAsync(context);
         if (preliminaryResult != null)
         {
             return new(preliminaryResult);
@@ -186,7 +187,7 @@ public partial class CheckoutWorkflow : ICheckoutWorkflow
         Guard.NotNull(context);
         Guard.NotNull(context.Parts);
 
-        var preliminaryResult = Preliminary(context);
+        var preliminaryResult = await PreliminaryAsync(context);
         if (preliminaryResult != null)
         {
             return new(false);
@@ -228,7 +229,7 @@ public partial class CheckoutWorkflow : ICheckoutWorkflow
     {
         Guard.NotNull(context);
 
-        var preliminaryResult = Preliminary(context);
+        var preliminaryResult = await PreliminaryAsync(context);
         if (preliminaryResult != null)
         {
             return new(preliminaryResult);
@@ -598,7 +599,7 @@ public partial class CheckoutWorkflow : ICheckoutWorkflow
     /// <summary>
     /// Checks whether the checkout can be executed, e.g. whether the shopping cart has items.
     /// </summary>
-    private IActionResult Preliminary(CheckoutContext context)
+    private async Task<IActionResult> PreliminaryAsync(CheckoutContext context)
     {
         if (context.HttpContext?.Request == null)
         {
@@ -609,6 +610,9 @@ public partial class CheckoutWorkflow : ICheckoutWorkflow
         {
             return new ChallengeResult();
         }
+
+        if (await CustomerGuildPolicy.RequiresGuildAsync(_db, context.Cart.Customer))
+            return new RedirectToActionResult("Profile", "SmsLogin", new { returnUrl = "/checkout" });
 
         if (!context.Cart.HasItems)
         {

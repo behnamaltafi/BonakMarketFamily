@@ -30,6 +30,7 @@ internal sealed class Startup : StarterBase
         services.AddScoped<SmsOtpLoginService>();
         services.AddScoped<IMobileApiTokenService, MobileApiTokenService>();
         services.AddScoped<CustomerProfileService>();
+        services.AddScoped<CustomerAddressService>();
         services.AddScoped<IStorefrontSmsProfileService>(sp => sp.GetRequiredService<CustomerProfileService>());
         services.AddScoped<ISmsOtpLoginService>(services => services.GetRequiredService<SmsOtpLoginService>());
         if (appContext.IsInstalled)

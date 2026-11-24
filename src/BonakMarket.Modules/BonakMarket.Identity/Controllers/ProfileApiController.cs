@@ -58,19 +58,6 @@ public sealed class ProfileApiController : CustomerAccountApiController
         return Ok(await ReadProfileAsync(customer, ct));
     }
 
-    [HttpGet("addresses"), HttpGet("~/api/sms-login/profile/addresses"), AllowAnonymous]
-    [ProducesResponseType(typeof(List<CustomerAddressDto>), 200)]
-    public async Task<IActionResult> Addresses(CancellationToken ct)
-    {
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
-        var addresses = await _db.Customers.AsNoTracking().Where(x => x.Id == customer.Id)
-            .SelectMany(x => x.Addresses).OrderBy(x => x.Id)
-            .Select(x => new CustomerAddressDto(x.Id, x.FirstName, x.LastName, x.CountryId, x.StateProvinceId,
-                x.City, x.Address1, x.Address2, x.ZipPostalCode, x.PhoneNumber)).ToListAsync(ct);
-        return Ok(addresses);
-    }
-
     /// <summary>Updates the phone-linked Customer's optional profile.</summary>
     [HttpPost("~/api/sms-login/profile"), AllowAnonymous, IgnoreAntiforgeryToken]
     [ProducesResponseType(typeof(IdentityCodeResponse), 200)]

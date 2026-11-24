@@ -60,6 +60,11 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
             AddResponse(operation, "400", "Invalid request, HTTPS requirement or invalid cookie antiforgery token.");
             if (route.StartsWith("me/security/"))
                 AddResponse(operation, "404", "Phone profile or SMS login capability disabled.");
+            if (route.StartsWith("me/addresses"))
+            {
+                AddResponse(operation, "404", "Address not found or not owned by current customer.");
+                if (method != "GET") { AddResponse(operation, "409", "Address conflict."); AddResponse(operation, "422", "Address validation failed."); }
+            }
             if (route == "me/profile" && method == "PUT")
                 AddResponse(operation, "422", "Profile validation failed (ProblemDetails).");
             // Identity preserves legacy mixed error payloads; do not declare a single false schema for them.

@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+using System.IO;
+using System.Security.Claims;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -77,6 +81,69 @@ public class StorefrontContractTests
     public void BearerIsRestrictedToCustomerApi(string path, bool expected)
     {
         Assert.That(CustomerApiBearerMiddleware.UsesCustomerBearer(new PathString(path)), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public async Task InvalidBearerCannotFallBackToCookieOnCustomerApi()
+    {
+        using var services = new ServiceCollection().BuildServiceProvider();
+        var http = new DefaultHttpContext { RequestServices = services };
+        http.Request.Scheme = "https";
+        http.Request.Path = "/api/sms-login/profile";
+        http.Request.Headers.Authorization = "Bearer invalid-token";
+        http.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, "7") }, "cookie"));
+        using var body = new MemoryStream();
+        http.Response.Body = body;
+        bool called = false;
+        var middleware = new CustomerApiBearerMiddleware(_ => { called = true; return Task.CompletedTask; });
+
+        await middleware.InvokeAsync(http);
+
+        Assert.That(called, Is.False);
+        Assert.That(http.Response.StatusCode, Is.EqualTo(401));
+        Assert.That(http.Items.ContainsKey(typeof(IMobileApiTokenService)), Is.False);
+    }
+
+    [Test]
+    public async Task ValidBearerInstallsOnlyVerifiedCustomerIdentity()
+    {
+        var customer = new Customer { Id = 123 };
+        var tokens = new Mock<IMobileApiTokenService>();
+        tokens.SetupGet(x => x.IsEnabled).Returns(true);
+        tokens.Setup(x => x.ValidateAsync("valid-token", It.IsAny<CancellationToken>())).ReturnsAsync(customer);
+        using var services = new ServiceCollection().AddSingleton(tokens.Object).BuildServiceProvider();
+        var http = new DefaultHttpContext { RequestServices = services };
+        http.Request.Scheme = "https";
+        http.Request.Path = "/api/storefront/v1/orders";
+        http.Request.Headers.Authorization = "Bearer valid-token";
+        http.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, "7") }, "cookie"));
+        bool called = false;
+        var middleware = new CustomerApiBearerMiddleware(_ => { called = true; return Task.CompletedTask; });
+
+        await middleware.InvokeAsync(http);
+
+        Assert.That(called, Is.True);
+        Assert.That(http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, Is.EqualTo("123"));
+        Assert.That(http.Items[typeof(IMobileApiTokenService)], Is.SameAs(customer));
+        tokens.Verify(x => x.ValidateAsync("valid-token", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [TestCase("/odata/v1/Countries")]
+    [TestCase("/api/sms-login/refresh")]
+    public async Task OtherAuthenticationFlowsAreNotIntercepted(string path)
+    {
+        var http = new DefaultHttpContext();
+        http.Request.Path = path;
+        http.Request.Headers.Authorization = "Basic integration";
+        var principal = http.User;
+        bool called = false;
+        var middleware = new CustomerApiBearerMiddleware(_ => { called = true; return Task.CompletedTask; });
+
+        await middleware.InvokeAsync(http);
+
+        Assert.That(called, Is.True);
+        Assert.That(http.User, Is.SameAs(principal));
+        Assert.That(http.Items.ContainsKey(typeof(IMobileApiTokenService)), Is.False);
     }
 
     [Test]

@@ -13,65 +13,84 @@ namespace BonakMarket.StorefrontApi.Controllers;
 public sealed class CartController(CartFacade cart) : StorefrontController
 {
     [HttpGet]
-    public async Task<ActionResult<List<CartItemDto>>> Get() => Ok(await cart.ItemsAsync());
+    public async Task<ActionResult<CartStateDto>> Get(CancellationToken ct) => Ok(await cart.StateAsync(ct));
+
+    [HttpGet("items")]
+    public async Task<ActionResult<List<CartItemDto>>> Items() => Ok(await cart.ItemsAsync());
 
     [HttpPost("items")]
-    public async Task<ActionResult<List<CartItemDto>>> Add([FromBody] AddCartItem request, CancellationToken ct) =>
-        Result(await cart.AddAsync(request, ct));
+    public async Task<ActionResult<CartStateDto>> Add([FromBody] AddCartItem request, CancellationToken ct) =>
+        await Result(await cart.AddAsync(request, ct), ct);
 
     [HttpPut("items/{id:int}")]
-    public async Task<ActionResult<List<CartItemDto>>> Update(int id, [FromBody] UpdateCartItem request, CancellationToken ct) =>
-        Result(await cart.UpdateAsync(id, request.Quantity, ct));
+    public async Task<ActionResult<CartStateDto>> Update(int id, [FromBody] UpdateCartItem request, CancellationToken ct) =>
+        await Result(await cart.UpdateAsync(id, request.Quantity, ct, active: request.Active), ct);
 
     [HttpDelete("items/{id:int}")]
-    public async Task<ActionResult<List<CartItemDto>>> Delete(int id, CancellationToken ct) =>
-        Result(await cart.DeleteAsync(id, ct));
+    public async Task<ActionResult<CartStateDto>> Delete(int id, CancellationToken ct) =>
+        await Result(await cart.DeleteAsync(id, ct), ct);
 
     [HttpGet("total")]
     [StorefrontPermission(Permissions.Catalog.DisplayPrice)]
-    public async Task<ActionResult<CartTotalDto>> Total() => Ok(await cart.TotalAsync());
+    public async Task<ActionResult<CartTotalDto>> Total(CancellationToken ct)
+    {
+        var state = await cart.StateAsync(ct);
+        if (state.Summary.CurrencyCode == null) return Error(422, "cart_validation_failed");
+        return Ok(new CartTotalDto(state.Summary.EstimatedTotal, state.Summary.OrderDiscountAmount ?? 0m, state.Summary.CurrencyCode));
+    }
 
     [HttpPost("coupon")]
-    [ProducesResponseType(204)]
     [ProducesResponseType(typeof(ProblemDetails), 422)]
-    public async Task<IActionResult> ApplyCoupon([FromBody] CouponRequest request, CancellationToken ct) =>
-        await cart.ApplyCouponAsync(request.Code, ct) ? NoContent() : Error(422, "coupon_not_applicable");
+    public async Task<ActionResult<CartStateDto>> ApplyCoupon([FromBody] CouponRequest request, CancellationToken ct) =>
+        await cart.ApplyCouponAsync(request.Code, ct) ? Ok(await cart.StateAsync(ct)) : Error(422, "coupon_not_applicable");
 
     [HttpDelete("coupon")]
-    [ProducesResponseType(204)]
-    public async Task<IActionResult> RemoveCoupon(CancellationToken ct)
+    public async Task<ActionResult<CartStateDto>> RemoveCoupon(CancellationToken ct)
     {
         await cart.RemoveCouponAsync(ct);
-        return NoContent();
+        return Ok(await cart.StateAsync(ct));
     }
 
     [HttpPost("items/{id:int}/wishlist")]
     [StorefrontPermission(StorefrontPermissions.Wishlist)]
     [StorefrontPermission(Permissions.Cart.AccessWishlist)]
-    public async Task<ActionResult<List<CartItemDto>>> ToWishlist(int id, CancellationToken ct) =>
-        Result(await cart.TransferAsync(id, ShoppingCartType.ShoppingCart, ct));
+    public async Task<ActionResult<CartTransferDto>> ToWishlist(int id, CancellationToken ct)
+    {
+        var result = await cart.TransferAsync(id, ShoppingCartType.ShoppingCart, ct);
+        if (result.Status != 200) return await Failure(result);
+        return Ok(new CartTransferDto(await cart.StateAsync(ct), await cart.WishlistStateAsync(ct)));
+    }
 
     [HttpPost("gift-cards")]
-    [ProducesResponseType(204)]
-    public async Task<IActionResult> ApplyGiftCard([FromBody] CouponRequest input, CancellationToken ct) =>
-        await cart.ApplyGiftCardAsync(input.Code, ct) ? NoContent() : Error(422, "gift_card_not_applicable");
+    public async Task<ActionResult<CartStateDto>> ApplyGiftCard([FromBody] CouponRequest input, CancellationToken ct) =>
+        await cart.ApplyGiftCardAsync(input.Code, ct) ? Ok(await cart.StateAsync(ct)) : Error(422, "gift_card_not_applicable");
 
     [HttpDelete("gift-cards/{id:int}")]
-    [ProducesResponseType(204)]
-    public async Task<IActionResult> RemoveGiftCard(int id, CancellationToken ct) =>
-        await cart.RemoveGiftCardAsync(id, ct) ? NoContent() : Error(404, "gift_card_not_applied");
+    public async Task<ActionResult<CartStateDto>> RemoveGiftCard(int id, CancellationToken ct) =>
+        await cart.RemoveGiftCardAsync(id, ct) ? Ok(await cart.StateAsync(ct)) : Error(404, "gift_card_not_applied");
+
+    [HttpDelete("gift-cards")]
+    public async Task<ActionResult<CartStateDto>> ClearGiftCards(CancellationToken ct)
+    {
+        await cart.ClearGiftCardsAsync(ct);
+        return Ok(await cart.StateAsync(ct));
+    }
 
     [HttpPut("reward-points")]
     [StorefrontPermission(StorefrontPermissions.RewardPoints)]
-    [ProducesResponseType(204)]
-    public async Task<IActionResult> RewardPoints([FromBody] UseRewardPointsRequest input, CancellationToken ct) =>
-        await cart.SetRewardPointsAsync(input.Use, ct) ? NoContent() : Error(403, "reward_points_disabled");
+    public async Task<ActionResult<CartStateDto>> RewardPoints([FromBody] UseRewardPointsRequest input, CancellationToken ct) =>
+        await cart.SetRewardPointsAsync(input.Use, ct) ? Ok(await cart.StateAsync(ct)) : Error(403, "reward_points_disabled");
 
-    private ActionResult<List<CartItemDto>> Result(CartChange result)
+    private async Task<ActionResult<CartStateDto>> Result(CartChange result, CancellationToken ct)
     {
-        if (result.Status == 200) return Ok(result.Items);
+        if (result.Status == 200) return Ok(await cart.StateAsync(ct, result.Warnings));
+        return await Failure(result);
+    }
+
+    private async Task<ObjectResult> Failure(CartChange result)
+    {
         var problem = new ProblemDetails { Status = result.Status, Title = result.Code };
-        if (result.Warnings?.Count > 0) problem.Extensions["warnings"] = result.Warnings;
+        if (result.Warnings?.Count > 0 && await cart.CanDisplayPriceAsync()) problem.Extensions["warnings"] = result.Warnings;
         return new ObjectResult(problem) { StatusCode = result.Status, ContentTypes = { "application/problem+json" } };
     }
 }

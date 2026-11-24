@@ -62,6 +62,12 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
             AddResponse(operation, "404", "Requested resource not found.");
         if (section == "cart" && (method == "POST" || method == "PUT"))
             AddResponse(operation, "422", "Cart or coupon validation failed.");
+        if (section is "cart" or "wishlist")
+        {
+            if (method is "PUT" or "POST") AddResponse(operation, "409", "Product or cart operation not supported in its current state.");
+            if (method == "DELETE") AddResponse(operation, "404", "Item or applied gift card not found.");
+            if (route == "cart/total") AddResponse(operation, "422", "Cart calculation unavailable.");
+        }
         if (route == "cart/items" && method == "POST")
             AddResponse(operation, "409", "Product configuration is not supported by this API.");
 

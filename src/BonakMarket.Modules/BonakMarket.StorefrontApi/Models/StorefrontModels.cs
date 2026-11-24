@@ -51,9 +51,15 @@ public sealed class AddCartItem
     [Range(1, 1000)] public int Quantity { get; set; } = 1;
     [MaxLength(30)] public List<VariantChoice> Variants { get; set; } = new();
 }
-public sealed class UpdateCartItem
+public sealed class UpdateCartItem : IValidatableObject
 {
-    [Range(1, 1000)] public int Quantity { get; set; }
+    [Range(1, 1000)] public int? Quantity { get; set; }
+    public bool? Active { get; set; }
+    public IEnumerable<ValidationResult> Validate(ValidationContext context)
+    {
+        if (!Quantity.HasValue && !Active.HasValue)
+            yield return new ValidationResult("Quantity or active is required.", new[] { nameof(Quantity), nameof(Active) });
+    }
 }
 
 public record PageDto<T>(IReadOnlyList<T> Items, int Page, int PageSize, int TotalCount, int TotalPages)

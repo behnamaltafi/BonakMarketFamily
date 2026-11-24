@@ -5,6 +5,9 @@ using BonakMarket.Core.Checkout.GiftCards;
 using BonakMarket.Threading;
 using BonakMarket.Core.Catalog.Attributes;
 using BonakMarket.Core.Catalog.Products;
+using BonakMarket.Core.Checkout.Tax;
+using BonakMarket.Core.Content.Media;
+using BonakMarket.Core.Security;
 using BonakMarket.Core.Checkout.Cart;
 using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Data;
@@ -16,8 +19,181 @@ namespace BonakMarket.StorefrontApi.Services;
 // An application adapter, not a second cart engine. All cart writes go through the native service.
 public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOrderCalculationService calculations,
     IProductAttributeMaterializer attributes, StorefrontRequestContext request, IWorkContext work,
-    ShoppingCartSettings settings, RewardPointsSettings rewards, IGiftCardService gifts, IDistributedLockProvider locks)
+    ShoppingCartSettings settings, RewardPointsSettings rewards, IGiftCardService gifts, IDistributedLockProvider locks,
+    IPermissionService permissions, IMediaService media, IShoppingCartValidator validator)
 {
+    public Task<bool> CanDisplayPriceAsync() => permissions.AuthorizeAsync(Permissions.Catalog.DisplayPrice, request.Customer);
+
+    public async Task<CartStateDto> StateAsync(CancellationToken ct, IReadOnlyList<string> operationWarnings = null)
+    {
+        var snapshot = await ReadSnapshotAsync(ShoppingCartType.ShoppingCart, ct);
+        var active = snapshot.Native.WithActiveItemsOnly();
+        var warnings = new List<string>(snapshot.CanPrice ? operationWarnings ?? Array.Empty<string>() : Array.Empty<string>());
+        var blockers = new List<string>();
+        if (!active.HasItems) blockers.Add("cart_empty");
+        if (!await permissions.AuthorizeAsync(StorefrontPermissions.Checkout, request.Customer))
+            blockers.Add("checkout_access_denied");
+        if (await CustomerGuildPolicy.RequiresGuildAsync(db, request.Customer, ct))
+            blockers.Add("profile_guild_required");
+        var invalid = snapshot.Lines.Any(x => x.Active && x.Availability != "available");
+        if (invalid) blockers.Add("cart_validation_failed");
+        if (active.HasItems && !invalid)
+        {
+            var cartWarnings = new List<string>();
+            // Checkout attribute validation can modify customer attributes; never run it on a GET.
+            if (!await validator.ValidateCartAsync(active, cartWarnings, false, true))
+                blockers.Add("cart_validation_failed");
+            if (snapshot.CanPrice) warnings.AddRange(cartWarnings);
+        }
+
+        ShoppingCartSubtotal sub = null;
+        ShoppingCartTotal total = null;
+        decimal? shipping = null, tax = null;
+        var includingTax = work.TaxDisplayType == TaxDisplayType.IncludingTax;
+        if (snapshot.CanPrice && !invalid)
+        {
+            sub = await calculations.GetShoppingCartSubtotalAsync(active, includeTax: includingTax, cache: false);
+            if (active.HasItems)
+            {
+                total = await calculations.GetShoppingCartTotalAsync(active, new ShoppingCartTotalOptions
+                {
+                    IncludeTax = includingTax, UseRequestCache = false
+                });
+                shipping = (await calculations.GetShoppingCartShippingTotalAsync(active, includingTax)).ShippingTotal?.Amount;
+                tax = (await calculations.GetShoppingCartTaxTotalAsync(active)).Price.Amount;
+            }
+        }
+
+        var lines = WithPrices(snapshot.Lines, sub);
+        var applied = total?.AppliedGiftCards?.ToDictionary(x => x.GiftCard.Id, x => x.UsableAmount.Amount);
+        var validGifts = await gifts.GetValidGiftCardsAsync(request.StoreId, request.Customer);
+        var cards = validGifts.OrderBy(x => x.GiftCard.Id).Select(x => new CartGiftCardDto(x.GiftCard.Id,
+            MaskCode(x.GiftCard.GiftCardCouponCode), snapshot.CanPrice ? x.UsableAmount.Amount : null,
+            total?.Total == null ? null : applied?.GetValueOrDefault(x.GiftCard.Id) ?? 0m)).ToList();
+        var root = lines.Where(x => x.ParentItemId == null).ToList();
+        var summary = new CartSummaryDto(root.Count, root.Sum(x => x.Quantity), root.Where(x => x.Active).Sum(x => x.Quantity),
+            sub?.SubtotalWithoutDiscount.Currency.CurrencyCode, sub?.SubtotalWithoutDiscount.Amount,
+            sub?.DiscountAmount.Amount, sub?.SubtotalWithDiscount.Amount, total?.DiscountAmount.Amount,
+            shipping, tax, sub == null ? null : includingTax,
+            total?.Total == null ? null : total.AppliedGiftCards?.Sum(x => x.UsableAmount.Amount),
+            total?.Total == null ? null : total.RedeemedRewardPointsAmount.Amount,
+            total?.Total == null ? null : total.RedeemedRewardPoints,
+            total?.Total == null ? null : total.CreditBalance.Amount,
+            total?.Total?.Amount, null);
+        var state = new CartStateDto("", lines, summary, request.Customer.GenericAttributes.DiscountCouponCode,
+            cards, request.Customer.GenericAttributes.UseRewardPointsDuringCheckout,
+            new CartCheckoutDto(blockers.Count == 0, active.IsShippingRequired, blockers.Distinct().ToArray()), warnings.Distinct().ToArray());
+        return state with { Revision = Revision(snapshot.Native, state with { Warnings = Array.Empty<string>() }) };
+    }
+
+    public async Task<WishlistStateDto> WishlistStateAsync(CancellationToken ct, IReadOnlyList<string> operationWarnings = null)
+    {
+        var snapshot = await ReadSnapshotAsync(ShoppingCartType.Wishlist, ct);
+        var eligible = snapshot.Lines.Where(x => x.ParentItemId == null && x.Availability == "available")
+            .Select(x => x.Id).ToHashSet();
+        eligible.ExceptWith(snapshot.Lines.Where(x => x.ParentItemId.HasValue && x.Availability != "available")
+            .Select(x => x.ParentItemId.Value));
+        var priceCart = new ShoppingCart(snapshot.Native, snapshot.Native.Items.Where(x => eligible.Contains(x.Item.Id)));
+        var sub = snapshot.CanPrice && priceCart.HasItems
+            ? await calculations.GetShoppingCartSubtotalAsync(priceCart, cache: false) : null;
+        var lines = WithPrices(snapshot.Lines, sub);
+        var root = lines.Where(x => x.ParentItemId == null).ToList();
+        var state = new WishlistStateDto("", lines, root.Count, root.Sum(x => x.Quantity),
+            snapshot.CanPrice ? operationWarnings ?? Array.Empty<string>() : Array.Empty<string>());
+        return state with { Revision = Revision(snapshot.Native, state with { Warnings = Array.Empty<string>() }) };
+    }
+
+    private async Task<(ShoppingCart Native, List<CartLineDto> Lines, bool CanPrice)> ReadSnapshotAsync(ShoppingCartType type, CancellationToken ct)
+    {
+        var native = await cart.GetCartAsync(request.Customer, type, request.StoreId, activeOnly: null);
+        var nodes = native.Items.SelectMany(Flatten).OrderBy(x => x.Item.Id).ToList();
+        var productIds = nodes.Select(x => x.Item.ProductId).Distinct().ToArray();
+        var products = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
+            .AsNoTracking().Where(x => productIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
+        var pictures = await db.Set<ProductMediaFile>().AsNoTracking()
+            .Where(x => productIds.Contains(x.ProductId) && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).Select(x => new { x.ProductId, x.MediaFileId }).ToListAsync(ct);
+        var pictureIds = pictures.GroupBy(x => x.ProductId).ToDictionary(x => x.Key, x => x.First().MediaFileId);
+        var urls = new Dictionary<int, string>();
+        var canPrice = await CanDisplayPriceAsync();
+        var target = type == ShoppingCartType.Wishlist ? ShoppingCartType.ShoppingCart : ShoppingCartType.Wishlist;
+        var canTransfer = await permissions.AuthorizeAsync(target == ShoppingCartType.Wishlist ? StorefrontPermissions.Wishlist : StorefrontPermissions.Cart, request.Customer) &&
+            await permissions.AuthorizeAsync(target == ShoppingCartType.Wishlist ? Permissions.Cart.AccessWishlist : Permissions.Cart.AccessShoppingCart, request.Customer);
+        var lines = new List<CartLineDto>(nodes.Count);
+        foreach (var node in nodes)
+        {
+            var item = node.Item;
+            var root = item.ParentItemId == null;
+            if (!products.TryGetValue(item.ProductId, out var product) || item.Product == null)
+            {
+                lines.Add(new(item.Id, item.ProductId, item.Quantity, node.Active, item.ParentItemId,
+                    null, null, null, null, null, [], null, "unavailable", [], null,
+                    new(false, root, false), ["product_unavailable"]));
+                continue;
+            }
+
+            if (!urls.ContainsKey(product.Id))
+                urls[product.Id] = pictureIds.TryGetValue(product.Id, out var picture)
+                    ? await media.GetUrlAsync(picture, 400, doFallback: false) : null;
+            var selected = new List<CartVariantDto>();
+            var selectedAttributes = await attributes.MaterializeProductVariantAttributesAsync(item.AttributeSelection);
+            var selectedValues = await attributes.MaterializeProductVariantAttributeValuesAsync(item.AttributeSelection);
+            foreach (var attribute in selectedAttributes.Where(x => x.ProductId == item.ProductId && ProductSelection.SupportsControl(x.AttributeControlType)))
+                selected.AddRange(selectedValues.Where(x => x.ProductVariantAttributeId == attribute.Id)
+                    .Select(x => new CartVariantDto(attribute.Id, attribute.ProductAttribute?.Name, x.Id, x.Name)));
+
+            var quantities = product.ParseAllowedQuantities();
+            var min = Math.Max(1, quantities.Length > 0 ? quantities[0] : product.OrderMinimumQuantity);
+            var max = Math.Max(min, quantities.Length > 0 ? quantities[^1] : product.OrderMaximumQuantity);
+            var ctx = new AddToCartContext { Product = item.Product, Customer = request.Customer, StoreId = request.StoreId,
+                CartType = type, Quantity = item.Quantity, RawAttributes = item.RawAttributes,
+                BundleItem = item.BundleItem, ChildItems = node.ChildItems.Select(x => x.Item).ToList() };
+            var valid = await validator.ValidateAddToCartItemAsync(ctx, item, native.Items);
+            var availability = product.CallForPrice ? "price_on_request" : valid ? "available" : "validation_failed";
+            lines.Add(new(item.Id, item.ProductId, item.Quantity, node.Active, item.ParentItemId,
+                product.Name, product.Sku, urls[product.Id], min, Math.Min(1000, max),
+                quantities.Where(q => q > 0 && q <= 1000).Distinct().ToArray(), Math.Max(1, product.QuantityStep),
+                availability, selected.OrderBy(x => x.VariantAttributeId).ThenBy(x => x.ValueId).ToArray(), null,
+                new(root && min <= 1000, root, root && valid && canTransfer),
+                valid ? Array.Empty<string>() : canPrice ? ctx.Warnings.Distinct().ToArray() : new[] { "cart_validation_failed" }));
+        }
+        var rootActivity = lines.Where(x => x.ParentItemId == null).ToDictionary(x => x.Id, x => x.Active);
+        lines = lines.Select(x => x.ParentItemId.HasValue && rootActivity.TryGetValue(x.ParentItemId.Value, out var active)
+            ? x with { Active = active } : x).ToList();
+        return (native, lines, canPrice);
+    }
+
+    private static IEnumerable<OrganizedShoppingCartItem> Flatten(OrganizedShoppingCartItem item)
+    {
+        yield return item;
+        foreach (var child in item.ChildItems.SelectMany(Flatten)) yield return child;
+    }
+
+    private List<CartLineDto> WithPrices(List<CartLineDto> lines, ShoppingCartSubtotal subtotal)
+    {
+        if (subtotal == null) return lines;
+        var lookup = subtotal.LineItems.ToDictionary(x => x.Item.Item.Id);
+        var incl = work.TaxDisplayType == TaxDisplayType.IncludingTax;
+        return lines.Select(x => lookup.TryGetValue(x.Id, out var price) ? x with
+        {
+            Pricing = new CartLinePricingDto(price.UnitPrice.FinalPrice.Currency.CurrencyCode,
+                price.UnitPrice.FinalPrice.Amount, price.UnitPrice.RegularPrice?.Amount,
+                price.Subtotal.FinalPrice.Amount, price.Subtotal.DiscountAmount.Amount, incl)
+        } : x).ToList();
+    }
+
+    private static string MaskCode(string code) => string.IsNullOrEmpty(code) || code.Length <= 4
+        ? "****" : "****" + code[^4..];
+
+    private static string Revision<T>(ShoppingCart native, T state) => CartSnapshotRevision.Create(new
+    {
+        State = state,
+        Rows = native.Items.SelectMany(Flatten).OrderBy(x => x.Item.Id).Select(x => new
+        {
+            x.Item.Id, x.Item.Quantity, x.Item.Active, x.Item.ParentItemId, x.Item.RawAttributes, x.Item.UpdatedOnUtc
+        }).ToArray()
+    });
+
     public async Task<List<CartItemDto>> ItemsAsync(ShoppingCartType type = ShoppingCartType.ShoppingCart)
     {
         var native = await cart.GetCartAsync(request.Customer, type, request.StoreId, activeOnly: null);
@@ -49,16 +225,22 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
             AutomaticallyAddBundleProducts = true
         };
         if (!await cart.AddToCartAsync(context)) return new(422, "cart_validation_failed", context.Warnings.ToList());
-        return new(200, Items: await ItemsAsync(type));
+        return new(200);
     }
 
-    public async Task<CartChange> UpdateAsync(int id, int quantity, CancellationToken ct, ShoppingCartType type = ShoppingCartType.ShoppingCart)
+    public async Task<CartChange> UpdateAsync(int id, int? quantity, CancellationToken ct, ShoppingCartType type = ShoppingCartType.ShoppingCart, bool? active = null)
     {
-        if (!await StorefrontScope.Cart(db, request.Customer, request.StoreId, type).AnyAsync(x => x.Id == id && x.ParentItemId == null, ct))
-            return new(404, "cart_item_not_found");
-        var warnings = await cart.UpdateCartItemAsync(request.Customer, id, quantity, null, true);
-        if (warnings.Count > 0) return new(422, "cart_validation_failed", warnings.ToList());
-        return new(200, Items: await ItemsAsync(type));
+        var row = await StorefrontScope.Cart(db, request.Customer, request.StoreId, type)
+            .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.ParentItemId == null, ct);
+        if (row == null) return new(404, "cart_item_not_found");
+        if (!quantity.HasValue && !active.HasValue) return new(400, "cart_update_required");
+        if (active.HasValue && (type != ShoppingCartType.ShoppingCart || !settings.AllowActivatableCartItems))
+            return new(409, "cart_activation_unsupported");
+        if (!await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
+            .AnyAsync(x => x.Id == row.ProductId, ct)) return new(409, "product_unavailable");
+        // Native UpdateCartItem persists quantity even with validation warnings.
+        var warnings = await cart.UpdateCartItemAsync(request.Customer, id, quantity, active, true);
+        return new(200, Warnings: warnings.ToList());
     }
 
     public async Task<CartChange> DeleteAsync(int id, CancellationToken ct, ShoppingCartType type = ShoppingCartType.ShoppingCart)
@@ -67,7 +249,7 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
             .FirstOrDefaultAsync(x => x.Id == id && x.ParentItemId == null, ct);
         if (item == null) return new(404, "cart_item_not_found");
         await cart.DeleteCartItemAsync(item, true, true);
-        return new(200, Items: await ItemsAsync(type));
+        return new(200);
     }
 
     public async Task<CartChange> TransferAsync(int id, ShoppingCartType source, CancellationToken ct)
@@ -90,7 +272,7 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
         };
         if (!await cart.CopyAsync(context)) return new(422, "cart_validation_failed", context.Warnings.ToList());
         if (settings.MoveItemsFromWishlistToCart) await cart.DeleteCartItemAsync(item.Item);
-        return new(200, Items: await ItemsAsync(target));
+        return new(200);
     }
 
     public async Task<bool> SetRewardPointsAsync(bool use, CancellationToken ct)
@@ -144,6 +326,12 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
         request.Customer.GenericAttributes.GiftCardCouponCodes = codes;
         await db.SaveChangesAsync(ct);
         return true;
+    }
+
+    public async Task ClearGiftCardsAsync(CancellationToken ct)
+    {
+        request.Customer.GenericAttributes.GiftCardCouponCodes = new List<GiftCardCouponCode>();
+        await db.SaveChangesAsync(ct);
     }
 
     public async Task<bool> ApplyCouponAsync(string code, CancellationToken ct)

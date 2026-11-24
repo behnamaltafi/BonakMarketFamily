@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Data;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using BonakMarket.Core.Checkout.Attributes;
 using BonakMarket.Core.Checkout.Cart.Events;
 using BonakMarket.Core.Checkout.Orders.Handlers;
@@ -25,7 +26,7 @@ using BonakMarket.Threading;
 
 namespace BonakMarket.StorefrontApi.Controllers;
 
-/// <summary>Customer/store-scoped checkout preparation. Order creation is deliberately not executed here.</summary>
+/// <summary>Customer/store-scoped checkout preparation and opt-in native offline confirmation.</summary>
 [Route("api/storefront/v1/checkout/sessions")]
 [StorefrontPermission(StorefrontPermissions.Checkout)]
 [StorefrontPermission(StorefrontPermissions.Cart)]
@@ -36,7 +37,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     IAddressService addresses, IDistributedLockProvider locks, IConfiguration configuration,
     IOrderCalculationService calculations, IOrderProcessingService processing, IStoreContext stores,
     ICheckoutFactory checkoutFactory, ICheckoutAttributeMaterializer checkoutAttributes,
-    ShoppingCartSettings cartSettings, ICurrencyService currencies, IEventPublisher events) : StorefrontController
+    ShoppingCartSettings cartSettings, ICurrencyService currencies, IEventPublisher events, ILogger<CheckoutSessionsController> logger) : StorefrontController
 {
     private const string DraftKey = "BonakMarket.Storefront.CheckoutDraft.v1";
     private const int RevisionConflict = 409;
@@ -255,6 +256,10 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     public async Task<ActionResult<CheckoutReviewDto>> Review(Guid id, CancellationToken ct)
     {
         if (!OfflineEnabled) return Error(409, "native_checkout_disabled");
+        var attempt = await ReadAttempt(ct);
+        if (attempt?.SessionId == id) return Error(409, "checkout_attempt_exists");
+        if (attempt != null && attempt.Status == "started" && !await OrderExists(attempt.SessionId, ct))
+            return Error(409, "checkout_attempt_requires_reconciliation");
         var reviewed = await GetReview(id, null, ct);
         if (reviewed.Error != null) return reviewed.Error;
         return Ok(reviewed.Review);
@@ -279,7 +284,8 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
             if (!existing.Matches(parsedKey, input)) return Error(409, "idempotency_conflict");
             return Ok(await ConfirmationState(id, existing, ct));
         }
-        if (await OrderExists(id, ct)) return Error(409, "order_already_exists");
+        if (await StorefrontScope.Orders(db, request.Customer, request.StoreId).AnyAsync(x => x.OrderGuid == id, ct))
+            return Error(409, "order_already_exists");
         if (existing != null && existing.Status == "started" && !await OrderExists(existing.SessionId, ct))
             return Error(409, "checkout_attempt_requires_reconciliation");
 
@@ -332,7 +338,8 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         catch (Exception)
         {
             // Preserve the reservation. A failure after native commit can still have produced an order.
-            // Never automatically invoke PlaceOrder again.
+            // Never automatically invoke PlaceOrder again. No payment/request data in the log.
+            logger.LogWarning("Native checkout attempt {SessionId} requires outcome reconciliation.", id);
         }
         return Ok(await ConfirmationState(id, attempt, CancellationToken.None));
     }

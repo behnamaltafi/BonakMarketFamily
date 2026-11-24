@@ -16,3 +16,7 @@ public sealed record TopicDetailDto(int Id, string? SystemName, string? Title, s
     string? MetaTitle, string? MetaDescription);
 public sealed record MyReviewDto(int Id, int ProductId, string? CurrentProductName, string Title,
     string ReviewText, int Rating, bool Approved, DateTime CreatedOnUtc);
+
+public sealed record CatalogFacetValueDto(int Id, string Name, int ProductCount);
+public sealed record CatalogFacetsDto(int MatchingProducts, IReadOnlyList<CatalogFacetValueDto> Categories,
+    IReadOnlyList<CatalogFacetValueDto> Brands, bool CategoriesTruncated, bool BrandsTruncated);

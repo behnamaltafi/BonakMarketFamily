@@ -12,4 +12,8 @@ with customer ACL and store restriction checks. No password is returned. Localiz
 working language. Intro/body are HTML: render with a sanitized renderer, never execute arbitrary scripts.
 This is not a renderer for MVC widgets or shopping themes. Media links can be relative; resolve against
 trusted storefront origin. All endpoints retain the native no-store cache policy; no shared cache is introduced.
-Native checkout confirmation and online payment flags are false pending the final payment integration.
+GET /products/facets accepts the same filters as GET /products, ignores page and returns matchingProducts,
+direct visible category/brand counts (up to 50 each, with truncation flags). It is not disjunctive faceting and
+does not expose specification facets. Price-based filters retain DisplayPrice authorization.
+Native checkout confirmation flag is false by default and enabled only by explicit configuration on SQL Server;
+see offline-checkout-confirmation.md. Native online payment remains false.

@@ -55,10 +55,14 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
             sub = await calculations.GetShoppingCartSubtotalAsync(active, includeTax: includingTax, cache: false);
             if (active.HasItems)
             {
-                total = await calculations.GetShoppingCartTotalAsync(active, new ShoppingCartTotalOptions
-                {
-                    IncludeTax = includingTax, UseRequestCache = false
-                });
+                // Native total calculation can persist normalized credit usage. Do not invoke it for
+                // an API estimate with a nonzero credit selection; leave total unknown until native checkout.
+                if (request.Customer.GenericAttributes.UseCreditBalanceDuringCheckout == 0m)
+                    total = await calculations.GetShoppingCartTotalAsync(active, new ShoppingCartTotalOptions
+                    {
+                        IncludeTax = includingTax, UseRequestCache = false
+                    });
+                else warnings.Add("credit_balance_requires_native_checkout");
                 shipping = (await calculations.GetShoppingCartShippingTotalAsync(active, includingTax)).ShippingTotal?.Amount;
                 tax = (await calculations.GetShoppingCartTaxTotalAsync(active)).Price.Amount;
             }
@@ -171,7 +175,7 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
 
     private List<CartLineDto> WithPrices(List<CartLineDto> lines, ShoppingCartSubtotal subtotal)
     {
-        if (subtotal == null) return lines;
+        if (subtotal?.LineItems == null) return lines;
         var lookup = subtotal.LineItems.ToDictionary(x => x.Item.Item.Id);
         var incl = work.TaxDisplayType == TaxDisplayType.IncludingTax;
         return lines.Select(x => lookup.TryGetValue(x.Id, out var price) ? x with

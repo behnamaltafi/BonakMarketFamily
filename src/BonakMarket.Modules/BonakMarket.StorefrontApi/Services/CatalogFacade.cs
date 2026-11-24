@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Autofac;
 using BonakMarket.Core;
 using BonakMarket.Core.Catalog.Products;
+using BonakMarket.Core.Catalog.Categories;
+using BonakMarket.Core.Catalog.Brands;
 using BonakMarket.Core.Catalog;
 using BonakMarket.Core.Catalog.Attributes;
 using BonakMarket.Core.Catalog.Search;
@@ -28,6 +30,14 @@ public sealed class CatalogFacade(
 
     public async Task<PageDto<ProductDto>> SearchAsync(ProductSearchRequest filter, CancellationToken ct)
     {
+        var source = await SearchSourceAsync(filter, ct);
+        var page = await source.ToPagedList(filter.Page - 1, filter.PageSize).LoadAsync(cancelToken: ct);
+        var items = await MapAsync(page.ToList(), filter.IncludePrice);
+        return NativePaging.Map(page, items);
+    }
+
+    private async Task<IQueryable<Product>> SearchSourceAsync(ProductSearchRequest filter, CancellationToken ct)
+    {
         var term = filter.Search?.Trim();
         var query = string.IsNullOrEmpty(term) ? new CatalogSearchQuery() :
             new CatalogSearchQuery(new[] { CatalogSearchQuery.KnownFilters.Name, CatalogSearchQuery.KnownFilters.Sku,
@@ -38,14 +48,14 @@ public sealed class CatalogFacade(
         {
             var category = await StorefrontScope.Categories(db, request.Customer, request.StoreId)
                 .AsNoTracking().FirstOrDefaultAsync(x => x.Id == filter.CategoryId.Value, ct);
-            if (category == null) return Empty(filter);
+            if (category == null) return db.Set<Product>().AsNoTracking().Where(x => false);
             if (catalogSettings.ShowProductsFromSubcategories) query.WithCategoryTreePath(category.TreePath, null);
             else query.WithCategoryIds(null, category.Id);
         }
         if (filter.BrandId.HasValue)
         {
             if (!await StorefrontScope.Brands(db, request.Customer, request.StoreId).AnyAsync(x => x.Id == filter.BrandId.Value, ct))
-                return Empty(filter);
+                return db.Set<Product>().AsNoTracking().Where(x => false);
             query.WithManufacturerIds(null, filter.BrandId.Value);
         }
         if (filter.MinPrice.HasValue || filter.MaxPrice.HasValue)
@@ -64,11 +74,38 @@ public sealed class CatalogFacade(
 
         // Native LINQ search with a strictly scoped base query. Unlike an external index,
         // the result count cannot contain stale/unpublished or cross-store product IDs.
-        var source = search.PrepareQuery(query, StorefrontScope.Products(db, request.Customer, request.StoreId,
+        return search.PrepareQuery(query, StorefrontScope.Products(db, request.Customer, request.StoreId,
             forSearch: !string.IsNullOrEmpty(term)).AsNoTracking());
-        var page = await source.ToPagedList(filter.Page - 1, filter.PageSize).LoadAsync(cancelToken: ct);
-        var items = await MapAsync(page.ToList(), filter.IncludePrice);
-        return NativePaging.Map(page, items);
+    }
+
+    // Conjunctive facets: same visible result set and filters as the list, independent of page.
+    // Counts are direct product mappings, not a recursive sum of descendants.
+    public async Task<CatalogFacetsDto> FacetsAsync(ProductSearchRequest filter, CancellationToken ct)
+    {
+        const int limit = 50;
+        var products = (await SearchSourceAsync(filter, ct)).Select(x => x.Id).Distinct();
+        var visibleCategories = StorefrontScope.Categories(db, request.Customer, request.StoreId);
+        var visibleBrands = StorefrontScope.Brands(db, request.Customer, request.StoreId);
+        var categoryCounts = db.Set<ProductCategory>().AsNoTracking()
+            .Where(x => products.Contains(x.ProductId) && !x.IsSystemMapping)
+            .Select(x => new { Id = x.CategoryId, x.ProductId }).Distinct()
+            .GroupBy(x => x.Id).Select(g => new { Id = g.Key, Count = g.Count() });
+        var brandCounts = db.Set<ProductManufacturer>().AsNoTracking()
+            .Where(x => products.Contains(x.ProductId))
+            .Select(x => new { Id = x.ManufacturerId, x.ProductId }).Distinct()
+            .GroupBy(x => x.Id).Select(g => new { Id = g.Key, Count = g.Count() });
+        var categories = await (from count in categoryCounts
+            join category in visibleCategories on count.Id equals category.Id
+            orderby count.Count descending, category.Id
+            select new CatalogFacetValueDto(category.Id, category.Name, count.Count))
+            .Take(limit + 1).ToListAsync(ct);
+        var brands = await (from count in brandCounts
+            join brand in visibleBrands on count.Id equals brand.Id
+            orderby count.Count descending, brand.Id
+            select new CatalogFacetValueDto(brand.Id, brand.Name, count.Count))
+            .Take(limit + 1).ToListAsync(ct);
+        return new(await products.CountAsync(ct), categories.Take(limit).ToArray(), brands.Take(limit).ToArray(),
+            categories.Count > limit, brands.Count > limit);
     }
 
     public async Task<ProductDto> FindAsync(int id, CancellationToken ct)

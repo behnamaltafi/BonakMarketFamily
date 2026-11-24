@@ -18,6 +18,15 @@ public sealed class CatalogController(CatalogFacade catalog) : StorefrontControl
         return Ok(await catalog.SearchAsync(filter, ct));
     }
 
+    [HttpGet("facets"), PublicCatalog]
+    public async Task<ActionResult<CatalogFacetsDto>> Facets([FromQuery] ProductSearchRequest filter, CancellationToken ct)
+    {
+        if ((filter.MinPrice.HasValue || filter.MaxPrice.HasValue || filter.HasDiscount.HasValue ||
+            filter.Sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc) && !await catalog.CanDisplayPriceAsync())
+            return Error(403, "price_access_denied");
+        return Ok(await catalog.FacetsAsync(filter, ct));
+    }
+
     [HttpGet("{id:int}"), PublicCatalog]
     public async Task<ActionResult<ProductDetailDto>> Get(int id, CancellationToken ct)
     {

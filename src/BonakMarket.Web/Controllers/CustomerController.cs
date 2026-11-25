@@ -305,7 +305,12 @@ public class CustomerController : PublicController
                 if (_shoppingCartSettings.QuickCheckoutEnabled)
                 {
                     customer.GenericAttributes.PreferredShippingOption = new() { ShippingMethodId = model.PreferredShippingMethodId ?? 0 };
-                    customer.GenericAttributes.PreferredPaymentMethod = model.PreferredPaymentMethod.NullEmpty();
+                    // The view hides the payment selector when no active methods are available.
+                    // Do not clear an existing preference merely because the field was not rendered.
+                    if (_shoppingCartSettings.CustomersCanChangePreferredPayment && Request.Form.ContainsKey(nameof(model.PreferredPaymentMethod)))
+                    {
+                        customer.GenericAttributes.PreferredPaymentMethod = model.PreferredPaymentMethod.NullEmpty();
+                    }
                 }
 
                 var updateResult = await _userManager.UpdateAsync(customer);
@@ -1150,7 +1155,8 @@ public class CustomerController : PublicController
         if (_shoppingCartSettings.QuickCheckoutEnabled)
         {
             var shippingMethods = await _shippingService.GetAllShippingMethodsAsync(store.Id);
-            var paymentProviders = await _paymentService.LoadActivePaymentProvidersAsync(null, store.Id);
+            // Profile preferences are optional even when no payment method is active.
+            var paymentProviders = await _paymentService.LoadActivePaymentProvidersAsync(null, store.Id, provideFallbackMethod: false);
             var preferredShippingMethodId = customer.GenericAttributes.PreferredShippingOption?.ShippingMethodId ?? 0;
             var preferredPaymentMethod = customer.GenericAttributes.PreferredPaymentMethod;
 

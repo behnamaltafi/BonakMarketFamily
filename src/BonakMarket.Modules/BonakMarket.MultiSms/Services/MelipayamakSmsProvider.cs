@@ -1,3 +1,4 @@
+using System.Globalization;
 using BonakMarket.Core.Messaging;
 using BonakMarket.MultiSms.Configuration;
 
@@ -50,7 +51,8 @@ public sealed class MelipayamakSmsProvider : ISmsProvider
         {
             bool safe = response.StatusCode is HttpStatusCode.Unauthorized or
                 HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests;
-            throw new SmsProviderException($"Melipayamak HTTP {(int)response.StatusCode}.", safe);
+            throw new SmsProviderException($"Melipayamak HTTP {(int)response.StatusCode}.", safe,
+                httpStatusCode: (int)response.StatusCode);
         }
 
         var raw = await response.Content.ReadAsStringAsync(cancelToken);
@@ -60,25 +62,41 @@ public sealed class MelipayamakSmsProvider : ISmsProvider
             var status = json.RootElement.GetProperty("RetStatus").GetInt32();
             if (status != 1)
             {
-                throw new SmsProviderException($"Melipayamak rejected SMS (status {status}).", safeToFailover: true);
+                // Value can contain arbitrary text or a message identifier. Only retain a small
+                // numeric error code on explicit rejection, never the response body.
+                int? errorCode = null;
+                if (json.RootElement.TryGetProperty("Value", out var error) &&
+                    (error.ValueKind == JsonValueKind.String || error.ValueKind == JsonValueKind.Number) &&
+                    int.TryParse(error.ValueKind == JsonValueKind.String ? error.GetString() : error.GetRawText(),
+                        NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out var code) &&
+                    code is >= -9999 and <= 9999)
+                {
+                    errorCode = code;
+                }
+
+                throw new SmsProviderException($"Melipayamak rejected SMS (status {status}).", safeToFailover: true,
+                    httpStatusCode: (int)response.StatusCode, providerStatus: status, providerErrorCode: errorCode);
             }
 
             var value = json.RootElement.GetProperty("Value");
             var id = value.ValueKind == JsonValueKind.String ? value.GetString() : value.GetRawText();
             if (string.IsNullOrWhiteSpace(id) || id == "0")
             {
-                throw new SmsProviderException("Melipayamak returned no message confirmation.");
+                throw new SmsProviderException("Melipayamak returned no message confirmation.",
+                    httpStatusCode: (int)response.StatusCode, reason: SmsFailureReason.MissingConfirmation);
             }
 
             return id;
         }
         catch (JsonException)
         {
-            throw new SmsProviderException("Melipayamak response could not be validated.");
+            throw new SmsProviderException("Melipayamak response could not be validated.",
+                    httpStatusCode: (int)response.StatusCode, reason: SmsFailureReason.InvalidResponse);
         }
         catch (KeyNotFoundException)
         {
-            throw new SmsProviderException("Melipayamak confirmation is incomplete.");
+            throw new SmsProviderException("Melipayamak confirmation is incomplete.",
+                    httpStatusCode: (int)response.StatusCode, reason: SmsFailureReason.IncompleteConfirmation);
         }
     }
 }

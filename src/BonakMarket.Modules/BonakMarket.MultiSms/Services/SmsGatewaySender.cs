@@ -110,7 +110,8 @@ public sealed class SmsGatewaySender : ISmsSender
         {
             if (!provider.IsAvailable(settings))
             {
-                throw new SmsProviderException("SMS provider is unavailable or not configured.", safeToFailover: true);
+                throw new SmsProviderException("SMS provider is unavailable or not configured.", safeToFailover: true,
+                    reason: SmsFailureReason.ProviderUnavailable);
             }
 
             messageId = await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
@@ -120,8 +121,15 @@ public sealed class SmsGatewaySender : ISmsSender
             // Cancellation may happen after the provider accepted the SMS.
             // Keep an Unknown audit result, but never retry it.
             timer.Stop();
+            var diagnostic = SmsHistoryFormatter.SafeDiagnostic(ex);
+            if (ex is not OperationCanceledException)
+            {
+                // Log structured, sanitized information even when history is disabled.
+                _logger.LogWarning("SMS attempt failed. Provider={Provider}; Kind={Kind}; HistoryId={HistoryId}; Diagnostic={Diagnostic}",
+                    provider.Name, request.Kind, message?.Id, diagnostic);
+            }
             await RecordSafelyAsync(message, provider.Name, SmsHistoryFormatter.FailedStatus(ex),
-                null, SmsHistoryFormatter.SafeCategory(ex), startedOnUtc,
+                null, diagnostic, startedOnUtc,
                 (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue));
             throw;
         }

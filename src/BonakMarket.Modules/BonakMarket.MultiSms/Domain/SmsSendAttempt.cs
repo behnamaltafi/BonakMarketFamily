@@ -5,7 +5,7 @@ using BonakMarket.Domain;
 
 namespace BonakMarket.MultiSms.Domain;
 
-/// <summary>One transport attempt; provider error details and SMS bodies are excluded.</summary>
+/// <summary>One transport attempt; only bounded diagnostic codes are retained, never raw provider responses or SMS bodies.</summary>
 [Table("MultiSmsSendAttempt")]
 [Index(nameof(SmsMessageId), Name = "IX_MultiSmsSendAttempt_Message")]
 public sealed class SmsSendAttempt : BaseEntity

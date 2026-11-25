@@ -15,11 +15,34 @@ public interface ISmsProvider
 /// </summary>
 public sealed class SmsProviderException : Exception
 {
-    public SmsProviderException(string message, bool safeToFailover = false)
+    public SmsProviderException(string message, bool safeToFailover = false,
+        int? httpStatusCode = null, int? providerStatus = null, int? providerErrorCode = null,
+        SmsFailureReason reason = SmsFailureReason.None)
         : base(message)
     {
         SafeToFailover = safeToFailover;
+        HttpStatusCode = httpStatusCode;
+        ProviderStatus = providerStatus;
+        ProviderErrorCode = providerErrorCode;
+        Reason = reason;
     }
 
     public bool SafeToFailover { get; }
+    public int? HttpStatusCode { get; }
+    public int? ProviderStatus { get; }
+    public int? ProviderErrorCode { get; }
+    public SmsFailureReason Reason { get; }
+}
+
+// Fixed diagnostics only. Never persist arbitrary provider response text.
+public enum SmsFailureReason
+{
+    None,
+    ProviderUnavailable,
+    CredentialsMissing,
+    CredentialsNotEncrypted,
+    CredentialsDecryptionFailed,
+    MissingConfirmation,
+    InvalidResponse,
+    IncompleteConfirmation
 }

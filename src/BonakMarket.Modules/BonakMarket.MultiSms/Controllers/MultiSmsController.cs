@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using BonakMarket.Core.Messaging;
 using BonakMarket.Core.Security;
 using BonakMarket.MultiSms.Configuration;
@@ -22,6 +23,7 @@ public sealed class MultiSmsController : AdminController
     private readonly IHostEnvironment _environment;
     private readonly SmsHistoryStore _history;
     private readonly DevelopmentSmsInbox _inbox;
+    private readonly ILogger<MultiSmsController> _logger;
     private readonly string[] _providerNames;
 
     public MultiSmsController(
@@ -30,13 +32,15 @@ public sealed class MultiSmsController : AdminController
         IEnumerable<ISmsProvider> providers,
         IHostEnvironment environment,
         SmsHistoryStore history,
-        DevelopmentSmsInbox inbox)
+        DevelopmentSmsInbox inbox,
+        ILogger<MultiSmsController> logger = null)
     {
         _protection = protection;
         _sender = sender;
         _environment = environment;
         _history = history;
         _inbox = inbox;
+        _logger = logger;
         _providerNames = providers
             .Where(x => environment.IsDevelopment() || !string.Equals(x.Name, "Mock", StringComparison.OrdinalIgnoreCase))
             .Select(x => x.Name)
@@ -181,7 +185,9 @@ public sealed class MultiSmsController : AdminController
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             model.TestSucceeded = false;
-            model.TestResult = T("Plugins.Sms.MultiSms.TestRejected");
+            var diagnostic = SmsHistoryFormatter.SafeDiagnostic(ex);
+            _logger?.LogWarning("Manual SMS test failed. Diagnostic={Diagnostic}", diagnostic);
+            model.TestResult = T("Plugins.Sms.MultiSms.TestRejected").Value + " (" + diagnostic + ")";
         }
 
         return View(nameof(Configure), model);

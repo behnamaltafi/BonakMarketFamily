@@ -19,6 +19,7 @@ namespace BonakMarket.Identity.Controllers;
 /// BonakMarket Customer identity. No AppUser model is required.
 /// </summary>
 [Route("sms-login")]
+[ApiExplorerSettings(IgnoreApi = true)]
 public sealed class SmsLoginController : PublicController
 {
     private readonly SmsOtpLoginService _otp;

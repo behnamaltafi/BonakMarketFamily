@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using BonakMarket.Engine.Modularity;
 using Moq;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
@@ -97,6 +98,7 @@ public class SwaggerContractTests
     public void Generated_documents_separate_customer_routes_security_and_schemas()
     {
         var services = new ServiceCollection();
+        services.AddSingleton(Mock.Of<IWebHostEnvironment>());
         services.AddLogging();
         services.AddAntiforgery(o => o.HeaderName = "X-Test-CSRF");
         services.AddMvcCore().AddApiExplorer().ConfigureApplicationPartManager(parts =>

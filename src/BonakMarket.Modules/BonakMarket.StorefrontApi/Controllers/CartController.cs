@@ -40,6 +40,7 @@ public sealed class CartController(CartFacade cart) : StorefrontController
     }
 
     [HttpPost("coupon")]
+    [ProducesResponseType(typeof(CartStateDto), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 422)]
     public async Task<ActionResult<CartStateDto>> ApplyCoupon([FromBody] CouponRequest request, CancellationToken ct) =>
         await cart.ApplyCouponAsync(request.Code, ct) ? Ok(await cart.StateAsync(ct)) : Error(422, "coupon_not_applicable");

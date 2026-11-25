@@ -185,6 +185,50 @@
                 <span asp-validation-for="ClearMelipayamakPassword"></span>
             </div>
         </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="SmsIrEnabled" /></div>
+            <div class="adminData">
+                <setting-editor asp-for="SmsIrEnabled" />
+                <span asp-validation-for="SmsIrEnabled"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="SmsIrLineNumber" /></div>
+            <div class="adminData">
+                <input asp-for="SmsIrLineNumber" type="number" min="1" class="form-control" />
+                <span asp-validation-for="SmsIrLineNumber"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="SmsIrTemplateId" /></div>
+            <div class="adminData">
+                <input asp-for="SmsIrTemplateId" type="number" min="1" class="form-control" />
+                <span asp-validation-for="SmsIrTemplateId"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="SmsIrCodeParameter" /></div>
+            <div class="adminData">
+                <input asp-for="SmsIrCodeParameter" class="form-control" maxlength="50" />
+                <span asp-validation-for="SmsIrCodeParameter"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="NewSmsIrApiKey" /></div>
+            <div class="adminData">
+                <input asp-for="NewSmsIrApiKey" class="form-control" type="password" autocomplete="new-password" value="" />
+                <small class="form-text text-muted">@T("Plugins.Sms.MultiSms.SecretHint")</small>
+                <small class="form-text text-muted">@(Model.HasSmsIrApiKey ? T("Plugins.Sms.MultiSms.SecretConfigured") : T("Plugins.Sms.MultiSms.SecretMissing"))</small>
+                <span asp-validation-for="NewSmsIrApiKey"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="ClearSmsIrApiKey" /></div>
+            <div class="adminData">
+                <setting-editor asp-for="ClearSmsIrApiKey" />
+                <span asp-validation-for="ClearSmsIrApiKey"></span>
+            </div>
+        </div>
     </div>
 </form>
 

@@ -1,6 +1,6 @@
 <Language Name="English" IsDefault="false" IsRightToLeft="false">
     <LocaleResource Name="Plugins.FriendlyName.BonakMarket.MultiSms" AppendRootKey="false"><Value>Multi-provider SMS Gateway</Value></LocaleResource>
-    <LocaleResource Name="Plugins.Description.BonakMarket.MultiSms" AppendRootKey="false"><Value>Switchable SMS gateway with Kavenegar and Melipayamak</Value></LocaleResource>
+    <LocaleResource Name="Plugins.Description.BonakMarket.MultiSms" AppendRootKey="false"><Value>Switchable SMS gateway with Kavenegar, Melipayamak and SMS.ir</Value></LocaleResource>
     <LocaleResource Name="Intro"><Value>Configure two independent SMS providers. Changes take effect on the next message without restarting. Failover occurs only on explicit rejection; ambiguous timeouts are never retried automatically.</Value></LocaleResource>
     <LocaleResource Name="SecretHint"><Value>Leave blank to keep the stored secret; use Clear to remove it. Credentials are encrypted in settings.</Value></LocaleResource>
     <LocaleResource Name="SecretConfigured"><Value>A secret is configured.</Value></LocaleResource>
@@ -70,4 +70,16 @@
     <LocaleResource Name="DevInboxMessage"><Value>Test message</Value></LocaleResource>
     <LocaleResource Name="DevInboxEmpty"><Value>No mock messages yet. Send an OTP or test SMS using the Mock provider.</Value></LocaleResource>
     <LocaleResource Name="RefreshInbox"><Value>Refresh</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrEnabled"><Value>Enable SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrEnabled.Hint"><Value>Enable the SMS.ir transport.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrLineNumber"><Value>SMS.ir line number</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrLineNumber.Hint"><Value>Required for free-text SMS and Test SMS; optional for Verify-only OTP.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrTemplateId"><Value>SMS.ir OTP template ID</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrTemplateId.Hint"><Value>Optional approved Verify template. When configured, OTP uses Verify instead of free-text.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrCodeParameter"><Value>SMS.ir code parameter</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrCodeParameter.Hint"><Value>Exact parameter name in your approved SMS.ir template (e.g. Code).</Value></LocaleResource>
+    <LocaleResource Name="Fields.NewSmsIrApiKey"><Value>New SMS.ir API key</Value></LocaleResource>
+    <LocaleResource Name="Fields.NewSmsIrApiKey.Hint"><Value>Enter the API key from SMS.ir developer settings.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ClearSmsIrApiKey"><Value>Clear SMS.ir API key</Value></LocaleResource>
+    <LocaleResource Name="Fields.ClearSmsIrApiKey.Hint"><Value>Remove the stored API key.</Value></LocaleResource>
 </Language>

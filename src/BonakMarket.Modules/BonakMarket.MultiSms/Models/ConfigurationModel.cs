@@ -60,6 +60,26 @@ public sealed class ConfigurationModel : ModelBase
 
     public bool HasMelipayamakPassword { get; set; }
 
+    [LocalizedDisplay("*SmsIrEnabled")]
+    public bool SmsIrEnabled { get; set; }
+
+    [LocalizedDisplay("*SmsIrLineNumber")]
+    public long? SmsIrLineNumber { get; set; }
+
+    [LocalizedDisplay("*SmsIrTemplateId")]
+    public int? SmsIrTemplateId { get; set; }
+
+    [LocalizedDisplay("*SmsIrCodeParameter")]
+    public string SmsIrCodeParameter { get; set; } = "Code";
+
+    [LocalizedDisplay("*NewSmsIrApiKey")]
+    public string NewSmsIrApiKey { get; set; }
+
+    [LocalizedDisplay("*ClearSmsIrApiKey")]
+    public bool ClearSmsIrApiKey { get; set; }
+
+    public bool HasSmsIrApiKey { get; set; }
+
     [LocalizedDisplay("*TestPhone")]
     public string TestPhone { get; set; }
 

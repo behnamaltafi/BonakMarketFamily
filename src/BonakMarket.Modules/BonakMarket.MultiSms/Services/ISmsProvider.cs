@@ -9,6 +9,12 @@ public interface ISmsProvider
     Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken);
 }
 
+/// <summary>Optional template-based OTP transport, separate from free-text sending.</summary>
+public interface IOtpSmsProvider
+{
+    Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken cancelToken);
+}
+
 /// <summary>
 /// Only explicit provider rejection is safe for automatic failover.
 /// Timeouts, connection resets and malformed responses are ambiguous: the SMS may already exist.

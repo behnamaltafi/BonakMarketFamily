@@ -576,7 +576,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         {
             var settings = await _settings.LoadSettingsAsync<CustomerIdentitySettings>();
             await _sms.SendAsync(new SmsSendRequest(phone,
-                settings.FormatOtpMessage(code), SmsMessageKind.Otp), ct);
+                settings.FormatOtpMessage(code), SmsMessageKind.Otp) { VerificationCode = code }, ct);
             return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

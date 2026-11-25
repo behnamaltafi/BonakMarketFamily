@@ -21,6 +21,11 @@ public sealed class SmsGatewaySettings : ISettings
     public bool KavenegarEnabled { get; set; } = true;
     public string KavenegarSender { get; set; }
     public string EncryptedKavenegarApiKey { get; set; }
+    public bool SmsIrEnabled { get; set; }
+    public long? SmsIrLineNumber { get; set; }
+    public int? SmsIrTemplateId { get; set; }
+    public string SmsIrCodeParameter { get; set; } = "Code";
+    public string EncryptedSmsIrApiKey { get; set; }
     public bool MelipayamakEnabled { get; set; }
     public string MelipayamakSender { get; set; }
     public string MelipayamakUsername { get; set; }

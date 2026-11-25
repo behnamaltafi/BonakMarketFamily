@@ -70,4 +70,16 @@
     <LocaleResource Name="DevInboxMessage"><Value>متن پیام آزمایشی</Value></LocaleResource>
     <LocaleResource Name="DevInboxEmpty"><Value>صندوق پیامک خالی است. یک درخواست OTP یا پیامک تست با Provider=Mock ارسال کنید.</Value></LocaleResource>
     <LocaleResource Name="RefreshInbox"><Value>به‌روزرسانی</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrEnabled"><Value>فعال‌سازی SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrEnabled.Hint"><Value>فعال کردن سرویس ارسال پیامک SMS.ir.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrLineNumber"><Value>شماره خط SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrLineNumber.Hint"><Value>برای پیامک متن آزاد و پیامک آزمایشی ضروری است؛ برای ارسال سریع OTP اختیاری است.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrTemplateId"><Value>شناسه قالب OTP در SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrTemplateId.Hint"><Value>شناسه قالب تأییدشده ارسال سریع؛ در صورت تنظیم، OTP با متد Verify ارسال می‌شود.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrCodeParameter"><Value>نام پارامتر کد SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrCodeParameter.Hint"><Value>نام دقیق پارامتر در قالب تأییدشده، مانند Code.</Value></LocaleResource>
+    <LocaleResource Name="Fields.NewSmsIrApiKey"><Value>کلید API جدید SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Fields.NewSmsIrApiKey.Hint"><Value>کلید وب‌سرویس را از بخش توسعه‌دهندگان وارد کنید.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ClearSmsIrApiKey"><Value>حذف کلید API پیامک SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Fields.ClearSmsIrApiKey.Hint"><Value>حذف کلید ذخیره‌شده.</Value></LocaleResource>
 </Language>

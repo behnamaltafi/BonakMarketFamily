@@ -21,6 +21,7 @@ internal sealed class Startup : StarterBase
         services.AddSingleton<SmsCredentialProtection>();
         services.AddSingleton<ISmsProvider, KavenegarSmsProvider>();
         services.AddSingleton<ISmsProvider, MelipayamakSmsProvider>();
+        services.AddSingleton<ISmsProvider, SmsIrSmsProvider>();
         services.AddSingleton<DevelopmentSmsInbox>();
         services.AddSingleton<ISmsProvider, MockSmsProvider>();
         services.AddScoped<SmsHistoryStore>();

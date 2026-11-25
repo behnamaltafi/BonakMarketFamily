@@ -72,6 +72,30 @@ public sealed class MultiSmsController : AdminController
             settings.EncryptedMelipayamakPassword = _protection.Protect(model.NewMelipayamakPassword);
         }
 
+        if (model.ClearSmsIrApiKey)
+        {
+            settings.EncryptedSmsIrApiKey = null;
+        }
+        else if (!string.IsNullOrWhiteSpace(model.NewSmsIrApiKey))
+        {
+            settings.EncryptedSmsIrApiKey = _protection.Protect(model.NewSmsIrApiKey.Trim());
+        }
+
+        if (model.SmsIrLineNumber is <= 0)
+            ModelState.AddModelError(nameof(model.SmsIrLineNumber), "Enter a positive SMS.ir line number.");
+        if (model.SmsIrTemplateId is <= 0)
+            ModelState.AddModelError(nameof(model.SmsIrTemplateId), "Enter a positive SMS.ir template ID.");
+        if (model.SmsIrTemplateId is > 0 && !SmsIrSmsProvider.IsValidParameterName(model.SmsIrCodeParameter?.Trim()))
+            ModelState.AddModelError(nameof(model.SmsIrCodeParameter), "Enter the exact SMS.ir template parameter name (1-50 ASCII letters, digits or underscores).");
+
+        if (model.Enabled && (string.Equals(model.PrimaryProvider, "SmsIr", StringComparison.OrdinalIgnoreCase) ||
+            (model.EnableFailover && string.Equals(model.FallbackProvider, "SmsIr", StringComparison.OrdinalIgnoreCase))))
+        {
+            if (!model.SmsIrEnabled || string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) ||
+                (model.SmsIrLineNumber is not > 0 && model.SmsIrTemplateId is not > 0))
+                ModelState.AddModelError(nameof(model.SmsIrEnabled), "Enable SMS.ir and configure its API key and line number or OTP template ID.");
+        }
+
         if (!IsValidProvider(model.PrimaryProvider))
         {
             ModelState.AddModelError(nameof(model.PrimaryProvider), "Unsupported SMS provider.");
@@ -134,6 +158,9 @@ public sealed class MultiSmsController : AdminController
 
         if (!ModelState.IsValid)
         {
+            model.NewSmsIrApiKey = null;
+            ModelState.Remove(nameof(model.NewSmsIrApiKey));
+            model.HasSmsIrApiKey = !string.IsNullOrEmpty(settings.EncryptedSmsIrApiKey);
             model.NewKavenegarApiKey = null;
             model.NewMelipayamakPassword = null;
             ModelState.Remove(nameof(model.NewKavenegarApiKey));
@@ -155,6 +182,10 @@ public sealed class MultiSmsController : AdminController
         settings.FallbackProvider = model.FallbackProvider;
         settings.KavenegarEnabled = model.KavenegarEnabled;
         settings.KavenegarSender = model.KavenegarSender?.Trim();
+        settings.SmsIrEnabled = model.SmsIrEnabled;
+        settings.SmsIrLineNumber = model.SmsIrLineNumber;
+        settings.SmsIrTemplateId = model.SmsIrTemplateId;
+        settings.SmsIrCodeParameter = model.SmsIrCodeParameter?.Trim();
         settings.MelipayamakEnabled = model.MelipayamakEnabled;
         settings.MelipayamakSender = model.MelipayamakSender?.Trim();
         settings.MelipayamakUsername = model.MelipayamakUsername?.Trim();
@@ -260,6 +291,11 @@ public sealed class MultiSmsController : AdminController
             KavenegarEnabled = settings.KavenegarEnabled,
             KavenegarSender = settings.KavenegarSender,
             HasKavenegarApiKey = !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey),
+            SmsIrEnabled = settings.SmsIrEnabled,
+            SmsIrLineNumber = settings.SmsIrLineNumber,
+            SmsIrTemplateId = settings.SmsIrTemplateId,
+            SmsIrCodeParameter = settings.SmsIrCodeParameter,
+            HasSmsIrApiKey = !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey),
             MelipayamakEnabled = settings.MelipayamakEnabled,
             MelipayamakSender = settings.MelipayamakSender,
             MelipayamakUsername = settings.MelipayamakUsername,

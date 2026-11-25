@@ -114,7 +114,9 @@ public sealed class SmsGatewaySender : ISmsSender
                     reason: SmsFailureReason.ProviderUnavailable);
             }
 
-            messageId = await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
+            messageId = request.Kind == SmsMessageKind.Otp && provider is IOtpSmsProvider otpProvider
+                ? await otpProvider.SendOtpAsync(request.PhoneNumber, request.Text, request.VerificationCode, settings, ct)
+                : await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
         }
         catch (Exception ex)
         {

@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using BonakMarket.Core.Identity;
 using BonakMarket.Identity.Models;
 using BonakMarket.Identity.Services;
+using BonakMarket.Identity.Security;
 
 namespace BonakMarket.Identity.Controllers;
 
@@ -53,7 +54,7 @@ public sealed class AuthApiController : CustomerAccountApiController
     [ProducesResponseType(typeof(IdentityTokenResponse), 200)]
     public async Task<IActionResult> Refresh([FromBody] MobileRefreshRequest request, CancellationToken ct)
     {
-        if (!Request.IsHttps)
+        if (!IdentityTransportPolicy.IsAllowed(Request))
             return Unauthorized();
         var service = HttpContext.RequestServices.GetService<IMobileApiTokenService>();
         var pair = service?.IsEnabled == true ? await service.RefreshAsync(request.RefreshToken, ct) : null;

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using BonakMarket.Core.Identity;
 using BonakMarket.Identity.Models;
+using BonakMarket.Identity.Security;
 
 namespace BonakMarket.Identity.Controllers;
 
@@ -26,7 +27,7 @@ public abstract class CustomerAccountApiController : ControllerBase
 
     protected async Task<(Customer Customer, IActionResult Error)> RequireAccountAsync()
     {
-        if (!Request.IsHttps) return (null, BadRequest(new IdentityCodeResponse("https_required")));
+        if (!IdentityTransportPolicy.IsAllowed(Request)) return (null, BadRequest(new IdentityCodeResponse("https_required")));
         var customer = await GetCustomerAsync();
         if (customer is null) return (null, Unauthorized());
         if (!Request.Headers.ContainsKey("Authorization") && !HttpMethods.IsGet(Request.Method) && !HttpMethods.IsHead(Request.Method))

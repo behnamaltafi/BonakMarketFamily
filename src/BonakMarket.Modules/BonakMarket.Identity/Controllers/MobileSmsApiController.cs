@@ -23,7 +23,7 @@ public sealed class MobileSmsApiController(SmsOtpLoginService otp, IMobileApiTok
     [ProducesResponseType(typeof(MobileSmsChallengeResponse), 200)]
     public async Task<IActionResult> RequestCode([FromBody] SmsCodeRequest input, CancellationToken ct)
     {
-        if (!Request.IsHttps) return BadRequest(new IdentityCodeResponse("https_required"));
+        if (!IdentityTransportPolicy.IsAllowed(Request)) return BadRequest(new IdentityCodeResponse("https_required"));
         if (!tokens.IsEnabled) return StatusCode(503, new IdentityCodeResponse("mobile_tokens_unavailable"));
         if (!await otp.IsEnabledAsync()) return NotFound(new IdentityCodeResponse("sms_login_disabled"));
         var phone = SmsPhoneNormalizer.Normalize(input.Phone);
@@ -39,7 +39,7 @@ public sealed class MobileSmsApiController(SmsOtpLoginService otp, IMobileApiTok
     [ProducesResponseType(typeof(MobileSmsSignInResponse), 200)]
     public async Task<IActionResult> VerifyCode([FromBody] MobileSmsVerifyRequest input, CancellationToken ct)
     {
-        if (!Request.IsHttps) return BadRequest(new IdentityCodeResponse("https_required"));
+        if (!IdentityTransportPolicy.IsAllowed(Request)) return BadRequest(new IdentityCodeResponse("https_required"));
         if (!tokens.IsEnabled) return StatusCode(503, new IdentityCodeResponse("mobile_tokens_unavailable"));
         if (!await otp.IsEnabledAsync()) return NotFound(new IdentityCodeResponse("sms_login_disabled"));
         var customer = await otp.ConfirmMobileLoginAsync(input.ChallengeId, input.Code, ct);

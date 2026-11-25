@@ -25,7 +25,7 @@ public sealed class CustomerApiBearerMiddleware(RequestDelegate next)
 
         context.Response.Headers.CacheControl = "no-store";
         Customer customer = null;
-        if (context.Request.IsHttps &&
+        if (IdentityTransportPolicy.IsAllowed(context.Request) &&
             AuthenticationHeaderValue.TryParse(context.Request.Headers.Authorization.ToString(), out var header) &&
             header.Scheme.Equals("Bearer", StringComparison.OrdinalIgnoreCase) &&
             !string.IsNullOrWhiteSpace(header.Parameter))

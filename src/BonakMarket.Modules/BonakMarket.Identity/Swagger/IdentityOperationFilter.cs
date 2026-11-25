@@ -41,7 +41,7 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
 
         if (mobileSms)
         {
-            operation.Description = (operation.Description ?? "") + " Token-only JSON over HTTPS. No cookie or CSRF token required.";
+            operation.Description = (operation.Description ?? "") + " Token-only JSON. HTTPS is required by default; HTTP is permitted only when Identity:RequireHttps is explicitly false. No cookie or CSRF token required.";
             AddResponse(operation, "400", "Invalid phone, challenge, OTP or HTTPS requirement.");
             AddResponse(operation, "404", "SMS login is disabled.");
             AddResponse(operation, "503", "Mobile token issuance unavailable.");

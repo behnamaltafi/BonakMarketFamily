@@ -10,7 +10,7 @@ New additive endpoints (existing web SMS routes, aliases and cookie flows are un
    do not send an expired access token, refresh concurrently or retry a consumed refresh credential.
 6. POST /api/identity/v1/auth/logout revokes the current mobile session.
 
-HTTPS and application/json are mandatory. No cookie, CSRF preflight session request or issueTokens flag is needed.
+HTTPS is required by default; application/json is mandatory. For isolated development/testing only, set `Identity:RequireHttps` to `false` (`Identity__RequireHttps=false` as an environment variable). The Development configuration opts out; all other environments inherit the secure default unless explicitly overridden. This setting applies to mobile SMS request/verify, optional legacy token issuance, refresh, customer bearer authentication, account operations and Storefront API authorization. Never disable HTTPS for real customer traffic; OTPs and credentials would travel unencrypted. Behind a trusted TLS-terminating reverse proxy, configure forwarded HTTPS headers instead. No cookie, CSRF preflight session request or issueTokens flag is needed.
 Token-only sign-in never explicitly creates a native login cookie and does not invoke the browser guest-cart
 sign-in flow. GET auth/session with bearer on the canonical route omits CSRF token values.
 The old auth/sms/request and verify still require the native antiforgery flow.

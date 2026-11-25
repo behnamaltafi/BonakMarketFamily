@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using BonakMarket.Core;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Security;
@@ -39,7 +41,10 @@ public sealed class StorefrontAuthorizationFilter(
         var isPublic = action.MethodInfo.IsDefined(typeof(PublicCatalogAttribute), true);
         var bearer = http.Request.Headers.ContainsKey("Authorization");
         Customer identity = null;
-        if (!http.Request.IsHttps) { Deny(context, 400, "https_required"); return; }
+        // Keep the same secure-by-default transport policy as Identity without a module assembly dependency.
+        var configuration = http.RequestServices?.GetService<IConfiguration>();
+        if (!http.Request.IsHttps && !(bool.TryParse(configuration?["Identity:RequireHttps"], out var requireHttps) && !requireHttps))
+        { Deny(context, 400, "https_required"); return; }
 
         if (bearer)
         {

@@ -8,6 +8,7 @@ using BonakMarket.Core.Identity;
 using BonakMarket.Events;
 using BonakMarket.Identity.Models;
 using BonakMarket.Identity.Services;
+using BonakMarket.Identity.Security;
 
 namespace BonakMarket.Identity.Controllers;
 
@@ -60,7 +61,7 @@ public sealed class SmsLoginApiController : ControllerBase
         }
 
         var tokenService = request.IssueTokens ? HttpContext.RequestServices.GetService<IMobileApiTokenService>() : null;
-        if (request.IssueTokens && (!Request.IsHttps || tokenService?.IsEnabled != true))
+        if (request.IssueTokens && (!IdentityTransportPolicy.IsAllowed(Request) || tokenService?.IsEnabled != true))
             return StatusCode(503, new IdentityCodeResponse("mobile_tokens_unavailable"));
 
         var customer = await _otp.ConfirmLoginAsync(request.Phone, request.Code, ct);

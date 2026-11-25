@@ -6,6 +6,7 @@ using System.Reflection;
 using System.IO;
 using System.Security.Claims;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -118,16 +119,28 @@ public class StorefrontContractTests
         Assert.That(http.Items.ContainsKey(typeof(IMobileApiTokenService)), Is.False);
     }
 
-    [Test]
-    public async Task ValidBearerInstallsOnlyVerifiedCustomerIdentity()
+    [TestCase("https", null, true)]
+    [TestCase("http", null, false)]
+    [TestCase("http", "true", false)]
+    [TestCase("http", "invalid", false)]
+    [TestCase("http", "false", true)]
+    [TestCase("https", "false", true)]
+    public async Task ValidBearerInstallsOnlyVerifiedCustomerIdentity(string scheme, string requireHttps, bool allowed)
     {
         var customer = new Customer { Id = 123 };
         var tokens = new Mock<IMobileApiTokenService>();
         tokens.SetupGet(x => x.IsEnabled).Returns(true);
         tokens.Setup(x => x.ValidateAsync("valid-token", It.IsAny<CancellationToken>())).ReturnsAsync(customer);
-        using var services = new ServiceCollection().AddSingleton(tokens.Object).BuildServiceProvider();
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>
+        {
+            ["Identity:RequireHttps"] = requireHttps
+        }).Build();
+        using var services = new ServiceCollection().AddSingleton<IConfiguration>(configuration)
+            .AddSingleton(tokens.Object).BuildServiceProvider();
         var http = new DefaultHttpContext { RequestServices = services };
-        http.Request.Scheme = "https";
+        http.Request.Scheme = scheme;
+        using var body = new MemoryStream();
+        http.Response.Body = body;
         http.Request.Path = "/api/storefront/v1/orders";
         http.Request.Headers.Authorization = "Bearer valid-token";
         http.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, "7") }, "cookie"));
@@ -136,7 +149,14 @@ public class StorefrontContractTests
 
         await middleware.InvokeAsync(http);
 
-        Assert.That(called, Is.True);
+        Assert.That(called, Is.EqualTo(allowed));
+        if (!allowed)
+        {
+            Assert.That(http.Response.StatusCode, Is.EqualTo(401));
+            Assert.That(http.Items.ContainsKey(typeof(IMobileApiTokenService)), Is.False);
+            tokens.Verify(x => x.ValidateAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+            return;
+        }
         Assert.That(http.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, Is.EqualTo("123"));
         Assert.That(http.Items[typeof(IMobileApiTokenService)], Is.SameAs(customer));
         tokens.Verify(x => x.ValidateAsync("valid-token", It.IsAny<CancellationToken>()), Times.Once);

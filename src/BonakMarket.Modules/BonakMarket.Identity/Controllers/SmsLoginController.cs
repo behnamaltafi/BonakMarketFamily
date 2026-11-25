@@ -103,6 +103,7 @@ public sealed class SmsLoginController : PublicController
         }
 
         model.ReturnUrl = Url.IsLocalUrl(model.ReturnUrl) ? model.ReturnUrl : null;
+        model.RetryAfterSeconds = await _otp.GetLoginRetryAfterAsync(model.Phone, ct);
         Customer customer;
         try { customer = await _otp.ConfirmLoginAsync(model.Phone, model.Code, ct); }
         catch (OtpFlowException ex)

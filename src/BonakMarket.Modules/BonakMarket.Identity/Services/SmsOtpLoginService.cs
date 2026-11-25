@@ -460,6 +460,22 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     public Task<bool> IsProfileIncompleteAsync(int customerId, CancellationToken ct = default)
         => _profile.IsProfileIncompleteAsync(customerId, ct);
 
+    public async Task<int> GetLoginRetryAfterAsync(string phone, CancellationToken ct = default)
+    {
+        var canonical = SmsPhoneNormalizer.Normalize(phone);
+        if (canonical is null) return 0;
+        var policy = await GetOtpSettingsAsync();
+        var key = "login-phone:" + canonical;
+        var row = await _db.Set<SmsOtpQuota>().AsNoTracking().FirstOrDefaultAsync(x => x.QuotaKey == key, ct);
+        if (row is null) return 0;
+        var now = DateTime.UtcNow;
+        var cooldown = row.LastSendUtc.AddSeconds(policy.EffectiveOtpResendIntervalSeconds());
+        var reset = row.WindowStartUtc.AddDays(1);
+        var until = row.SentCount >= policy.EffectiveOtpMaxDailyRequests() && reset > now
+            ? (reset > cooldown ? reset : cooldown) : cooldown;
+        return until > now ? OtpFlowException.SecondsUntil(until, now) : 0;
+    }
+
     private async Task<bool> ConsumeEnrollmentQuotaAsync(int customerId, CancellationToken ct)
         => await ConsumeQuotaAsync("enroll-account:" + customerId,
             TimeSpan.FromSeconds((await GetOtpSettingsAsync()).EffectiveOtpResendIntervalSeconds()), ct);
@@ -532,7 +548,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         if (current is not null)
         {
             // Login has an independent quota covering consumed challenges.
-            if (current.LastSentOnUtc > now.AddSeconds(-settings.EffectiveOtpResendIntervalSeconds()))
+            if (purpose != "login" && current.LastSentOnUtc > now.AddSeconds(-settings.EffectiveOtpResendIntervalSeconds()))
             {
                 return false;
             }
@@ -543,7 +559,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                 current.SentInWindow = 0;
             }
 
-            if (current.SentInWindow >= settings.EffectiveOtpMaxDailyRequests())
+            if (purpose != "login" && current.SentInWindow >= settings.EffectiveOtpMaxDailyRequests())
             {
                 return false;
             }

@@ -61,11 +61,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BonakMarket.Build", "src\Bo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BonakMarket.WebApi", "src\BonakMarket.Modules\BonakMarket.WebApi\BonakMarket.WebApi.csproj", "{D6A3CB44-4C7A-4637-8465-515D4D70324F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BonakMarket.Data.PostgreSql", "src\BonakMarket.Data\BonakMarket.Data.PostgreSql\BonakMarket.Data.PostgreSql.csproj", "{1A016177-D0EA-49AD-9BD5-BAD99D9D08F9}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BonakMarket.Data.Sqlite", "src\BonakMarket.Data\BonakMarket.Data.Sqlite\BonakMarket.Data.Sqlite.csproj", "{32683DB7-C20D-4ABD-BE90-569168B2A68F}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BonakMarket.Data.MySql", "src\BonakMarket.Data\BonakMarket.Data.MySql\BonakMarket.Data.MySql.csproj", "{86AFBE84-F22E-84F3-7D95-3BC3937D5572}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -188,24 +184,12 @@ Global
 		{D6A3CB44-4C7A-4637-8465-515D4D70324F}.DebugNoRazorCompile|Any CPU.Build.0 = DebugNoRazorCompile|Any CPU
 		{D6A3CB44-4C7A-4637-8465-515D4D70324F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D6A3CB44-4C7A-4637-8465-515D4D70324F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1A016177-D0EA-49AD-9BD5-BAD99D9D08F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1A016177-D0EA-49AD-9BD5-BAD99D9D08F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1A016177-D0EA-49AD-9BD5-BAD99D9D08F9}.DebugNoRazorCompile|Any CPU.ActiveCfg = DebugNoRazorCompile|Any CPU
-		{1A016177-D0EA-49AD-9BD5-BAD99D9D08F9}.DebugNoRazorCompile|Any CPU.Build.0 = DebugNoRazorCompile|Any CPU
-		{1A016177-D0EA-49AD-9BD5-BAD99D9D08F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1A016177-D0EA-49AD-9BD5-BAD99D9D08F9}.Release|Any CPU.Build.0 = Release|Any CPU
 		{32683DB7-C20D-4ABD-BE90-569168B2A68F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{32683DB7-C20D-4ABD-BE90-569168B2A68F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{32683DB7-C20D-4ABD-BE90-569168B2A68F}.DebugNoRazorCompile|Any CPU.ActiveCfg = DebugNoRazorCompile|Any CPU
 		{32683DB7-C20D-4ABD-BE90-569168B2A68F}.DebugNoRazorCompile|Any CPU.Build.0 = DebugNoRazorCompile|Any CPU
 		{32683DB7-C20D-4ABD-BE90-569168B2A68F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{32683DB7-C20D-4ABD-BE90-569168B2A68F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{86AFBE84-F22E-84F3-7D95-3BC3937D5572}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{86AFBE84-F22E-84F3-7D95-3BC3937D5572}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{86AFBE84-F22E-84F3-7D95-3BC3937D5572}.DebugNoRazorCompile|Any CPU.ActiveCfg = DebugNoRazorCompile|Any CPU
-		{86AFBE84-F22E-84F3-7D95-3BC3937D5572}.DebugNoRazorCompile|Any CPU.Build.0 = DebugNoRazorCompile|Any CPU
-		{86AFBE84-F22E-84F3-7D95-3BC3937D5572}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{86AFBE84-F22E-84F3-7D95-3BC3937D5572}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -226,9 +210,7 @@ Global
 		{BEA9D71F-6B39-4B68-909F-868B9E53038E} = {E5C1AA43-6B44-4EFA-8DE9-6070EE007CE3}
 		{48F4799B-9824-469C-B1A4-7050F85163CA} = {5135A2B0-95B5-46AD-906A-70A2364B892B}
 		{D6A3CB44-4C7A-4637-8465-515D4D70324F} = {E5C1AA43-6B44-4EFA-8DE9-6070EE007CE3}
-		{1A016177-D0EA-49AD-9BD5-BAD99D9D08F9} = {82A38DDA-C944-4C15-AF43-86732F8ED15A}
 		{32683DB7-C20D-4ABD-BE90-569168B2A68F} = {82A38DDA-C944-4C15-AF43-86732F8ED15A}
-		{86AFBE84-F22E-84F3-7D95-3BC3937D5572} = {82A38DDA-C944-4C15-AF43-86732F8ED15A}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A0A0B995-5D0B-458E-BCC0-1071B76949D1}

@@ -9,7 +9,7 @@ namespace BonakMarket.ModuleBuilder;
 
 class Program
 {
-    private static readonly string[] _dataProviderNames = ["BonakMarket.Data.SqlServer", "BonakMarket.Data.MySql", "BonakMarket.Data.PostgreSql", "BonakMarket.Data.Sqlite"];
+    private static readonly string[] _dataProviderNames = ["BonakMarket.Data.SqlServer", "BonakMarket.Data.Sqlite"];
 
     static void Main(string[] args)
     {

@@ -83,7 +83,7 @@
     <LocaleResource Name="Fields.ClearSmsIrApiKey"><Value>SMS.ir API-Schlüssel löschen</Value></LocaleResource>
     <LocaleResource Name="Fields.ClearSmsIrApiKey.Hint"><Value>Gespeicherten Schlüssel entfernen.</Value></LocaleResource>
     <LocaleResource Name="Fields.ShowOtpCodeInHistory"><Value>OTP-Code im Verlauf anzeigen (Diagnose)</Value></LocaleResource>
-    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>Standardmäßig deaktiviert. Der verschlüsselte Code ist 15 Minuten abrufbar; in Development sofort, sonst erst nach 5 Minuten. Nur zur Fehlerdiagnose aktivieren.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>Standardmäßig deaktiviert. Verschlüsselter Code ist in allen Umgebungen sofort für 15 Minuten sichtbar. Aktive Codes ermöglichen Anmeldung; nur zur Diagnose aktivieren.</Value></LocaleResource>
     <LocaleResource Name="HistoryOtpCode"><Value>Einmalcode</Value></LocaleResource>
-    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>Nicht erfasst, noch aktiv oder Aufbewahrungszeit abgelaufen.</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>Nicht erfasst oder Aufbewahrungszeit abgelaufen.</Value></LocaleResource>
 </Language>

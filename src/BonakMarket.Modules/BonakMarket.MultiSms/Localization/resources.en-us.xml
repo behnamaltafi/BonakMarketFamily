@@ -83,7 +83,7 @@
     <LocaleResource Name="Fields.ClearSmsIrApiKey"><Value>Clear SMS.ir API key</Value></LocaleResource>
     <LocaleResource Name="Fields.ClearSmsIrApiKey.Hint"><Value>Remove the stored API key.</Value></LocaleResource>
     <LocaleResource Name="Fields.ShowOtpCodeInHistory"><Value>Show OTP code in history (diagnostics)</Value></LocaleResource>
-    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>Off by default. Stores only an encrypted code for 15 minutes. In Development it is visible immediately; elsewhere only after 5 minutes, when the current login OTP has expired. Enable only for troubleshooting.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>Off by default. Encrypted code is visible immediately in all environments for 15 minutes. Active codes grant account access; enable only for troubleshooting.</Value></LocaleResource>
     <LocaleResource Name="HistoryOtpCode"><Value>OTP code</Value></LocaleResource>
-    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>Unavailable: not captured, still active outside Development, or retention window expired.</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>Unavailable: not captured or retention window expired.</Value></LocaleResource>
 </Language>

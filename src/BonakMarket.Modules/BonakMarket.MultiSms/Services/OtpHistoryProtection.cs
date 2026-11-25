@@ -9,7 +9,6 @@ namespace BonakMarket.MultiSms.Services;
 /// <summary>Short-lived diagnostic codes, isolated from provider credentials and OTP validation.</summary>
 public sealed class OtpHistoryProtection(IDataProtectionProvider protection)
 {
-    private static readonly TimeSpan ActiveOtpLifetime = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan DiagnosticLifetime = TimeSpan.FromMinutes(15);
     private readonly ITimeLimitedDataProtector _protector =
         protection.CreateProtector("BonakMarket.MultiSms.OtpHistory.v1").ToTimeLimitedDataProtector();
@@ -27,8 +26,7 @@ public sealed class OtpHistoryProtection(IDataProtectionProvider protection)
     {
         if (!settings.HistoryEnabled || !settings.ShowOtpCodeInHistory || message.Kind != "Otp" ||
             string.IsNullOrEmpty(message.Body) || now < message.CreatedOnUtc ||
-            now >= message.CreatedOnUtc.Add(DiagnosticLifetime) ||
-            (!development && now < message.CreatedOnUtc.Add(ActiveOtpLifetime)))
+            now >= message.CreatedOnUtc.Add(DiagnosticLifetime))
             return null;
 
         try

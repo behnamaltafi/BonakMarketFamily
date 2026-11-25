@@ -83,7 +83,7 @@
     <LocaleResource Name="Fields.ClearSmsIrApiKey"><Value>حذف کلید API پیامک SMS.ir</Value></LocaleResource>
     <LocaleResource Name="Fields.ClearSmsIrApiKey.Hint"><Value>حذف کلید ذخیره‌شده.</Value></LocaleResource>
     <LocaleResource Name="Fields.ShowOtpCodeInHistory"><Value>نمایش کد OTP در تاریخچه (عیب‌یابی)</Value></LocaleResource>
-    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>پیش‌فرض خاموش است. فقط کد رمزنگاری‌شده برای ۱۵ دقیقه قابل بازیابی است. در محیط توسعه فوری و در سایر محیط‌ها پس از ۵ دقیقه و انقضای کد ورود نمایش داده می‌شود. فقط برای عیب‌یابی فعال کنید.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>پیش‌فرض خاموش است. کد رمزنگاری‌شده در تمام محیط‌ها بلافاصله و تا ۱۵ دقیقه قابل مشاهده است. کد فعال امکان ورود به حساب را می‌دهد؛ فقط برای عیب‌یابی فعال کنید.</Value></LocaleResource>
     <LocaleResource Name="HistoryOtpCode"><Value>کد احراز هویت</Value></LocaleResource>
-    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>کد موجود نیست، هنوز معتبر است یا مهلت نمایش آن پایان یافته است.</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>کد ثبت نشده یا مهلت نمایش آن پایان یافته است.</Value></LocaleResource>
 </Language>

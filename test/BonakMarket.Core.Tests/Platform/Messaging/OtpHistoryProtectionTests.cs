@@ -27,7 +27,7 @@ public class OtpHistoryProtectionTests
     }
 
     [Test]
-    public void Protected_code_is_visible_in_development_and_only_after_expiry_elsewhere()
+    public void Protected_code_is_visible_immediately_in_all_environments()
     {
         var protection = new OtpHistoryProtection(new EphemeralDataProtectionProvider());
         var settings = new SmsGatewaySettings { ShowOtpCodeInHistory = true };
@@ -35,7 +35,7 @@ public class OtpHistoryProtectionTests
         var message = new SmsMessage { Kind = "Otp", CreatedOnUtc = now, Body = protection.Capture(Otp, settings) };
         Assert.That(message.Body, Is.Not.Null.And.Not.EqualTo("012345"));
         Assert.That(protection.Reveal(message, settings, true, now), Is.EqualTo("012345"));
-        Assert.That(protection.Reveal(message, settings, false, now), Is.Null);
+        Assert.That(protection.Reveal(message, settings, false, now), Is.EqualTo("012345"));
         Assert.That(protection.Reveal(message, settings, false, now.AddMinutes(5)), Is.EqualTo("012345"));
         Assert.That(protection.Reveal(message, settings, true, now.AddMinutes(15)), Is.Null);
         settings.ShowOtpCodeInHistory = false;

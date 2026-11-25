@@ -14,13 +14,21 @@ public sealed class CustomerIdentityAdminController : AdminController
     public IActionResult Configure(CustomerIdentitySettings settings) => View(new IdentityConfigurationModel
     {
         OtpLoginEnabled = settings.OtpLoginEnabled,
+        OtpMessageTemplate = CustomerIdentitySettings.IsValidOtpMessageTemplate(settings.OtpMessageTemplate)
+            ? settings.OtpMessageTemplate : CustomerIdentitySettings.DefaultOtpMessageTemplate,
         SmsAsPrimaryLogin = settings.SmsAsPrimaryLogin
     });
 
     [HttpPost, SaveSetting(false)]
     public IActionResult Configure(IdentityConfigurationModel model, CustomerIdentitySettings settings)
     {
+        if (!CustomerIdentitySettings.IsValidOtpMessageTemplate(model.OtpMessageTemplate))
+        {
+            ModelState.AddModelError(nameof(model.OtpMessageTemplate), T("Plugins.Identity.Customer.Fields.OtpMessageTemplate.Invalid").Value);
+        }
+
         if (!ModelState.IsValid) return View(model);
+        settings.OtpMessageTemplate = model.OtpMessageTemplate;
         settings.OtpLoginEnabled = model.OtpLoginEnabled;
         settings.SmsAsPrimaryLogin = model.SmsAsPrimaryLogin;
         NotifySuccess(T("Admin.Common.DataSuccessfullySaved"));

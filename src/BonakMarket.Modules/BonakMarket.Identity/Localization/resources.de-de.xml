@@ -2,6 +2,9 @@
     <LocaleResource Name="Plugins.FriendlyName.BonakMarket.Identity" AppendRootKey="false"><Value>Kundenidentität</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled"><Value>SMS-Anmeldung mit Einmalcode aktivieren</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>SMS-Anmeldung und -Registrierung per Mobilnummer aktivieren. Bestehende Kunden können ihre Nummer ausdrücklich mit ihrem Konto verknüpfen.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMessageTemplate"><Value>SMS-Vorlage für Einmalcodes</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMessageTemplate.Hint"><Value>Geben Sie bei Bedarf mehrere Zeilen ein. {Code} wird durch den sechsstelligen Bestätigungscode ersetzt.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMessageTemplate.Invalid"><Value>Die SMS-Vorlage muss {Code} enthalten.</Value></LocaleResource>
     <LocaleResource Name="Otp.LoginTitle"><Value>Mit Mobilnummer anmelden oder registrieren</Value></LocaleResource>
     <LocaleResource Name="Otp.LoginHint"><Value>Geben Sie Ihre Mobilnummer ein. Bestehende Kunden melden sich per Code an; andernfalls wird nach der Bestätigung ein neues Konto erstellt.</Value></LocaleResource>
     <LocaleResource Name="Otp.PhoneLabel"><Value>Mobilnummer</Value></LocaleResource>

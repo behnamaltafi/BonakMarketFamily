@@ -29,5 +29,14 @@
                 <span asp-validation-for="SmsAsPrimaryLogin"></span>
             </div>
         </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="OtpMessageTemplate" />
+            </div>
+            <div class="adminData">
+                <textarea asp-for="OtpMessageTemplate" class="form-control" rows="6" dir="auto"></textarea>
+                <span asp-validation-for="OtpMessageTemplate"></span>
+            </div>
+        </div>
     </div>
 </form>

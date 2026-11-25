@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.DataProtection;
 using NUnit.Framework;
+using BonakMarket.Identity.Configuration;
 using BonakMarket.Identity.Models;
 using BonakMarket.Identity.Security;
 
@@ -24,6 +25,32 @@ public class MobileOtpContractTests
         Assert.That(service.TryRead(service.Create("+989121234567", 0), out _, out _), Is.False);
         Assert.That(service.TryRead("not-a-ticket", out _, out _), Is.False);
         Assert.That(new MobileOtpChallengeTicket(new EphemeralDataProtectionProvider()).TryRead(ticket, out _, out _), Is.False);
+    }
+
+    [Test]
+    public void Default_otp_message_preserves_persian_text_and_line_breaks()
+    {
+        var settings = new CustomerIdentitySettings();
+        Assert.That(settings.FormatOtpMessage("012345"), Is.EqualTo(
+            "بنک مارکت\n«محرمانه»\nاز در اختیار قرار دادن محتوای این پیامک به دیگران، اکیدا خودداری کنید.\nکد احراز هویت جهت ورود:\n012345"));
+    }
+
+    [Test]
+    public void Custom_otp_message_replaces_placeholder()
+    {
+        var settings = new CustomerIdentitySettings { OtpMessageTemplate = "Custom\n{Code}" };
+        Assert.That(settings.FormatOtpMessage("012345"), Is.EqualTo("Custom\n012345"));
+    }
+
+    [TestCase(null)]
+    [TestCase("")]
+    [TestCase("No placeholder")]
+    [TestCase("{code}")]
+    public void Invalid_otp_message_uses_default(string template)
+    {
+        Assert.That(CustomerIdentitySettings.IsValidOtpMessageTemplate(template), Is.False);
+        var settings = new CustomerIdentitySettings { OtpMessageTemplate = template };
+        Assert.That(settings.FormatOtpMessage("012345"), Is.EqualTo(new CustomerIdentitySettings().FormatOtpMessage("012345")));
     }
 
     [TestCase("012345", true)]

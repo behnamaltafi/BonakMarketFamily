@@ -2,6 +2,9 @@
     <LocaleResource Name="Plugins.FriendlyName.BonakMarket.Identity" AppendRootKey="false"><Value>Customer Identity</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled"><Value>Enable SMS one-time-code login</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>Enable SMS sign-in and sign-up with a verified mobile. Existing customers can explicitly link their number without creating a new account.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMessageTemplate"><Value>OTP message template</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMessageTemplate.Hint"><Value>Enter the SMS text on multiple lines if needed. Include {Code}, which is replaced with the six-digit verification code.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMessageTemplate.Invalid"><Value>The OTP message template must contain {Code}.</Value></LocaleResource>
     <LocaleResource Name="Otp.LoginTitle"><Value>Sign in or register with mobile</Value></LocaleResource>
     <LocaleResource Name="Otp.LoginHint"><Value>Enter your mobile number. If you have an account, sign in with the code; otherwise a new account is created after verification.</Value></LocaleResource>
     <LocaleResource Name="Otp.PhoneLabel"><Value>Mobile number</Value></LocaleResource>

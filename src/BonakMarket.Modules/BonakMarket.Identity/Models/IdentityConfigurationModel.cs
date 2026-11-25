@@ -6,6 +6,9 @@ public sealed class IdentityConfigurationModel : ModelBase
     [LocalizedDisplay("*OtpLoginEnabled")]
     public bool OtpLoginEnabled { get; set; }
 
+    [LocalizedDisplay("*OtpMessageTemplate")]
+    public string OtpMessageTemplate { get; set; }
+
     [LocalizedDisplay("*SmsAsPrimaryLogin")]
     public bool SmsAsPrimaryLogin { get; set; }
 }

@@ -574,8 +574,9 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
         try
         {
+            var settings = await _settings.LoadSettingsAsync<CustomerIdentitySettings>();
             await _sms.SendAsync(new SmsSendRequest(phone,
-                $"Your BonakMarket verification code is {code}. Valid for {MobileOtpChallengeTicket.LifetimeSeconds / 60} minutes.", SmsMessageKind.Otp), ct);
+                settings.FormatOtpMessage(code), SmsMessageKind.Otp), ct);
             return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

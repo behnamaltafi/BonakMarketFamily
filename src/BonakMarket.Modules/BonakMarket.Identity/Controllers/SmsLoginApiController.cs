@@ -39,6 +39,8 @@ public sealed class SmsLoginApiController : ControllerBase
     /// <summary>Requests a login code with an account-independent response.</summary>
     [HttpPost("request"), HttpPost("~/api/sms-login/request"), AllowAnonymous]
     [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
+    [ProducesResponseType(typeof(OtpErrorResponse), 429)]
+    [ProducesResponseType(typeof(OtpErrorResponse), 400)]
     public async Task<IActionResult> RequestCode([FromBody] SmsCodeRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -46,13 +48,21 @@ public sealed class SmsLoginApiController : ControllerBase
             return NotFound();
         }
 
-        await _otp.RequestLoginCodeAsync(request.Phone, ct);
+        try { await _otp.RequestLoginCodeAsync(request.Phone, ct); }
+        catch (OtpFlowException ex)
+        {
+            if (ex.RetryAfterSeconds.HasValue)
+                Response.Headers["Retry-After"] = ex.RetryAfterSeconds.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return StatusCode(ex.StatusCode, new OtpErrorResponse(ex.Code, ex.RetryAfterSeconds));
+        }
         return Ok(new IdentityCodeResponse("code_requested"));
     }
 
     /// <summary>Consumes an OTP and creates the native, non-persistent login cookie.</summary>
     [HttpPost("verify"), HttpPost("~/api/sms-login/verify"), AllowAnonymous]
     [ProducesResponseType(typeof(SmsSignInResponse), 200)]
+    [ProducesResponseType(typeof(OtpErrorResponse), 429)]
+    [ProducesResponseType(typeof(OtpErrorResponse), 400)]
     public async Task<IActionResult> VerifyCode([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
     {
         if (!await _otp.IsEnabledAsync())
@@ -64,7 +74,14 @@ public sealed class SmsLoginApiController : ControllerBase
         if (request.IssueTokens && (!IdentityTransportPolicy.IsAllowed(Request) || tokenService?.IsEnabled != true))
             return StatusCode(503, new IdentityCodeResponse("mobile_tokens_unavailable"));
 
-        var customer = await _otp.ConfirmLoginAsync(request.Phone, request.Code, ct);
+        Customer customer;
+        try { customer = await _otp.ConfirmLoginAsync(request.Phone, request.Code, ct); }
+        catch (OtpFlowException ex)
+        {
+            if (ex.RetryAfterSeconds.HasValue)
+                Response.Headers["Retry-After"] = ex.RetryAfterSeconds.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            return StatusCode(ex.StatusCode, new OtpErrorResponse(ex.Code, ex.RetryAfterSeconds));
+        }
         if (customer is null || customer.Deleted || !customer.Active || !customer.IsRegistered() ||
             !await _signInManager.CanSignInAsync(customer) ||
             (_userManager.SupportsUserLockout && await _userManager.IsLockedOutAsync(customer)) ||

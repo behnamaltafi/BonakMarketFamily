@@ -16,6 +16,10 @@ public sealed class CustomerIdentityAdminController : AdminController
         OtpLoginEnabled = settings.OtpLoginEnabled,
         OtpMessageTemplate = CustomerIdentitySettings.IsValidOtpMessageTemplate(settings.OtpMessageTemplate)
             ? settings.OtpMessageTemplate : CustomerIdentitySettings.DefaultOtpMessageTemplate,
+        OtpResendIntervalSeconds = settings.EffectiveOtpResendIntervalSeconds(),
+        OtpExpirationSeconds = settings.EffectiveOtpExpirationSeconds(),
+        OtpMaxDailyRequests = settings.EffectiveOtpMaxDailyRequests(),
+        OtpMaxVerificationAttempts = settings.EffectiveOtpMaxVerificationAttempts(),
         SmsAsPrimaryLogin = settings.SmsAsPrimaryLogin
     });
 
@@ -28,6 +32,10 @@ public sealed class CustomerIdentityAdminController : AdminController
         }
 
         if (!ModelState.IsValid) return View(model);
+        settings.OtpResendIntervalSeconds = model.OtpResendIntervalSeconds;
+        settings.OtpExpirationSeconds = model.OtpExpirationSeconds;
+        settings.OtpMaxDailyRequests = model.OtpMaxDailyRequests;
+        settings.OtpMaxVerificationAttempts = model.OtpMaxVerificationAttempts;
         settings.OtpMessageTemplate = model.OtpMessageTemplate;
         settings.OtpLoginEnabled = model.OtpLoginEnabled;
         settings.SmsAsPrimaryLogin = model.SmsAsPrimaryLogin;

@@ -43,4 +43,13 @@
     <LocaleResource Name="Otp.ChangePhoneRequested"><Value>Wenn die Anfrage zulässig ist, wird ein Bestätigungscode an die neue Nummer gesendet. Geben Sie ihn unten ein.</Value></LocaleResource>
     <LocaleResource Name="Otp.ChangePhoneSucceeded"><Value>Die Anmeldenummer wurde bestätigt und aktualisiert.</Value></LocaleResource>
     <LocaleResource Name="Otp.ChangePhoneFailed"><Value>Die Nummer konnte nicht bestätigt werden. Prüfen Sie Code, Versandlimits und Telefonnummer.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpResendIntervalSeconds"><Value>Sendeintervall (Sekunden)</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpExpirationSeconds"><Value>OTP-Gültigkeit (Sekunden)</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMaxDailyRequests"><Value>Maximale tägliche OTP-Anfragen</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMaxVerificationAttempts"><Value>Maximale Prüfversuche</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_resend_too_soon"><Value>Warten Sie {0} Sekunden vor einer neuen Anfrage.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_daily_limit"><Value>Tageslimit erreicht. Versuchen Sie es in {0} Sekunden erneut.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_expired"><Value>Code abgelaufen. Fordern Sie einen neuen an.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_attempt_limit"><Value>Zu viele Fehlversuche. Fordern Sie einen neuen Code an.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_request_conflict"><Value>Versuchen Sie es in {0} Sekunden erneut.</Value></LocaleResource>
 </Language>

@@ -43,4 +43,13 @@
     <LocaleResource Name="Otp.ChangePhoneRequested"><Value>A verification code will be sent to the new number if the request is eligible. Enter the code below.</Value></LocaleResource>
     <LocaleResource Name="Otp.ChangePhoneSucceeded"><Value>Your sign-in mobile has been verified and updated.</Value></LocaleResource>
     <LocaleResource Name="Otp.ChangePhoneFailed"><Value>Could not request or confirm the number. Check your code, sending limits and number.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpResendIntervalSeconds"><Value>Resend interval (seconds)</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpExpirationSeconds"><Value>OTP lifetime (seconds)</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMaxDailyRequests"><Value>Maximum daily OTP requests</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMaxVerificationAttempts"><Value>Maximum verification attempts</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_resend_too_soon"><Value>Wait {0} seconds before requesting another code.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_daily_limit"><Value>Daily OTP request limit reached. Try again in {0} seconds.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_expired"><Value>The code has expired. Request another code.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_attempt_limit"><Value>Too many incorrect attempts. Request another code.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_request_conflict"><Value>Please try again in {0} seconds.</Value></LocaleResource>
 </Language>

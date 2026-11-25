@@ -60,6 +60,9 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         return settings.OtpLoginEnabled && await _delivery.IsEnabledAsync();
     }
 
+    public Task<CustomerIdentitySettings> GetOtpSettingsAsync()
+        => _settings.LoadSettingsAsync<CustomerIdentitySettings>();
+
     public Task<string> GetVerifiedPhoneAsync(int customerId, CancellationToken ct = default)
         => _profile.GetVerifiedPhoneAsync(customerId, ct);
 
@@ -104,6 +107,12 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             return;
         }
 
+        var policy = await GetOtpSettingsAsync();
+        // Quota applies to every valid phone before checking account eligibility.
+        if (!await ConsumeQuotaAsync("login-phone:" + canonical,
+            TimeSpan.FromSeconds(policy.EffectiveOtpResendIntervalSeconds()), ct, reportLimits: true))
+            throw new OtpFlowException("otp_request_conflict", 1);
+
         // Same public response for known/unknown numbers. Unknown numbers receive an OTP
         // so they can register only AFTER proving possession of that mobile number.
         var binding = await _db.Set<SmsLoginPhone>().AsNoTracking()
@@ -129,14 +138,6 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             }
         }
 
-        // A consumed login challenge no longer stores its own cooldown.
-        // Keep per-phone quota separately to prevent unlimited resend cycles
-        // after repeated successful logins or registrations.
-        if (!await ConsumeQuotaAsync("login-phone:" + canonical, TimeSpan.FromSeconds(MobileOtpChallengeTicket.ResendAfterSeconds), ct))
-        {
-            return;
-        }
-
         await IssueCodeAsync(canonical, "login", ct);
     }
 
@@ -145,12 +146,13 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     {
         await RequestLoginCodeAsync(canonicalPhone, ct);
         var now = DateTime.UtcNow;
+        var policy = await GetOtpSettingsAsync();
+        var attempts = policy.EffectiveOtpMaxVerificationAttempts();
         var sent = await _db.Set<SmsOtpChallenge>().AsNoTracking()
             .Where(x => x.Phone == canonicalPhone && x.Purpose == "login" && x.ExpiresOnUtc > now &&
-                x.FailedAttempts < 5)
+                x.FailedAttempts < attempts)
             .Select(x => (DateTime?)x.LastSentOnUtc).SingleOrDefaultAsync(ct);
-        // The public response is the same when no OTP was issued, or a quota suppressed delivery.
-        return _mobileTicket.Create(canonicalPhone, sent?.Ticks ?? 0);
+        return _mobileTicket.Create(canonicalPhone, sent?.Ticks ?? 0, policy.EffectiveOtpExpirationSeconds());
     }
 
     public Task<Customer> ConfirmMobileLoginAsync(string ticket, string code, CancellationToken ct)
@@ -165,7 +167,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     {
         if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered() || !await IsEnabledAsync()) return false;
         var phone = await GetVerifiedPhoneAsync(customer.Id, ct);
-        if (phone == null || !await ConsumeQuotaAsync("reauth-account:" + customer.Id, TimeSpan.FromMinutes(2), ct)) return false;
+        if (phone == null || !await ConsumeQuotaAsync("reauth-account:" + customer.Id, TimeSpan.FromSeconds((await GetOtpSettingsAsync()).EffectiveOtpResendIntervalSeconds()), ct)) return false;
         return await IssueCodeAsync(phone, "reauth:" + customer.Id, ct);
     }
 
@@ -458,11 +460,13 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     public Task<bool> IsProfileIncompleteAsync(int customerId, CancellationToken ct = default)
         => _profile.IsProfileIncompleteAsync(customerId, ct);
 
-    private Task<bool> ConsumeEnrollmentQuotaAsync(int customerId, CancellationToken ct)
-        => ConsumeQuotaAsync("enroll-account:" + customerId, TimeSpan.FromMinutes(1), ct);
+    private async Task<bool> ConsumeEnrollmentQuotaAsync(int customerId, CancellationToken ct)
+        => await ConsumeQuotaAsync("enroll-account:" + customerId,
+            TimeSpan.FromSeconds((await GetOtpSettingsAsync()).EffectiveOtpResendIntervalSeconds()), ct);
 
-    private async Task<bool> ConsumeQuotaAsync(string key, TimeSpan cooldown, CancellationToken ct)
+    private async Task<bool> ConsumeQuotaAsync(string key, TimeSpan cooldown, CancellationToken ct, bool reportLimits = false)
     {
+        var policy = await GetOtpSettingsAsync();
         var now = DateTime.UtcNow;
         var quotas = _db.Set<SmsOtpQuota>();
         var row = await quotas.FirstOrDefaultAsync(x => x.QuotaKey == key, ct);
@@ -471,6 +475,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         {
             if (row.LastSendUtc > now.Subtract(cooldown))
             {
+                if (reportLimits) throw new OtpFlowException("otp_resend_too_soon",
+                    OtpFlowException.SecondsUntil(row.LastSendUtc.Add(cooldown), now));
                 return false;
             }
 
@@ -480,8 +486,10 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                 row.SentCount = 0;
             }
 
-            if (row.SentCount >= 10)
+            if (row.SentCount >= policy.EffectiveOtpMaxDailyRequests())
             {
+                if (reportLimits) throw new OtpFlowException("otp_daily_limit",
+                    OtpFlowException.SecondsUntil(row.WindowStartUtc.AddDays(1), now));
                 return false;
             }
         }
@@ -515,6 +523,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
     private async Task<bool> IssueCodeAsync(string phone, string purpose, CancellationToken ct)
     {
+        var settings = await GetOtpSettingsAsync();
         var now = DateTime.UtcNow;
         var challenges = _db.Set<SmsOtpChallenge>();
         var current = await challenges.FirstOrDefaultAsync(
@@ -522,8 +531,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
         if (current is not null)
         {
-            // Two minutes between sends, maximum 10 sends in a rolling 24h.
-            if (current.LastSentOnUtc > now.AddSeconds(-MobileOtpChallengeTicket.ResendAfterSeconds))
+            // Login has an independent quota covering consumed challenges.
+            if (current.LastSentOnUtc > now.AddSeconds(-settings.EffectiveOtpResendIntervalSeconds()))
             {
                 return false;
             }
@@ -534,7 +543,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
                 current.SentInWindow = 0;
             }
 
-            if (current.SentInWindow >= 10)
+            if (current.SentInWindow >= settings.EffectiveOtpMaxDailyRequests())
             {
                 return false;
             }
@@ -549,7 +558,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         };
 
         record.ProtectedCode = _codeProtector.Protect(code);
-        record.ExpiresOnUtc = now.AddSeconds(MobileOtpChallengeTicket.LifetimeSeconds);
+        record.ExpiresOnUtc = now.AddSeconds(settings.EffectiveOtpExpirationSeconds());
         record.LastSentOnUtc = now;
         record.FailedAttempts = 0;
         record.SentInWindow++;
@@ -574,7 +583,6 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
         try
         {
-            var settings = await _settings.LoadSettingsAsync<CustomerIdentitySettings>();
             await _sms.SendAsync(new SmsSendRequest(phone,
                 settings.FormatOtpMessage(code), SmsMessageKind.Otp) { VerificationCode = code }, ct);
             return true;
@@ -597,10 +605,20 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
         var record = await _db.Set<SmsOtpChallenge>().FirstOrDefaultAsync(
             x => x.Phone == phone && x.Purpose == purpose, ct);
-        if (record is null || record.ExpiresOnUtc <= DateTime.UtcNow ||
-            record.FailedAttempts >= 5 || string.IsNullOrWhiteSpace(record.ProtectedCode) ||
+        var policy = await GetOtpSettingsAsync();
+        if (record is null || string.IsNullOrWhiteSpace(record.ProtectedCode) ||
             (sentTicks.HasValue && record.LastSentOnUtc.Ticks != sentTicks.Value))
+            return null;
+
+        if (record.ExpiresOnUtc <= DateTime.UtcNow)
         {
+            if (purpose == "login") throw new OtpFlowException("otp_expired");
+            return null;
+        }
+
+        if (record.FailedAttempts >= policy.EffectiveOtpMaxVerificationAttempts())
+        {
+            if (purpose == "login") throw new OtpFlowException("otp_attempt_limit");
             return null;
         }
 
@@ -623,6 +641,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
             try
             {
                 await _db.SaveChangesAsync(ct);
+                if (purpose == "login" && record.FailedAttempts >= policy.EffectiveOtpMaxVerificationAttempts())
+                    throw new OtpFlowException("otp_attempt_limit");
             }
             catch (DbUpdateException)
             {

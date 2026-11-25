@@ -38,5 +38,33 @@
                 <span asp-validation-for="OtpMessageTemplate"></span>
             </div>
         </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="OtpResendIntervalSeconds" /></div>
+            <div class="adminData">
+                <input asp-for="OtpResendIntervalSeconds" type="number" min="30" max="300" class="form-control" />
+                <span asp-validation-for="OtpResendIntervalSeconds"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="OtpExpirationSeconds" /></div>
+            <div class="adminData">
+                <input asp-for="OtpExpirationSeconds" type="number" min="60" max="600" class="form-control" />
+                <span asp-validation-for="OtpExpirationSeconds"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="OtpMaxDailyRequests" /></div>
+            <div class="adminData">
+                <input asp-for="OtpMaxDailyRequests" type="number" min="1" max="50" class="form-control" />
+                <span asp-validation-for="OtpMaxDailyRequests"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="OtpMaxVerificationAttempts" /></div>
+            <div class="adminData">
+                <input asp-for="OtpMaxVerificationAttempts" type="number" min="1" max="5" class="form-control" />
+                <span asp-validation-for="OtpMaxVerificationAttempts"></span>
+            </div>
+        </div>
     </div>
 </form>

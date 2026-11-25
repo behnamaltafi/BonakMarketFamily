@@ -43,4 +43,13 @@
     <LocaleResource Name="Otp.ChangePhoneRequested"><Value>اگر درخواست مجاز باشد، کد تأیید به شماره جدید ارسال می‌شود. کد را وارد کنید.</Value></LocaleResource>
     <LocaleResource Name="Otp.ChangePhoneSucceeded"><Value>شماره همراه ورود با موفقیت تأیید و به‌روزرسانی شد.</Value></LocaleResource>
     <LocaleResource Name="Otp.ChangePhoneFailed"><Value>ثبت یا تأیید شماره انجام نشد. کد، محدودیت ارسال و شماره مقصد را بررسی کنید.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpResendIntervalSeconds"><Value>فاصله ارسال مجدد (ثانیه)</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpExpirationSeconds"><Value>مدت اعتبار کد (ثانیه)</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMaxDailyRequests"><Value>حداکثر درخواست روزانه کد</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpMaxVerificationAttempts"><Value>حداکثر تلاش برای تأیید کد</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_resend_too_soon"><Value>برای ارسال مجدد کد، {0} ثانیه صبر کنید.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_daily_limit"><Value>سقف درخواست روزانه کد تکمیل شده است. {0} ثانیه دیگر تلاش کنید.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_expired"><Value>کد منقضی شده است. کد جدید درخواست کنید.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_attempt_limit"><Value>تعداد تلاش‌های ناموفق به سقف رسیده است. کد جدید درخواست کنید.</Value></LocaleResource>
+    <LocaleResource Name="Otp.otp_request_conflict"><Value>لطفاً {0} ثانیه دیگر تلاش کنید.</Value></LocaleResource>
 </Language>

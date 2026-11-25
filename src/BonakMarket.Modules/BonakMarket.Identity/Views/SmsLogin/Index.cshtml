@@ -56,7 +56,8 @@
                             <input type="hidden" name="Phone" value="@Model.Phone" />
                             <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
                             <input type="hidden" name="CheckoutAsGuest" value="@Model.CheckoutAsGuest" />
-                            <button type="submit" class="btn btn-link p-0">@T("Plugins.Identity.Customer.Otp.SendCode")</button>
+                            <button id="otp-resend" type="submit" class="btn btn-link p-0" disabled="@(Model.RetryAfterSeconds > 0)" data-seconds="@Model.RetryAfterSeconds">@T("Plugins.Identity.Customer.Otp.SendCode")</button>
+                            <span id="otp-resend-timer" aria-live="off"></span>
                             <a asp-controller="SmsLogin" asp-action="Index" asp-route-returnUrl="@Model.ReturnUrl" asp-route-checkoutAsGuest="@Model.CheckoutAsGuest" class="ml-3">@T("Plugins.Identity.Customer.Otp.ChangePhone")</a>
                         </form>
                     }
@@ -76,3 +77,19 @@
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    const button = document.getElementById('otp-resend');
+    const timer = document.getElementById('otp-resend-timer');
+    if (!button || !timer) return;
+    const deadline = Date.now() + Number(button.dataset.seconds || 0) * 1000;
+    function tick() {
+        const seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        button.disabled = seconds > 0;
+        timer.textContent = seconds > 0 ? ' (' + Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0') + ')' : '';
+        if (seconds > 0) window.setTimeout(tick, 250);
+    }
+    tick();
+})();
+</script>

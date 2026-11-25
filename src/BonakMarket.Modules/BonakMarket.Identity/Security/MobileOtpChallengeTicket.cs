@@ -9,14 +9,14 @@ namespace BonakMarket.Identity.Security;
 public sealed class MobileOtpChallengeTicket(IDataProtectionProvider protection)
 {
     public const int LifetimeSeconds = 300;
-    public const int ResendAfterSeconds = 120;
+    public const int ResendAfterSeconds = 60;
     private readonly ITimeLimitedDataProtector _protector =
         protection.CreateProtector("BonakMarket.Identity.MobileOtpChallenge.v1").ToTimeLimitedDataProtector();
 
     // Fixed-width generation (zero for suppressed/no active challenge) avoids a response-shape distinction.
-    public string Create(string canonicalPhone, long sentTicks) =>
+    public string Create(string canonicalPhone, long sentTicks, int lifetimeSeconds = LifetimeSeconds) =>
         _protector.Protect(canonicalPhone + "|" + sentTicks.ToString("D19", CultureInfo.InvariantCulture),
-            TimeSpan.FromSeconds(LifetimeSeconds));
+            TimeSpan.FromSeconds(lifetimeSeconds + 600)); // Diagnostic grace; SQL enforces the actual OTP expiration.
 
     public bool TryRead(string ticket, out string phone, out long sentTicks)
     {

@@ -45,6 +45,35 @@ public class SmsApiControllerTests
         otp.Verify(x => x.RequestLoginCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
+    [TestCase("otp_resend_too_soon", 37)]
+    [TestCase("otp_daily_limit", 7200)]
+    public async Task Login_request_returns_rate_limit_and_retry_after(string code, int retryAfter)
+    {
+        var otp = new Mock<ISmsOtpLoginService>();
+        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.RequestLoginCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OtpFlowException(code, retryAfter));
+        var controller = CreateLoginController(otp);
+        var result = (ObjectResult)await controller.RequestCode(new SmsCodeRequest { Phone = "09123456789" }, default);
+        Assert.That(result.StatusCode, Is.EqualTo(429));
+        Assert.That(((OtpErrorResponse)result.Value).RetryAfter, Is.EqualTo(retryAfter));
+        Assert.That(controller.Response.Headers["Retry-After"].ToString(), Is.EqualTo(retryAfter.ToString()));
+    }
+
+    [TestCase("otp_expired", 400)]
+    [TestCase("otp_attempt_limit", 429)]
+    public async Task Login_verification_returns_specific_otp_error(string code, int status)
+    {
+        var otp = new Mock<ISmsOtpLoginService>();
+        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.ConfirmLoginAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OtpFlowException(code));
+        var result = (ObjectResult)await CreateLoginController(otp).VerifyCode(
+            new SmsCodeVerificationRequest { Phone = "09123456789", Code = "123456" }, default);
+        Assert.That(result.StatusCode, Is.EqualTo(status));
+        Assert.That(((OtpErrorResponse)result.Value).Code, Is.EqualTo(code));
+    }
+
     [Test]
     public async Task Disabled_login_does_not_issue_codes()
     {

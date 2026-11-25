@@ -11,6 +11,7 @@ public sealed class SmsOtpLoginModel
     /// <summary>Preserves the guest-checkout option from the native login page.</summary>
     public bool CheckoutAsGuest { get; set; }
     public string VerifiedPhone { get; set; }
+    public int RetryAfterSeconds { get; set; }
     public bool CodeRequested { get; set; }
     public bool IsEnrolling { get; set; }
     public string StatusMessage { get; set; }

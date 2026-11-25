@@ -76,12 +76,19 @@ public sealed class SmsLoginController : PublicController
             return View("Index", model);
         }
 
-        await _otp.RequestLoginCodeAsync(model.Phone, ct);
-
-        // The response is independent of whether an account is registered.
         ModelState.Clear();
         model.CodeRequested = true;
-        model.StatusMessage = T("Plugins.Identity.Customer.Otp.CodeSentGeneric").Value;
+        try
+        {
+            await _otp.RequestLoginCodeAsync(model.Phone, ct);
+            model.RetryAfterSeconds = (await _otp.GetOtpSettingsAsync()).EffectiveOtpResendIntervalSeconds();
+            model.StatusMessage = T("Plugins.Identity.Customer.Otp.CodeSentGeneric").Value;
+        }
+        catch (OtpFlowException ex)
+        {
+            model.RetryAfterSeconds = ex.RetryAfterSeconds ?? 0;
+            ModelState.AddModelError(string.Empty, T("Plugins.Identity.Customer.Otp." + ex.Code, model.RetryAfterSeconds).Value);
+        }
         return View("Index", model);
     }
 
@@ -96,7 +103,14 @@ public sealed class SmsLoginController : PublicController
         }
 
         model.ReturnUrl = Url.IsLocalUrl(model.ReturnUrl) ? model.ReturnUrl : null;
-        var customer = await _otp.ConfirmLoginAsync(model.Phone, model.Code, ct);
+        Customer customer;
+        try { customer = await _otp.ConfirmLoginAsync(model.Phone, model.Code, ct); }
+        catch (OtpFlowException ex)
+        {
+            model.CodeRequested = true;
+            ModelState.AddModelError(nameof(model.Code), T("Plugins.Identity.Customer.Otp." + ex.Code).Value);
+            return View("Index", model);
+        }
 
         if (customer is null || customer.Deleted || !customer.Active ||
             !customer.IsRegistered() ||

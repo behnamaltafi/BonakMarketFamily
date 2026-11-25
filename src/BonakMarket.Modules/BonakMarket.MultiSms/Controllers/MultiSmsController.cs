@@ -176,6 +176,7 @@ public sealed class MultiSmsController : AdminController
         settings.MockEnabled = _environment.IsDevelopment() && model.MockEnabled;
         settings.HistoryEnabled = model.HistoryEnabled;
         settings.HistoryRetentionDays = model.HistoryRetentionDays;
+        settings.ShowOtpCodeInHistory = model.ShowOtpCodeInHistory;
         settings.StoreNonOtpMessageBody = model.StoreNonOtpMessageBody;
         settings.PrimaryProvider = model.PrimaryProvider;
         settings.EnableFailover = model.EnableFailover;
@@ -250,7 +251,8 @@ public sealed class MultiSmsController : AdminController
 
     [HttpGet]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public async Task<IActionResult> Message(int id, CancellationToken ct = default)
+    [LoadSetting(false)]
+    public async Task<IActionResult> Message(int id, SmsGatewaySettings settings, CancellationToken ct = default)
     {
         var message = await _history.FindAsync(id, ct);
         if (message is null) return NotFound();
@@ -258,6 +260,8 @@ public sealed class MultiSmsController : AdminController
         return View(new SmsHistoryDetailsModel
         {
             Message = message,
+            OtpCode = _history.GetOtpCode(message, settings, _environment.IsDevelopment()),
+            ShowOtpCodeHint = settings.HistoryEnabled && settings.ShowOtpCodeInHistory && message.Kind == "Otp",
             Attempts = await _history.AttemptsAsync(id, ct)
         });
     }
@@ -283,6 +287,7 @@ public sealed class MultiSmsController : AdminController
             MockEnabled = settings.MockEnabled,
             HistoryEnabled = settings.HistoryEnabled,
             HistoryRetentionDays = settings.HistoryRetentionDays,
+            ShowOtpCodeInHistory = settings.ShowOtpCodeInHistory,
             StoreNonOtpMessageBody = settings.StoreNonOtpMessageBody,
             Enabled = settings.Enabled,
             PrimaryProvider = settings.PrimaryProvider,

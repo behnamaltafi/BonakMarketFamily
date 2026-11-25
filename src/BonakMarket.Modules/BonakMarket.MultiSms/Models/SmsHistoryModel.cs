@@ -19,5 +19,7 @@ public sealed class SmsHistoryModel
 public sealed class SmsHistoryDetailsModel
 {
     public SmsMessage Message { get; set; }
+    public string OtpCode { get; set; }
+    public bool ShowOtpCodeHint { get; set; }
     public IReadOnlyList<SmsSendAttempt> Attempts { get; set; } = Array.Empty<SmsSendAttempt>();
 }

@@ -46,7 +46,7 @@
     <LocaleResource Name="Fields.StoreNonOtpMessageBody"><Value>Text normaler SMS speichern (niemals OTP oder Test)</Value></LocaleResource>
     <LocaleResource Name="MockWarning"><Value>Mock funktioniert nur in Development; es werden keine echten SMS versendet.</Value></LocaleResource>
     <LocaleResource Name="HistoryTitle"><Value>SMS-Verlauf</Value></LocaleResource>
-    <LocaleResource Name="HistoryHint"><Value>Accepted bedeutet Annahme durch den Anbieter, nicht Zustellung an das Gerät. OTP-Texte werden nie in SQL gespeichert.</Value></LocaleResource>
+    <LocaleResource Name="HistoryHint"><Value>Accepted bedeutet Anbieterannahme, nicht Zustellung. OTP-Texte werden nie gespeichert; optionale verschlüsselte Codes laufen nach 15 Minuten ab.</Value></LocaleResource>
     <LocaleResource Name="SettingsLink"><Value>SMS-Einstellungen</Value></LocaleResource>
     <LocaleResource Name="HistoryPhone"><Value>Empfänger</Value></LocaleResource>
     <LocaleResource Name="HistoryKind"><Value>Typ</Value></LocaleResource>
@@ -82,4 +82,8 @@
     <LocaleResource Name="Fields.NewSmsIrApiKey.Hint"><Value>API-Schlüssel aus dem Entwicklerbereich.</Value></LocaleResource>
     <LocaleResource Name="Fields.ClearSmsIrApiKey"><Value>SMS.ir API-Schlüssel löschen</Value></LocaleResource>
     <LocaleResource Name="Fields.ClearSmsIrApiKey.Hint"><Value>Gespeicherten Schlüssel entfernen.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory"><Value>OTP-Code im Verlauf anzeigen (Diagnose)</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>Standardmäßig deaktiviert. Der verschlüsselte Code ist 15 Minuten abrufbar; in Development sofort, sonst erst nach 5 Minuten. Nur zur Fehlerdiagnose aktivieren.</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCode"><Value>Einmalcode</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>Nicht erfasst, noch aktiv oder Aufbewahrungszeit abgelaufen.</Value></LocaleResource>
 </Language>

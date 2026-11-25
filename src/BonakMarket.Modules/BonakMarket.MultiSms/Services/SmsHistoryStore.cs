@@ -10,18 +10,20 @@ namespace BonakMarket.MultiSms.Services;
 /// <summary>
 /// Best-effort operational history around the transport. A database logging failure
 /// must never trigger a second SMS or conceal a successful provider acknowledgement.
-/// No OTP body is copied to SQL, including on failed delivery.
+/// Only an opt-in, short-lived encrypted OTP code may be captured; never the OTP message body.
 /// </summary>
 public sealed class SmsHistoryStore : ISmsHistoryWriter
 {
     private readonly SmartDbContext _db;
     private readonly ILogger<SmsHistoryStore> _logger;
+    private readonly OtpHistoryProtection _otpHistory;
     private static long _lastCleanupUtcTicks;
 
-    public SmsHistoryStore(SmartDbContext db, ILogger<SmsHistoryStore> logger)
+    public SmsHistoryStore(SmartDbContext db, ILogger<SmsHistoryStore> logger, OtpHistoryProtection otpHistory)
     {
         _db = db;
         _logger = logger;
+        _otpHistory = otpHistory;
     }
 
     /// <summary>
@@ -45,6 +47,15 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
         if (!settings.HistoryEnabled) return null;
 
         var message = CreateMessageMetadata(request, settings);
+        if (request.Kind == SmsMessageKind.Otp)
+        {
+            // The existing Body column holds only protected short-lived code data for OTP.
+            try { message.Body = _otpHistory.Capture(request, settings); }
+            catch (System.Security.Cryptography.CryptographicException)
+            {
+                _logger.LogWarning("OTP history protection failed; code capture skipped.");
+            }
+        }
 
         try
         {
@@ -165,6 +176,9 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
         return new SmsHistoryModelData(items, count);
     }
+
+    public string GetOtpCode(SmsMessage message, SmsGatewaySettings settings, bool development)
+        => _otpHistory.Reveal(message, settings, development, DateTime.UtcNow);
 
     public Task<SmsMessage> FindAsync(int id, CancellationToken ct)
         => _db.Set<SmsMessage>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);

@@ -15,6 +15,9 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*HistoryRetentionDays")]
     public int HistoryRetentionDays { get; set; } = 90;
 
+    [LocalizedDisplay("*ShowOtpCodeInHistory")]
+    public bool ShowOtpCodeInHistory { get; set; }
+
     [LocalizedDisplay("*StoreNonOtpMessageBody")]
     public bool StoreNonOtpMessageBody { get; set; }
 

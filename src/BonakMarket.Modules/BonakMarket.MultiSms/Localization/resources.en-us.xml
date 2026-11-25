@@ -46,7 +46,7 @@
     <LocaleResource Name="Fields.StoreNonOtpMessageBody"><Value>Store ordinary SMS body (never OTP or test)</Value></LocaleResource>
     <LocaleResource Name="MockWarning"><Value>Mock works only in Development. No real SMS is sent.</Value></LocaleResource>
     <LocaleResource Name="HistoryTitle"><Value>SMS message history</Value></LocaleResource>
-    <LocaleResource Name="HistoryHint"><Value>Accepted means the provider accepted the request, not confirmed handset delivery. OTP codes and bodies are never stored in SQL history.</Value></LocaleResource>
+    <LocaleResource Name="HistoryHint"><Value>Accepted means provider acceptance, not handset delivery. OTP bodies are never stored; optional encrypted OTP code diagnostics expire after 15 minutes.</Value></LocaleResource>
     <LocaleResource Name="SettingsLink"><Value>SMS configuration</Value></LocaleResource>
     <LocaleResource Name="HistoryPhone"><Value>Recipient</Value></LocaleResource>
     <LocaleResource Name="HistoryKind"><Value>Kind</Value></LocaleResource>
@@ -82,4 +82,8 @@
     <LocaleResource Name="Fields.NewSmsIrApiKey.Hint"><Value>Enter the API key from SMS.ir developer settings.</Value></LocaleResource>
     <LocaleResource Name="Fields.ClearSmsIrApiKey"><Value>Clear SMS.ir API key</Value></LocaleResource>
     <LocaleResource Name="Fields.ClearSmsIrApiKey.Hint"><Value>Remove the stored API key.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory"><Value>Show OTP code in history (diagnostics)</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>Off by default. Stores only an encrypted code for 15 minutes. In Development it is visible immediately; elsewhere only after 5 minutes, when the current login OTP has expired. Enable only for troubleshooting.</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCode"><Value>OTP code</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>Unavailable: not captured, still active outside Development, or retention window expired.</Value></LocaleResource>
 </Language>

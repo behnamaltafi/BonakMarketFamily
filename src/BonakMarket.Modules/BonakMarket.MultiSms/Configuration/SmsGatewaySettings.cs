@@ -13,7 +13,9 @@ public sealed class SmsGatewaySettings : ISettings
     public bool MockEnabled { get; set; }
     public bool HistoryEnabled { get; set; } = true;
     public int HistoryRetentionDays { get; set; } = 90;
-    /// <summary>OTP and test bodies are never persisted regardless of this flag.</summary>
+    /// <summary>Opt-in temporary encrypted OTP code history; disabled by default.</summary>
+    public bool ShowOtpCodeInHistory { get; set; }
+    /// <summary>Only ordinary message bodies are persisted by this flag.</summary>
     public bool StoreNonOtpMessageBody { get; set; }
     public string PrimaryProvider { get; set; } = "Kavenegar";
     public bool EnableFailover { get; set; }

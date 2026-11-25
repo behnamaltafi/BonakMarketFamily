@@ -60,6 +60,13 @@
             </div>
         </div>
         <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="ShowOtpCodeInHistory" /></div>
+            <div class="adminData">
+                <setting-editor asp-for="ShowOtpCodeInHistory" />
+                <small class="form-text text-muted">@T("Plugins.Sms.MultiSms.Fields.ShowOtpCodeInHistory.Hint")</small>
+            </div>
+        </div>
+        <div class="adminRow">
             <div class="adminTitle"><smart-label asp-for="StoreNonOtpMessageBody" /></div>
             <div class="adminData"><setting-editor asp-for="StoreNonOtpMessageBody" /></div>
         </div>

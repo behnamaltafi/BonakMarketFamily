@@ -46,7 +46,7 @@
     <LocaleResource Name="Fields.StoreNonOtpMessageBody"><Value>ذخیره متن پیامک‌های معمولی (به‌جز OTP و تست)</Value></LocaleResource>
     <LocaleResource Name="MockWarning"><Value>سرویس Mock تنها در محیط Development کار می‌کند و پیامکی به شماره واقعی ارسال نمی‌کند.</Value></LocaleResource>
     <LocaleResource Name="HistoryTitle"><Value>تاریخچه پیامک‌ها</Value></LocaleResource>
-    <LocaleResource Name="HistoryHint"><Value>وضعیت Accepted فقط پذیرش توسط سرویس‌دهنده است، نه تحویل قطعی به گوشی. متن و کد OTP در دیتابیس تاریخچه ذخیره نمی‌شوند.</Value></LocaleResource>
+    <LocaleResource Name="HistoryHint"><Value>وضعیت Accepted به معنی پذیرش توسط سرویس‌دهنده است، نه تحویل قطعی. متن OTP ذخیره نمی‌شود؛ کد رمزنگاری‌شده اختیاری پس از ۱۵ دقیقه قابل بازیابی نیست.</Value></LocaleResource>
     <LocaleResource Name="SettingsLink"><Value>تنظیمات پیامک</Value></LocaleResource>
     <LocaleResource Name="HistoryPhone"><Value>شماره گیرنده</Value></LocaleResource>
     <LocaleResource Name="HistoryKind"><Value>نوع پیامک</Value></LocaleResource>
@@ -82,4 +82,8 @@
     <LocaleResource Name="Fields.NewSmsIrApiKey.Hint"><Value>کلید وب‌سرویس را از بخش توسعه‌دهندگان وارد کنید.</Value></LocaleResource>
     <LocaleResource Name="Fields.ClearSmsIrApiKey"><Value>حذف کلید API پیامک SMS.ir</Value></LocaleResource>
     <LocaleResource Name="Fields.ClearSmsIrApiKey.Hint"><Value>حذف کلید ذخیره‌شده.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory"><Value>نمایش کد OTP در تاریخچه (عیب‌یابی)</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>پیش‌فرض خاموش است. فقط کد رمزنگاری‌شده برای ۱۵ دقیقه قابل بازیابی است. در محیط توسعه فوری و در سایر محیط‌ها پس از ۵ دقیقه و انقضای کد ورود نمایش داده می‌شود. فقط برای عیب‌یابی فعال کنید.</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCode"><Value>کد احراز هویت</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>کد موجود نیست، هنوز معتبر است یا مهلت نمایش آن پایان یافته است.</Value></LocaleResource>
 </Language>

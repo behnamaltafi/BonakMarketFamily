@@ -24,7 +24,7 @@ Kavenegar/Rejected → Melipayamak/Accepted.
   accordingly. No message body is stored by default.
 - The optional `StoreNonOtpMessageBody` flag stores bodies of messages
   explicitly classified `General`. OTP and manual Test message bodies are
-  never persisted even if enabled.
+  never persisted even if enabled. Optional OTP code diagnostics are separate from body storage.
 - History write errors are non-blocking: they cannot turn an accepted SMS into
   a retryable error. The admin status is operational history, not a delivery
   status verification service. There is no delivery callback integration yet.
@@ -45,3 +45,7 @@ Preserve existing SQL history and Data Protection keys during upgrade. See ../Bo
 ## SMS.ir configuration
 
 Select SmsIr as primary or safe fallback in SMS Gateway. Enable it and set the encrypted API key. Set the numeric dedicated line number for free-text messages and the existing manual Test SMS action. For OTP, optionally enter an approved SMS.ir Verify template ID and its exact code parameter name (default Code). When the template is configured, OTP uses /v1/send/verify with the original six-digit code (not parsed from message text); the message body is controlled by the approved provider template. Without a template ID, OTP uses /v1/send/bulk and the Identity message template. A Verify-only configuration does not support free-text tests or general SMS. Verify requires an approved SMS.ir template and appropriate account permissions. Test real delivery with your own account after deployment. No raw responses or OTPs are logged. No automatic retry on ambiguous delivery.
+
+## Optional OTP code history
+
+ShowOtpCodeInHistory defaults to false and requires HistoryEnabled. Only the explicit six-digit VerificationCode is captured (not parsed from text), using a dedicated time-limited Data Protection purpose and the existing Body column. The admin details view rechecks the setting on every request. Development may reveal immediately; all other environments wait five minutes (the current Identity OTP lifetime). The encrypted value becomes unreadable after 15 minutes and is removed with normal history retention. Disabling hides existing codes immediately and stops new capture; re-enabling within the window may show previously captured codes. This is an opt-in diagnostic feature; keep disabled in normal production. No raw OTP body or test text is captured by this option.

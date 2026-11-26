@@ -28,9 +28,9 @@ public sealed class MelipayamakSmsProvider : ISmsProvider, ITemplateSmsProvider
         _ => false
     };
 
-    public bool IsAvailable(SmsGatewaySettings s) => s.MelipayamakEnabled && s.MelipayamakGeneralEnabled &&
+    public bool IsAvailable(SmsGatewaySettings s) => s.MelipayamakEnabled && s.MelipayamakFreeTextEnabled &&
         HasCredentials(s) && !string.IsNullOrWhiteSpace(s.MelipayamakSender);
-    public bool IsTemplateAvailable(SmsGatewaySettings s) => s.MelipayamakEnabled && s.MelipayamakOtpEnabled &&
+    public bool IsTemplateAvailable(SmsGatewaySettings s) => s.MelipayamakEnabled && s.MelipayamakTemplateEnabled &&
         HasCredentials(s);
     public bool IsValidMapping(string externalId, IEnumerable<string> slots)
         => SmsTemplateRules.IsPositiveId(externalId) && SmsTemplateRules.IsPositional(slots);

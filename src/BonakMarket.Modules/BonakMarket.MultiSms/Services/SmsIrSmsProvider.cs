@@ -30,11 +30,11 @@ public sealed class SmsIrSmsProvider : ISmsProvider, ITemplateSmsProvider
         => name is { Length: >= 1 and <= 50 } && name.All(ch => char.IsAsciiLetterOrDigit(ch) || ch == '_');
 
     public bool IsAvailable(SmsGatewaySettings settings)
-        => settings.SmsIrEnabled && settings.SmsIrGeneralEnabled &&
+        => settings.SmsIrEnabled && settings.SmsIrFreeTextEnabled &&
             !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) && settings.SmsIrLineNumber is > 0;
 
     public bool IsTemplateAvailable(SmsGatewaySettings settings)
-        => settings.SmsIrEnabled && settings.SmsIrOtpEnabled &&
+        => settings.SmsIrEnabled && settings.SmsIrTemplateEnabled &&
             !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey);
     public bool IsValidMapping(string externalId, IEnumerable<string> slots)
         => SmsTemplateRules.IsPositiveId(externalId) && slots.All(IsValidParameterName);

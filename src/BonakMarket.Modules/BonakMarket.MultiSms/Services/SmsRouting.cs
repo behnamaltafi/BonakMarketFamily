@@ -6,14 +6,14 @@ namespace BonakMarket.MultiSms.Services;
 /// <summary>Separate ordered routes. Mock must never be mixed with payable transports.</summary>
 public static class SmsRouting
 {
-    public static string[] Providers(SmsGatewaySettings settings, bool otp)
+    public static string[] Providers(SmsGatewaySettings settings, bool templateMode)
     {
-        if (!settings.RoutingConfigured) return [];
-        var primary = otp ? settings.OtpPrimary : settings.GeneralPrimary;
+        if (!settings.DeliveryRoutingConfigured) return [];
+        var primary = templateMode ? settings.TemplatePrimary : settings.FreeTextPrimary;
         if (string.IsNullOrWhiteSpace(primary)) return [];
-        var failover = otp ? settings.OtpFailover : settings.GeneralFailover;
-        var names = new[] { primary, otp ? settings.OtpFallback1 : settings.GeneralFallback1,
-            otp ? settings.OtpFallback2 : settings.GeneralFallback2 };
+        var failover = templateMode ? settings.TemplateFailover : settings.FreeTextFailover;
+        var names = new[] { primary, templateMode ? settings.TemplateFallback1 : settings.FreeTextFallback1,
+            templateMode ? settings.TemplateFallback2 : settings.FreeTextFallback2 };
         if (!failover) return [primary];
         var result = names.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         if (result.Length > 1 && result.Any(x => string.Equals(x, "Mock", StringComparison.OrdinalIgnoreCase)))
@@ -21,7 +21,7 @@ public static class SmsRouting
         return result;
     }
 
-    public static bool IsReady(ISmsProvider provider, SmsGatewaySettings settings, bool otp)
-        => otp ? provider is ITemplateSmsProvider dedicated && dedicated.IsTemplateAvailable(settings)
+    public static bool IsReady(ISmsProvider provider, SmsGatewaySettings settings, bool templateMode)
+        => templateMode ? provider is ITemplateSmsProvider dedicated && dedicated.IsTemplateAvailable(settings)
             : provider.IsAvailable(settings);
 }

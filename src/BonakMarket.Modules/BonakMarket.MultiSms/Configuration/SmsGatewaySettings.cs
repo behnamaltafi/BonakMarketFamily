@@ -9,24 +9,22 @@ namespace BonakMarket.MultiSms.Configuration;
 public sealed class SmsGatewaySettings : ISettings
 {
     public bool Enabled { get; set; }
-    public bool RoutingConfigured { get; set; }
-    public string GeneralPrimary { get; set; }
-    public string GeneralFallback1 { get; set; }
-    public string GeneralFallback2 { get; set; }
-    public bool GeneralFailover { get; set; }
-    public string OtpPrimary { get; set; }
-    public string OtpFallback1 { get; set; }
-    public string OtpFallback2 { get; set; }
-    public bool OtpFailover { get; set; }
-    public bool KavenegarGeneralEnabled { get; set; }
-    public bool KavenegarOtpEnabled { get; set; }
-    public string KavenegarOtpTemplate { get; set; }
-    public bool MelipayamakGeneralEnabled { get; set; }
-    public bool MelipayamakOtpEnabled { get; set; }
-    public int? MelipayamakBodyId { get; set; }
+    public bool DeliveryRoutingConfigured { get; set; }
+    public string FreeTextPrimary { get; set; }
+    public string FreeTextFallback1 { get; set; }
+    public string FreeTextFallback2 { get; set; }
+    public bool FreeTextFailover { get; set; }
+    public string TemplatePrimary { get; set; }
+    public string TemplateFallback1 { get; set; }
+    public string TemplateFallback2 { get; set; }
+    public bool TemplateFailover { get; set; }
+    public bool KavenegarFreeTextEnabled { get; set; }
+    public bool KavenegarTemplateEnabled { get; set; }
+    public bool MelipayamakFreeTextEnabled { get; set; }
+    public bool MelipayamakTemplateEnabled { get; set; }
     public string MelipayamakAuthMode { get; set; } = "Console";
-    public bool SmsIrGeneralEnabled { get; set; }
-    public bool SmsIrOtpEnabled { get; set; }
+    public bool SmsIrFreeTextEnabled { get; set; }
+    public bool SmsIrTemplateEnabled { get; set; }
     public string EncryptedMelipayamakApiToken { get; set; }
     /// <summary>Only effective when the process is running in Development.</summary>
     public bool MockEnabled { get; set; }
@@ -44,8 +42,6 @@ public sealed class SmsGatewaySettings : ISettings
     public string EncryptedKavenegarApiKey { get; set; }
     public bool SmsIrEnabled { get; set; }
     public long? SmsIrLineNumber { get; set; }
-    public int? SmsIrTemplateId { get; set; }
-    public string SmsIrCodeParameter { get; set; } = "Code";
     public string EncryptedSmsIrApiKey { get; set; }
     public bool MelipayamakEnabled { get; set; }
     public string MelipayamakSender { get; set; }

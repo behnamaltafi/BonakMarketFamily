@@ -29,12 +29,12 @@ public sealed class KavenegarSmsProvider : ISmsProvider, ITemplateSmsProvider
     public string GetMethod(bool otp, SmsGatewaySettings settings) => otp ? "VerifyLookup" : "Send";
 
     public bool IsAvailable(SmsGatewaySettings settings)
-        => settings.KavenegarEnabled && settings.KavenegarGeneralEnabled &&
+        => settings.KavenegarEnabled && settings.KavenegarFreeTextEnabled &&
            !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey) &&
            !string.IsNullOrWhiteSpace(settings.KavenegarSender);
 
     public bool IsTemplateAvailable(SmsGatewaySettings settings)
-        => settings.KavenegarEnabled && settings.KavenegarOtpEnabled &&
+        => settings.KavenegarEnabled && settings.KavenegarTemplateEnabled &&
            !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey);
 
     public bool IsValidMapping(string externalId, IEnumerable<string> slots)

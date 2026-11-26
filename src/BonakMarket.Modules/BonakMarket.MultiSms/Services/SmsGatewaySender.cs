@@ -85,7 +85,7 @@ public sealed class SmsGatewaySender : ISmsSender
         }
 
         var names = testProvider is null ? SmsRouting.Providers(settings, templateMode) : new[] { testProvider };
-        if (!settings.RoutingConfigured || names.Length == 0)
+        if (!settings.DeliveryRoutingConfigured || names.Length == 0)
             throw new InvalidOperationException("Configure the SMS route first.");
 
         if (names.Any(x => string.Equals(x, "Mock", StringComparison.OrdinalIgnoreCase)) &&

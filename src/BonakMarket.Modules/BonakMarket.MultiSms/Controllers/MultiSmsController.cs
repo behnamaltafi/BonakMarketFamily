@@ -16,9 +16,10 @@ namespace BonakMarket.MultiSms.Controllers;
 /// No anonymous send endpoint is exposed by this module.
 /// </summary>
 [Permission("configuration.setting")]
-public sealed class MultiSmsController : AdminController
+public sealed partial class MultiSmsController : AdminController
 {
     private readonly SmsCredentialProtection _protection;
+    private readonly BonakMarket.Core.Data.SmartDbContext _db;
     private readonly SmsGatewaySender _sender;
     private readonly ISmsProvider[] _providers;
     private readonly IHostEnvironment _environment;
@@ -34,9 +35,11 @@ public sealed class MultiSmsController : AdminController
         IHostEnvironment environment,
         SmsHistoryStore history,
         DevelopmentSmsInbox inbox,
+        BonakMarket.Core.Data.SmartDbContext db,
         ILogger<MultiSmsController> logger = null)
     {
         _protection = protection;
+        _db = db;
         _sender = sender;
         _environment = environment;
         _history = history;
@@ -58,113 +61,103 @@ public sealed class MultiSmsController : AdminController
     {
         var candidate = new SmsGatewaySettings
         {
-            RoutingConfigured = true,
+            DeliveryRoutingConfigured = true,
             Enabled = model.Enabled,
             MockEnabled = _environment.IsDevelopment() && model.MockEnabled,
             HistoryEnabled = model.HistoryEnabled,
             HistoryRetentionDays = model.HistoryRetentionDays,
             ShowOtpCodeInHistory = model.ShowOtpCodeInHistory,
             StoreNonOtpMessageBody = model.StoreNonOtpMessageBody,
-            GeneralPrimary = model.GeneralPrimary?.Trim(),
-            GeneralFallback1 = model.GeneralFallback1?.Trim(),
-            GeneralFallback2 = model.GeneralFallback2?.Trim(),
-            GeneralFailover = model.GeneralFailover,
-            OtpPrimary = model.OtpPrimary?.Trim(),
-            OtpFallback1 = model.OtpFallback1?.Trim(),
-            OtpFallback2 = model.OtpFallback2?.Trim(),
-            OtpFailover = model.OtpFailover,
-            KavenegarGeneralEnabled = model.KavenegarGeneralEnabled,
-            KavenegarOtpEnabled = model.KavenegarOtpEnabled,
-            KavenegarOtpTemplate = model.KavenegarOtpTemplate?.Trim(),
-            MelipayamakGeneralEnabled = model.MelipayamakGeneralEnabled,
-            MelipayamakOtpEnabled = model.MelipayamakOtpEnabled,
-            MelipayamakBodyId = model.MelipayamakBodyId,
+            FreeTextPrimary = model.FreeTextPrimary?.Trim(),
+            FreeTextFallback1 = model.FreeTextFallback1?.Trim(),
+            FreeTextFallback2 = model.FreeTextFallback2?.Trim(),
+            FreeTextFailover = model.FreeTextFailover,
+            TemplatePrimary = model.TemplatePrimary?.Trim(),
+            TemplateFallback1 = model.TemplateFallback1?.Trim(),
+            TemplateFallback2 = model.TemplateFallback2?.Trim(),
+            TemplateFailover = model.TemplateFailover,
+            KavenegarFreeTextEnabled = model.KavenegarFreeTextEnabled,
+            KavenegarTemplateEnabled = model.KavenegarTemplateEnabled,
+            MelipayamakFreeTextEnabled = model.MelipayamakFreeTextEnabled,
+            MelipayamakTemplateEnabled = model.MelipayamakTemplateEnabled,
             MelipayamakAuthMode = model.MelipayamakAuthMode?.Trim(),
-            SmsIrGeneralEnabled = model.SmsIrGeneralEnabled,
-            SmsIrOtpEnabled = model.SmsIrOtpEnabled,
+            SmsIrFreeTextEnabled = model.SmsIrFreeTextEnabled,
+            SmsIrTemplateEnabled = model.SmsIrTemplateEnabled,
             KavenegarEnabled = model.KavenegarEnabled,
             KavenegarSender = model.KavenegarSender?.Trim(),
             SmsIrEnabled = model.SmsIrEnabled,
             SmsIrLineNumber = model.SmsIrLineNumber,
-            SmsIrTemplateId = model.SmsIrTemplateId,
-            SmsIrCodeParameter = model.SmsIrCodeParameter?.Trim(),
             MelipayamakEnabled = model.MelipayamakEnabled,
             MelipayamakSender = model.MelipayamakSender?.Trim(),
             MelipayamakUsername = model.MelipayamakUsername?.Trim(),
         };
 
         // Old routing settings are deliberately not migrated. Require fresh secrets on first save.
-        candidate.EncryptedKavenegarApiKey = ReadSecret(model.NewKavenegarApiKey, model.ClearKavenegarApiKey, settings.RoutingConfigured ? settings.EncryptedKavenegarApiKey : null);
-        candidate.EncryptedMelipayamakPassword = ReadSecret(model.NewMelipayamakPassword, model.ClearMelipayamakPassword, settings.RoutingConfigured ? settings.EncryptedMelipayamakPassword : null);
-        candidate.EncryptedSmsIrApiKey = ReadSecret(model.NewSmsIrApiKey, model.ClearSmsIrApiKey, settings.RoutingConfigured ? settings.EncryptedSmsIrApiKey : null);
-        candidate.EncryptedMelipayamakApiToken = ReadSecret(model.NewMelipayamakApiToken, model.ClearMelipayamakApiToken, settings.RoutingConfigured ? settings.EncryptedMelipayamakApiToken : null);
+        candidate.EncryptedKavenegarApiKey = ReadSecret(model.NewKavenegarApiKey, model.ClearKavenegarApiKey, settings.DeliveryRoutingConfigured ? settings.EncryptedKavenegarApiKey : null);
+        candidate.EncryptedMelipayamakPassword = ReadSecret(model.NewMelipayamakPassword, model.ClearMelipayamakPassword, settings.DeliveryRoutingConfigured ? settings.EncryptedMelipayamakPassword : null);
+        candidate.EncryptedSmsIrApiKey = ReadSecret(model.NewSmsIrApiKey, model.ClearSmsIrApiKey, settings.DeliveryRoutingConfigured ? settings.EncryptedSmsIrApiKey : null);
+        candidate.EncryptedMelipayamakApiToken = ReadSecret(model.NewMelipayamakApiToken, model.ClearMelipayamakApiToken, settings.DeliveryRoutingConfigured ? settings.EncryptedMelipayamakApiToken : null);
 
         if (candidate.HistoryRetentionDays is < 1 or > 3650)
             ModelState.AddModelError(nameof(model.HistoryRetentionDays), "Retention must be between 1 and 3650 days.");
         if (candidate.MelipayamakAuthMode is not ("Console" or "Legacy"))
             ModelState.AddModelError(nameof(model.MelipayamakAuthMode), "Select a supported authentication mode.");
-        if (candidate.SmsIrLineNumber is <= 0 || candidate.SmsIrTemplateId is <= 0 || candidate.MelipayamakBodyId is <= 0)
-            ModelState.AddModelError("", "Line numbers and template IDs must be positive.");
-        if (candidate.SmsIrOtpEnabled && !SmsIrSmsProvider.IsValidParameterName(candidate.SmsIrCodeParameter))
-            ModelState.AddModelError(nameof(model.SmsIrCodeParameter), "Enter the exact SMS.ir template parameter name.");
+        if (candidate.SmsIrLineNumber is <= 0)
+            ModelState.AddModelError(nameof(model.SmsIrLineNumber), "Line number must be positive.");
 
         ValidateRoute(candidate, false);
         ValidateRoute(candidate, true);
-        if (candidate.Enabled && string.IsNullOrWhiteSpace(candidate.GeneralPrimary) && string.IsNullOrWhiteSpace(candidate.OtpPrimary))
+        if (candidate.Enabled && string.IsNullOrWhiteSpace(candidate.FreeTextPrimary) && string.IsNullOrWhiteSpace(candidate.TemplatePrimary))
             ModelState.AddModelError("", "Configure at least one route before enabling the gateway.");
 
         if (!ModelState.IsValid)
         {
             model.NewKavenegarApiKey = null;
             ModelState.Remove(nameof(model.NewKavenegarApiKey));
-            model.HasKavenegarApiKey = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey);
+            model.HasKavenegarApiKey = settings.DeliveryRoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey);
             model.NewMelipayamakPassword = null;
             ModelState.Remove(nameof(model.NewMelipayamakPassword));
-            model.HasMelipayamakPassword = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakPassword);
+            model.HasMelipayamakPassword = settings.DeliveryRoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakPassword);
             model.NewSmsIrApiKey = null;
             ModelState.Remove(nameof(model.NewSmsIrApiKey));
-            model.HasSmsIrApiKey = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey);
+            model.HasSmsIrApiKey = settings.DeliveryRoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey);
             model.NewMelipayamakApiToken = null;
             ModelState.Remove(nameof(model.NewMelipayamakApiToken));
-            model.HasMelipayamakApiToken = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakApiToken);
-            model.RoutingConfigured = settings.RoutingConfigured;
-            model.OtpReadyProviders = GetReadyProviders(settings, true);
-            model.GeneralReadyProviders = GetReadyProviders(settings, false);
+            model.HasMelipayamakApiToken = settings.DeliveryRoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakApiToken);
+            model.DeliveryRoutingConfigured = settings.DeliveryRoutingConfigured;
+            model.TemplateReadyProviders = GetReadyProviders(settings, true);
+            model.FreeTextReadyProviders = GetReadyProviders(settings, false);
             model.AvailableProviders = _providerNames;
             model.DevelopmentMode = _environment.IsDevelopment();
             return View(model);
         }
 
-        settings.RoutingConfigured = true;
+        settings.DeliveryRoutingConfigured = true;
         settings.Enabled = candidate.Enabled;
         settings.MockEnabled = candidate.MockEnabled;
         settings.HistoryEnabled = candidate.HistoryEnabled;
         settings.HistoryRetentionDays = candidate.HistoryRetentionDays;
         settings.ShowOtpCodeInHistory = candidate.ShowOtpCodeInHistory;
         settings.StoreNonOtpMessageBody = candidate.StoreNonOtpMessageBody;
-        settings.GeneralPrimary = candidate.GeneralPrimary;
-        settings.GeneralFallback1 = candidate.GeneralFallback1;
-        settings.GeneralFallback2 = candidate.GeneralFallback2;
-        settings.GeneralFailover = candidate.GeneralFailover;
-        settings.OtpPrimary = candidate.OtpPrimary;
-        settings.OtpFallback1 = candidate.OtpFallback1;
-        settings.OtpFallback2 = candidate.OtpFallback2;
-        settings.OtpFailover = candidate.OtpFailover;
-        settings.KavenegarGeneralEnabled = candidate.KavenegarGeneralEnabled;
-        settings.KavenegarOtpEnabled = candidate.KavenegarOtpEnabled;
-        settings.KavenegarOtpTemplate = candidate.KavenegarOtpTemplate;
-        settings.MelipayamakGeneralEnabled = candidate.MelipayamakGeneralEnabled;
-        settings.MelipayamakOtpEnabled = candidate.MelipayamakOtpEnabled;
-        settings.MelipayamakBodyId = candidate.MelipayamakBodyId;
+        settings.FreeTextPrimary = candidate.FreeTextPrimary;
+        settings.FreeTextFallback1 = candidate.FreeTextFallback1;
+        settings.FreeTextFallback2 = candidate.FreeTextFallback2;
+        settings.FreeTextFailover = candidate.FreeTextFailover;
+        settings.TemplatePrimary = candidate.TemplatePrimary;
+        settings.TemplateFallback1 = candidate.TemplateFallback1;
+        settings.TemplateFallback2 = candidate.TemplateFallback2;
+        settings.TemplateFailover = candidate.TemplateFailover;
+        settings.KavenegarFreeTextEnabled = candidate.KavenegarFreeTextEnabled;
+        settings.KavenegarTemplateEnabled = candidate.KavenegarTemplateEnabled;
+        settings.MelipayamakFreeTextEnabled = candidate.MelipayamakFreeTextEnabled;
+        settings.MelipayamakTemplateEnabled = candidate.MelipayamakTemplateEnabled;
         settings.MelipayamakAuthMode = candidate.MelipayamakAuthMode;
-        settings.SmsIrGeneralEnabled = candidate.SmsIrGeneralEnabled;
-        settings.SmsIrOtpEnabled = candidate.SmsIrOtpEnabled;
+        settings.SmsIrFreeTextEnabled = candidate.SmsIrFreeTextEnabled;
+        settings.SmsIrTemplateEnabled = candidate.SmsIrTemplateEnabled;
         settings.KavenegarEnabled = candidate.KavenegarEnabled;
         settings.KavenegarSender = candidate.KavenegarSender;
         settings.SmsIrEnabled = candidate.SmsIrEnabled;
         settings.SmsIrLineNumber = candidate.SmsIrLineNumber;
-        settings.SmsIrTemplateId = candidate.SmsIrTemplateId;
-        settings.SmsIrCodeParameter = candidate.SmsIrCodeParameter;
         settings.MelipayamakEnabled = candidate.MelipayamakEnabled;
         settings.MelipayamakSender = candidate.MelipayamakSender;
         settings.MelipayamakUsername = candidate.MelipayamakUsername;
@@ -281,13 +274,13 @@ public sealed class MultiSmsController : AdminController
     private string ReadSecret(string value, bool clear, string existing)
         => clear ? null : string.IsNullOrWhiteSpace(value) ? existing : _protection.Protect(value.Trim());
 
-    private void ValidateRoute(SmsGatewaySettings settings, bool otp)
+    private void ValidateRoute(SmsGatewaySettings settings, bool templateMode)
     {
-        var primary = otp ? settings.OtpPrimary : settings.GeneralPrimary;
-        var fail = otp ? settings.OtpFailover : settings.GeneralFailover;
-        var first = otp ? settings.OtpFallback1 : settings.GeneralFallback1;
-        var second = otp ? settings.OtpFallback2 : settings.GeneralFallback2;
-        var field = otp ? nameof(ConfigurationModel.OtpPrimary) : nameof(ConfigurationModel.GeneralPrimary);
+        var primary = templateMode ? settings.TemplatePrimary : settings.FreeTextPrimary;
+        var fail = templateMode ? settings.TemplateFailover : settings.FreeTextFailover;
+        var first = templateMode ? settings.TemplateFallback1 : settings.FreeTextFallback1;
+        var second = templateMode ? settings.TemplateFallback2 : settings.FreeTextFallback2;
+        var field = templateMode ? nameof(ConfigurationModel.TemplatePrimary) : nameof(ConfigurationModel.FreeTextPrimary);
         var names = new[] { primary, fail ? first : null, fail ? second : null }
             .Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
         if (names.Length == 0) return;
@@ -301,7 +294,7 @@ public sealed class MultiSmsController : AdminController
         foreach (var name in names)
         {
             var provider = _providers.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (!IsValidProvider(name) || provider is null || !SmsRouting.IsReady(provider, settings, otp))
+            if (!IsValidProvider(name) || provider is null || !SmsRouting.IsReady(provider, settings, templateMode))
                 ModelState.AddModelError(field, $"Provider {name} is not configured for this route.");
         }
     }
@@ -311,50 +304,46 @@ public sealed class MultiSmsController : AdminController
         {
             AvailableProviders = _providerNames,
             DevelopmentMode = _environment.IsDevelopment(),
-            RoutingConfigured = settings.RoutingConfigured,
-            OtpReadyProviders = GetReadyProviders(settings, true),
-            GeneralReadyProviders = GetReadyProviders(settings, false),
-            Enabled = settings.RoutingConfigured && settings.Enabled,
-            MockEnabled = settings.RoutingConfigured ? settings.MockEnabled : default,
+            DeliveryRoutingConfigured = settings.DeliveryRoutingConfigured,
+            TemplateReadyProviders = GetReadyProviders(settings, true),
+            FreeTextReadyProviders = GetReadyProviders(settings, false),
+            Enabled = settings.DeliveryRoutingConfigured && settings.Enabled,
+            MockEnabled = settings.DeliveryRoutingConfigured ? settings.MockEnabled : default,
             HistoryEnabled = settings.HistoryEnabled,
             HistoryRetentionDays = settings.HistoryRetentionDays,
             ShowOtpCodeInHistory = settings.ShowOtpCodeInHistory,
             StoreNonOtpMessageBody = settings.StoreNonOtpMessageBody,
-            GeneralPrimary = settings.RoutingConfigured ? settings.GeneralPrimary : default,
-            GeneralFallback1 = settings.RoutingConfigured ? settings.GeneralFallback1 : default,
-            GeneralFallback2 = settings.RoutingConfigured ? settings.GeneralFallback2 : default,
-            GeneralFailover = settings.RoutingConfigured ? settings.GeneralFailover : default,
-            OtpPrimary = settings.RoutingConfigured ? settings.OtpPrimary : default,
-            OtpFallback1 = settings.RoutingConfigured ? settings.OtpFallback1 : default,
-            OtpFallback2 = settings.RoutingConfigured ? settings.OtpFallback2 : default,
-            OtpFailover = settings.RoutingConfigured ? settings.OtpFailover : default,
-            KavenegarGeneralEnabled = settings.RoutingConfigured ? settings.KavenegarGeneralEnabled : default,
-            KavenegarOtpEnabled = settings.RoutingConfigured ? settings.KavenegarOtpEnabled : default,
-            KavenegarOtpTemplate = settings.RoutingConfigured ? settings.KavenegarOtpTemplate : default,
-            MelipayamakGeneralEnabled = settings.RoutingConfigured ? settings.MelipayamakGeneralEnabled : default,
-            MelipayamakOtpEnabled = settings.RoutingConfigured ? settings.MelipayamakOtpEnabled : default,
-            MelipayamakBodyId = settings.RoutingConfigured ? settings.MelipayamakBodyId : default,
-            MelipayamakAuthMode = settings.RoutingConfigured ? settings.MelipayamakAuthMode : "Console",
-            SmsIrGeneralEnabled = settings.RoutingConfigured ? settings.SmsIrGeneralEnabled : default,
-            SmsIrOtpEnabled = settings.RoutingConfigured ? settings.SmsIrOtpEnabled : default,
-            KavenegarEnabled = settings.RoutingConfigured ? settings.KavenegarEnabled : default,
-            KavenegarSender = settings.RoutingConfigured ? settings.KavenegarSender : default,
-            SmsIrEnabled = settings.RoutingConfigured ? settings.SmsIrEnabled : default,
-            SmsIrLineNumber = settings.RoutingConfigured ? settings.SmsIrLineNumber : default,
-            SmsIrTemplateId = settings.RoutingConfigured ? settings.SmsIrTemplateId : default,
-            SmsIrCodeParameter = settings.RoutingConfigured ? settings.SmsIrCodeParameter : "Code",
-            MelipayamakEnabled = settings.RoutingConfigured ? settings.MelipayamakEnabled : default,
-            MelipayamakSender = settings.RoutingConfigured ? settings.MelipayamakSender : default,
-            MelipayamakUsername = settings.RoutingConfigured ? settings.MelipayamakUsername : default,
-            HasKavenegarApiKey = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey),
-            HasMelipayamakPassword = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakPassword),
-            HasSmsIrApiKey = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey),
-            HasMelipayamakApiToken = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakApiToken),
+            FreeTextPrimary = settings.DeliveryRoutingConfigured ? settings.FreeTextPrimary : default,
+            FreeTextFallback1 = settings.DeliveryRoutingConfigured ? settings.FreeTextFallback1 : default,
+            FreeTextFallback2 = settings.DeliveryRoutingConfigured ? settings.FreeTextFallback2 : default,
+            FreeTextFailover = settings.DeliveryRoutingConfigured ? settings.FreeTextFailover : default,
+            TemplatePrimary = settings.DeliveryRoutingConfigured ? settings.TemplatePrimary : default,
+            TemplateFallback1 = settings.DeliveryRoutingConfigured ? settings.TemplateFallback1 : default,
+            TemplateFallback2 = settings.DeliveryRoutingConfigured ? settings.TemplateFallback2 : default,
+            TemplateFailover = settings.DeliveryRoutingConfigured ? settings.TemplateFailover : default,
+            KavenegarFreeTextEnabled = settings.DeliveryRoutingConfigured ? settings.KavenegarFreeTextEnabled : default,
+            KavenegarTemplateEnabled = settings.DeliveryRoutingConfigured ? settings.KavenegarTemplateEnabled : default,
+            MelipayamakFreeTextEnabled = settings.DeliveryRoutingConfigured ? settings.MelipayamakFreeTextEnabled : default,
+            MelipayamakTemplateEnabled = settings.DeliveryRoutingConfigured ? settings.MelipayamakTemplateEnabled : default,
+            MelipayamakAuthMode = settings.DeliveryRoutingConfigured ? settings.MelipayamakAuthMode : "Console",
+            SmsIrFreeTextEnabled = settings.DeliveryRoutingConfigured ? settings.SmsIrFreeTextEnabled : default,
+            SmsIrTemplateEnabled = settings.DeliveryRoutingConfigured ? settings.SmsIrTemplateEnabled : default,
+            KavenegarEnabled = settings.DeliveryRoutingConfigured ? settings.KavenegarEnabled : default,
+            KavenegarSender = settings.DeliveryRoutingConfigured ? settings.KavenegarSender : default,
+            SmsIrEnabled = settings.DeliveryRoutingConfigured ? settings.SmsIrEnabled : default,
+            SmsIrLineNumber = settings.DeliveryRoutingConfigured ? settings.SmsIrLineNumber : default,
+            MelipayamakEnabled = settings.DeliveryRoutingConfigured ? settings.MelipayamakEnabled : default,
+            MelipayamakSender = settings.DeliveryRoutingConfigured ? settings.MelipayamakSender : default,
+            MelipayamakUsername = settings.DeliveryRoutingConfigured ? settings.MelipayamakUsername : default,
+            HasKavenegarApiKey = settings.DeliveryRoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey),
+            HasMelipayamakPassword = settings.DeliveryRoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakPassword),
+            HasSmsIrApiKey = settings.DeliveryRoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey),
+            HasMelipayamakApiToken = settings.DeliveryRoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakApiToken),
         };
 
-    private string[] GetReadyProviders(SmsGatewaySettings settings, bool otp)
-        => !settings.RoutingConfigured ? [] : _providers
-            .Where(p => IsValidProvider(p.Name) && SmsRouting.IsReady(p, settings, otp))
+    private string[] GetReadyProviders(SmsGatewaySettings settings, bool templateMode)
+        => !settings.DeliveryRoutingConfigured ? [] : _providers
+            .Where(p => IsValidProvider(p.Name) && SmsRouting.IsReady(p, settings, templateMode))
             .Select(p => p.Name).ToArray();
 
     private bool IsValidProvider(string provider)

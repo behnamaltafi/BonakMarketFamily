@@ -1,0 +1,74 @@
+@model SmsTemplateEditorModel
+@{
+    Layout = "_ConfigureModule";
+    var existing = Model.Id != 0;
+    var parameterNames = (Model.Parameters ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+}
+<h3>@T("Plugins.Sms.MultiSms.Routing.Templates")</h3>
+<a asp-action="Templates" class="btn btn-secondary mb-3">@T("Plugins.Sms.MultiSms.Routing.Templates")</a>
+<form asp-action="Template" method="post">
+    <input asp-for="Id" type="hidden"/>
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <div class="row">
+        <div class="col-md-6 form-group"><label asp-for="Key">@T("Plugins.Sms.MultiSms.Routing.TemplateKey")</label><input asp-for="Key" readonly="@existing" class="form-control" dir="ltr"/></div>
+        <div class="col-md-6 form-group"><label asp-for="Title">@T("Plugins.Sms.MultiSms.Routing.TemplateTitle")</label><input asp-for="Title" class="form-control"/></div>
+    </div>
+    <div class="form-check mb-2"><input asp-for="IsActive" class="form-check-input"/><label asp-for="IsActive" class="form-check-label">@T("Plugins.Sms.MultiSms.Routing.Enabled")</label></div>
+    @if (existing)
+    {
+        <input asp-for="IsOtp" type="hidden"/>
+        <p>OTP: @(Model.IsOtp ? "✓" : "—")</p>
+    }
+    else
+    {
+        <div class="form-check mb-2"><input asp-for="IsOtp" class="form-check-input"/><label asp-for="IsOtp" class="form-check-label">OTP (Code)</label></div>
+    }
+    <div class="form-group">
+        <label asp-for="Parameters">@T("Plugins.Sms.MultiSms.Routing.LogicalParameters")</label>
+        <input asp-for="Parameters" readonly="@existing" class="form-control" dir="ltr" placeholder="OrderNumber, TrackingCode"/>
+        <small class="text-muted">@T("Plugins.Sms.MultiSms.Routing.ParameterHelp")</small>
+    </div>
+    <div class="row">
+        @for (var i = 0; i < Model.Mappings.Count; i++)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="border rounded p-3 h-100">
+                    <h5>@Model.Mappings[i].Provider</h5>
+                    <input asp-for="Mappings[i].Provider" type="hidden"/>
+                    <div class="form-group"><label asp-for="Mappings[i].ExternalTemplateId">@T("Plugins.Sms.MultiSms.Routing.ExternalTemplateId")</label>
+                        <input asp-for="Mappings[i].ExternalTemplateId" class="form-control" dir="ltr"/></div>
+                    <div class="form-group"><label asp-for="Mappings[i].Slots">@T("Plugins.Sms.MultiSms.Routing.Slots")</label>
+                        <input asp-for="Mappings[i].Slots" class="form-control" dir="ltr"
+                               placeholder="@(Model.Mappings[i].Provider == "Kavenegar" ? "token, token2" : Model.Mappings[i].Provider == "Melipayamak" ? "0, 1" : "ORDER, TRACKING")"/>
+                        <small class="text-muted">@T("Plugins.Sms.MultiSms.Routing.SlotHelp")</small></div>
+                </div>
+            </div>
+        }
+    </div>
+    <button type="submit" class="btn btn-primary">@T("Admin.Common.Save")</button>
+</form>
+@if (existing && Model.IsActive)
+{
+    <hr/>
+    <h5>@T("Plugins.Sms.MultiSms.Routing.TestTitle")</h5>
+    <p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.TestHint")</p>
+    <form asp-action="TestTemplate" method="post" autocomplete="off">
+        <input type="hidden" name="id" value="@Model.Id"/>
+        <div class="form-group"><label for="template-provider">@T("Plugins.Sms.MultiSms.Routing.Provider")</label>
+            <select id="template-provider" name="provider" class="form-control" required>
+                @foreach (var mapping in Model.Mappings.Where(m => !string.IsNullOrWhiteSpace(m.ExternalTemplateId)))
+                {
+                    <option value="@mapping.Provider">@mapping.Provider</option>
+                }
+            </select></div>
+        <div class="form-group"><label for="template-phone">@T("Plugins.Sms.MultiSms.Routing.Recipient")</label><input id="template-phone" name="phone" type="tel" class="form-control" required/></div>
+        @if (!Model.IsOtp)
+        {
+            @foreach (var parameter in parameterNames)
+            {
+                <div class="form-group"><label>@parameter</label><input name="values" class="form-control" required/></div>
+            }
+        }
+        <button type="submit" class="btn btn-primary">@T("Plugins.Sms.MultiSms.Routing.TestTemplate")</button>
+    </form>
+}

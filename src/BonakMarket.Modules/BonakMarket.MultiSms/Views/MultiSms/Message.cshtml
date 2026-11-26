@@ -17,6 +17,10 @@
         <dd class="col-md-9" dir="ltr">@SmsHistoryFormatter.MaskPhone(Model.Message.Phone)</dd>
         <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryKind")</dt>
         <dd class="col-md-9">@Model.Message.Kind</dd>
+        <dt class="col-md-3">@T("Plugins.Sms.MultiSms.Routing.DeliveryMode")</dt>
+        <dd class="col-md-9">@(Model.Message.DeliveryMode ?? "—")</dd>
+        <dt class="col-md-3">@T("Plugins.Sms.MultiSms.Routing.TemplateKey")</dt>
+        <dd class="col-md-9">@(Model.Message.TemplateKey ?? "—")</dd>
         <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryStatus")</dt>
         <dd class="col-md-9">@Model.Message.Status</dd>
         <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryProvider")</dt>

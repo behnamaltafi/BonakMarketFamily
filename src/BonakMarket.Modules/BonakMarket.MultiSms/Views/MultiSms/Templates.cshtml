@@ -1,0 +1,22 @@
+@model IReadOnlyList<BonakMarket.MultiSms.Domain.SmsTemplate>
+@{
+    Layout = "_ConfigureModule";
+}
+<h3>@T("Plugins.Sms.MultiSms.Routing.Templates")</h3>
+<p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.TemplateHelp")</p>
+<div class="mb-3">
+    <a asp-action="Configure" class="btn btn-secondary">@T("Plugins.Sms.MultiSms.SettingsLink")</a>
+    <a asp-action="Template" asp-route-id="0" class="btn btn-primary">@T("Plugins.Sms.MultiSms.Routing.AddTemplate")</a>
+</div>
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead><tr><th>@T("Plugins.Sms.MultiSms.Routing.TemplateKey")</th><th>@T("Plugins.Sms.MultiSms.Routing.TemplateTitle")</th><th>OTP</th><th>@T("Plugins.Sms.MultiSms.HistoryStatus")</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var template in Model)
+    {
+        <tr><td dir="ltr">@template.Key</td><td>@template.Title</td><td>@(template.IsOtp ? "✓" : "—")</td><td>@(template.IsActive ? "✓" : "—")</td>
+        <td><a class="btn btn-sm btn-secondary" asp-action="Template" asp-route-id="@template.Id">@T("Admin.Common.Edit")</a></td></tr>
+    }
+    </tbody>
+</table>
+</div>

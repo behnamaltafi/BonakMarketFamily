@@ -5,7 +5,7 @@ namespace BonakMarket.MultiSms.Services;
 public interface ISmsProvider
 {
     string Name { get; }
-    string GetMethod(bool otp, SmsGatewaySettings settings) => otp ? "OTP" : "General";
+    string GetMethod(bool templateMode, SmsGatewaySettings settings) => templateMode ? "Template" : "FreeText";
     bool IsAvailable(SmsGatewaySettings settings);
     Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken);
 }

@@ -17,18 +17,20 @@ public sealed class SmsGatewaySender : ISmsSender
     private readonly IReadOnlyDictionary<string, ISmsProvider> _providers;
     private readonly ILogger<SmsGatewaySender> _logger;
     private readonly ISmsHistoryWriter _history;
+    private readonly ISmsTemplateCatalog _templates;
 
     // Optional history parameter keeps existing isolated sender unit tests compatible.
     public SmsGatewaySender(
         ISettingFactory settings,
         IEnumerable<ISmsProvider> providers,
         ILogger<SmsGatewaySender> logger,
-        ISmsHistoryWriter history = null)
+        ISmsHistoryWriter history = null, ISmsTemplateCatalog templates = null)
     {
         _settings = settings;
         _providers = providers.ToDictionary(x => x.Name, StringComparer.OrdinalIgnoreCase);
         _logger = logger;
         _history = history;
+        _templates = templates;
     }
 
     public Task<SmsSendResult> SendAsync(SmsSendRequest request, CancellationToken cancelToken = default)
@@ -44,9 +46,10 @@ public sealed class SmsGatewaySender : ISmsSender
     private async Task<SmsSendResult> SendCoreAsync(SmsSendRequest request, string testProvider, CancellationToken cancelToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        bool templateMode = request.EffectiveDeliveryMode == SmsDeliveryMode.Template;
         if (string.IsNullOrWhiteSpace(request.PhoneNumber) || request.PhoneNumber.Length > 20 ||
             !request.PhoneNumber.Select((ch, i) => (ch >= '0' && ch <= '9') || (i == 0 && ch == '+')).All(valid => valid) ||
-            string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 1500)
+            (!templateMode && string.IsNullOrWhiteSpace(request.Text)) || request.Text?.Length > 1500)
         {
             throw new ArgumentException("Invalid SMS destination or message.");
         }
@@ -58,15 +61,35 @@ public sealed class SmsGatewaySender : ISmsSender
         }
 
         bool otp = request.Kind == SmsMessageKind.Otp;
-        if (otp && (request.VerificationCode is not { Length: 6 } || !request.VerificationCode.All(char.IsAsciiDigit)))
-            throw new ArgumentException("Invalid verification code.");
+        if (otp && (!templateMode || request.VerificationCode is not { Length: 6 } || !request.VerificationCode.All(char.IsAsciiDigit)))
+            throw new ArgumentException("OTP requires an approved template and six-digit code.");
+        if (!otp && !string.IsNullOrEmpty(request.VerificationCode))
+            throw new ArgumentException("Verification code is only valid for OTP purpose.");
+        if (!templateMode && (!string.IsNullOrWhiteSpace(request.TemplateKey) || request.TemplateParameters is not null))
+            throw new ArgumentException("FreeText cannot contain template parameters.");
 
-        var names = testProvider is null ? SmsRouting.Providers(settings, otp) : new[] { testProvider };
+        SmsTemplateDefinition template = null;
+        IReadOnlyDictionary<string, string> values = null;
+        if (templateMode)
+        {
+            var key = request.TemplateKey ?? (otp ? SmsTemplateRules.DefaultOtpKey : null);
+            if (!SmsTemplateRules.IsName(key, 80) || _templates is null)
+                throw new InvalidOperationException("Configure the template catalog.");
+            template = await _templates.FindAsync(key, cancelToken);
+            values = otp ? new Dictionary<string, string> { ["Code"] = request.VerificationCode } : request.TemplateParameters;
+            if (template is null || !template.IsActive || template.IsOtp != otp ||
+                !SmsTemplateRules.IsValidDefinition(template.Parameters, template.IsOtp) ||
+                !SmsTemplateRules.HasExactParameters(template.Parameters, values))
+                throw new ArgumentException("Unknown, disabled or invalid SMS template/parameters.");
+            request = request with { DeliveryMode = SmsDeliveryMode.Template, TemplateKey = template.Key };
+        }
+
+        var names = testProvider is null ? SmsRouting.Providers(settings, templateMode) : new[] { testProvider };
         if (!settings.RoutingConfigured || names.Length == 0)
             throw new InvalidOperationException("Configure the SMS route first.");
 
         if (names.Any(x => string.Equals(x, "Mock", StringComparison.OrdinalIgnoreCase)) &&
-            (names.Length != 1 || !_providers.TryGetValue(names[0], out var mock) || !SmsRouting.IsReady(mock, settings, otp)))
+            (names.Length != 1 || !_providers.TryGetValue(names[0], out var mock) || !SmsRouting.IsReady(mock, settings, templateMode)))
             throw new InvalidOperationException("Mock SMS transport must be enabled in Development and isolated.");
 
         SmsMessage historyMessage = null;
@@ -75,7 +98,7 @@ public sealed class SmsGatewaySender : ISmsSender
             try
             {
                 var historyRequest = testProvider is not null
-                    ? request with { Kind = SmsMessageKind.Test, VerificationCode = null } : request;
+                    ? request with { Kind = SmsMessageKind.Test, VerificationCode = null, DeliveryMode = request.EffectiveDeliveryMode } : request;
                 historyMessage = await _history.BeginAsync(historyRequest, settings, cancelToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -92,7 +115,7 @@ public sealed class SmsGatewaySender : ISmsSender
                 throw new InvalidOperationException("Unrecognized SMS provider.");
             try
             {
-                var id = await AttemptAsync(provider, request, settings, historyMessage, cancelToken);
+                var id = await AttemptAsync(provider, request, settings, historyMessage, template, values, cancelToken);
                 return new SmsSendResult(provider.Name, id);
             }
             catch (SmsProviderException ex) when (ex.SafeToFailover && i + 1 < names.Length && !cancelToken.IsCancellationRequested)
@@ -106,26 +129,37 @@ public sealed class SmsGatewaySender : ISmsSender
 
     private async Task<string> AttemptAsync(
         ISmsProvider provider, SmsSendRequest request, SmsGatewaySettings settings,
-        SmsMessage message, CancellationToken ct)
+        SmsMessage message, SmsTemplateDefinition template, IReadOnlyDictionary<string, string> values, CancellationToken ct)
     {
         var startedOnUtc = DateTime.UtcNow;
         var timer = Stopwatch.StartNew();
         string messageId;
-        var method = provider.GetMethod(request.Kind == SmsMessageKind.Otp, settings);
+        var method = provider.GetMethod(template is not null, settings);
 
         // Only provider-side failures may qualify for failover. The optional
         // database audit is always performed *outside* the provider try/catch.
         try
         {
-            if (!SmsRouting.IsReady(provider, settings, request.Kind == SmsMessageKind.Otp))
+            if (!SmsRouting.IsReady(provider, settings, template is not null))
             {
                 throw new SmsProviderException("SMS provider is unavailable or not configured.", safeToFailover: true,
                     reason: SmsFailureReason.ProviderUnavailable);
             }
 
-            messageId = request.Kind == SmsMessageKind.Otp
-                ? await ((IOtpSmsProvider)provider).SendOtpAsync(request.PhoneNumber, request.Text, request.VerificationCode, settings, ct)
-                : await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
+            if (template is null)
+                messageId = await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
+            else
+            {
+                var transport = (ITemplateSmsProvider)provider;
+                SmsTemplatePayload payload;
+                if (string.Equals(provider.Name, "Mock", StringComparison.OrdinalIgnoreCase))
+                    payload = new SmsTemplatePayload(template.Key, values);
+                else if (!SmsTemplateRules.TryMap(template, provider.Name, values, out payload) ||
+                    !transport.IsValidMapping(payload.ExternalTemplateId, payload.Parameters.Keys))
+                    throw new SmsProviderException("Template mapping is not configured for this provider.", true,
+                        reason: SmsFailureReason.ProviderUnavailable);
+                messageId = await transport.SendTemplateAsync(request.PhoneNumber, payload, settings, ct);
+            }
         }
         catch (Exception ex)
         {

@@ -35,8 +35,10 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
         {
             Phone = request.PhoneNumber,
             Kind = request.Kind.ToString(),
+            DeliveryMode = request.EffectiveDeliveryMode.ToString(),
+            TemplateKey = request.EffectiveDeliveryMode == SmsDeliveryMode.Template ? request.TemplateKey : null,
             Status = "Pending",
-            Body = request.Kind == SmsMessageKind.General && settings.StoreNonOtpMessageBody
+            Body = request.Kind == SmsMessageKind.General && request.EffectiveDeliveryMode == SmsDeliveryMode.FreeText && settings.StoreNonOtpMessageBody
                 ? request.Text : null,
             CreatedOnUtc = DateTime.UtcNow
         };

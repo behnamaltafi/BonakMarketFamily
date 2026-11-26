@@ -6,7 +6,7 @@ using BonakMarket.MultiSms.Configuration;
 namespace BonakMarket.MultiSms.Services;
 
 /// <summary>Explicit Console token or legacy REST API-key mode; never switches modes automatically.</summary>
-public sealed class MelipayamakSmsProvider : ISmsProvider, IOtpSmsProvider
+public sealed class MelipayamakSmsProvider : ISmsProvider, ITemplateSmsProvider
 {
     private const string Legacy = "https://rest.payamak-panel.com/api/SendSMS/";
     private const string ConsoleApi = "https://console.melipayamak.com/api/send/";
@@ -30,24 +30,29 @@ public sealed class MelipayamakSmsProvider : ISmsProvider, IOtpSmsProvider
 
     public bool IsAvailable(SmsGatewaySettings s) => s.MelipayamakEnabled && s.MelipayamakGeneralEnabled &&
         HasCredentials(s) && !string.IsNullOrWhiteSpace(s.MelipayamakSender);
-    public bool IsOtpAvailable(SmsGatewaySettings s) => s.MelipayamakEnabled && s.MelipayamakOtpEnabled &&
-        HasCredentials(s) && s.MelipayamakBodyId is > 0;
+    public bool IsTemplateAvailable(SmsGatewaySettings s) => s.MelipayamakEnabled && s.MelipayamakOtpEnabled &&
+        HasCredentials(s);
+    public bool IsValidMapping(string externalId, IEnumerable<string> slots)
+        => SmsTemplateRules.IsPositiveId(externalId) && SmsTemplateRules.IsPositional(slots);
 
     public Task<string> SendAsync(string phone, string text, SmsGatewaySettings s, CancellationToken ct)
     {
         if (!IsAvailable(s)) throw new SmsProviderException("Melipayamak general SMS is not configured.", true);
-        return SendCoreAsync(phone, text, false, s, ct);
+        return SendCoreAsync(phone, text, null, null, s, ct);
     }
-    public Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings s, CancellationToken ct)
+    public Task<string> SendTemplateAsync(string phone, SmsTemplatePayload template, SmsGatewaySettings s, CancellationToken ct)
     {
-        if (!IsOtpAvailable(s)) throw new SmsProviderException("Melipayamak OTP is not configured.", true);
-        if (verificationCode is not { Length: 6 } || !verificationCode.All(char.IsAsciiDigit))
-            throw new ArgumentException("Invalid verification code.");
-        return SendCoreAsync(phone, verificationCode, true, s, ct);
+        if (!IsTemplateAvailable(s) || !IsValidMapping(template.ExternalTemplateId, template.Parameters.Keys))
+            throw new SmsProviderException("Melipayamak template is not configured.", true);
+        var args = template.Parameters.OrderBy(x => int.Parse(x.Key, CultureInfo.InvariantCulture)).Select(x => x.Value).ToArray();
+        if (s.MelipayamakAuthMode == "Legacy" && args.Any(x => x.Contains(';')))
+            throw new SmsProviderException("Legacy template values cannot contain the argument delimiter.", true);
+        return SendCoreAsync(phone, null, int.Parse(template.ExternalTemplateId, CultureInfo.InvariantCulture), args, s, ct);
     }
 
-    private async Task<string> SendCoreAsync(string phone, string value, bool otp, SmsGatewaySettings s, CancellationToken ct)
+    private async Task<string> SendCoreAsync(string phone, string value, int? bodyId, string[] args, SmsGatewaySettings s, CancellationToken ct)
     {
+        bool otp = bodyId.HasValue;
         var to = SmsPhoneNormalizer.ToProviderPhone(phone);
         var console = s.MelipayamakAuthMode == "Console";
         string url;
@@ -56,7 +61,7 @@ public sealed class MelipayamakSmsProvider : ISmsProvider, IOtpSmsProvider
         {
             var token = _credentials.Unprotect(s.EncryptedMelipayamakApiToken);
             url = ConsoleApi + (otp ? "shared/" : "simple/") + Uri.EscapeDataString(token);
-            content = otp ? JsonContent.Create(new { bodyId = s.MelipayamakBodyId.Value, to, args = new[] { value } })
+            content = otp ? JsonContent.Create(new { bodyId = bodyId.Value, to, args })
                           : JsonContent.Create(new { from = s.MelipayamakSender, to, text = value });
         }
         else
@@ -66,9 +71,9 @@ public sealed class MelipayamakSmsProvider : ISmsProvider, IOtpSmsProvider
             {
                 ["username"] = s.MelipayamakUsername,
                 ["password"] = _credentials.Unprotect(s.EncryptedMelipayamakPassword),
-                ["to"] = to, ["text"] = value
+                ["to"] = to, ["text"] = otp ? string.Join(";", args) : value
             };
-            if (otp) values["bodyId"] = s.MelipayamakBodyId.Value.ToString(CultureInfo.InvariantCulture);
+            if (otp) values["bodyId"] = bodyId.Value.ToString(CultureInfo.InvariantCulture);
             else { values["from"] = s.MelipayamakSender; values["isFlash"] = "false"; }
             content = new FormUrlEncodedContent(values);
         }

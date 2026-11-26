@@ -17,6 +17,9 @@ public sealed class SmsMessage : BaseEntity
     [Required, MaxLength(20)]
     public string Kind { get; set; }
 
+    [MaxLength(20)] public string DeliveryMode { get; set; }
+    [MaxLength(80)] public string TemplateKey { get; set; }
+
     [Required, MaxLength(20)]
     public string Status { get; set; }
 

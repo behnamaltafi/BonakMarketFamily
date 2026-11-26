@@ -22,6 +22,6 @@ public static class SmsRouting
     }
 
     public static bool IsReady(ISmsProvider provider, SmsGatewaySettings settings, bool otp)
-        => otp ? provider is IOtpSmsProvider dedicated && dedicated.IsOtpAvailable(settings)
+        => otp ? provider is ITemplateSmsProvider dedicated && dedicated.IsTemplateAvailable(settings)
             : provider.IsAvailable(settings);
 }

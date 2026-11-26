@@ -16,6 +16,7 @@ public interface ISmsSender
 /// A single recipient and message body. OTP creation and verification are deliberately separate.
 /// </summary>
 public enum SmsMessageKind { General, Otp, Test }
+public enum SmsDeliveryMode { FreeText, Template }
 
 /// <summary>Mark OTP explicitly so audit storage never persists authentication secrets.</summary>
 public sealed record SmsSendRequest(
@@ -23,6 +24,13 @@ public sealed record SmsSendRequest(
 {
     /// <summary>Optional OTP value for template transports. Never persist or log it.</summary>
     public string VerificationCode { get; init; }
+    /// <summary>Null preserves legacy callers; OTP always requires a service template.</summary>
+    public SmsDeliveryMode? DeliveryMode { get; init; }
+    public string TemplateKey { get; init; }
+    public IReadOnlyDictionary<string, string> TemplateParameters { get; init; }
+    public SmsDeliveryMode EffectiveDeliveryMode => DeliveryMode ??
+        (Kind == SmsMessageKind.Otp || !string.IsNullOrWhiteSpace(TemplateKey)
+            ? SmsDeliveryMode.Template : SmsDeliveryMode.FreeText);
 }
 
 /// <summary>

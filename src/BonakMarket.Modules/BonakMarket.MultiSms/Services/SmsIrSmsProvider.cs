@@ -8,7 +8,7 @@ using BonakMarket.MultiSms.Configuration;
 namespace BonakMarket.MultiSms.Services;
 
 /// <summary>SMS.ir v1 free-text and approved Verify template transport.</summary>
-public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
+public sealed class SmsIrSmsProvider : ISmsProvider, ITemplateSmsProvider
 {
     private const string BaseUrl = "https://api.sms.ir/v1/send/";
     private static readonly HttpClient Client = new(new SocketsHttpHandler
@@ -33,10 +33,11 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
         => settings.SmsIrEnabled && settings.SmsIrGeneralEnabled &&
             !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) && settings.SmsIrLineNumber is > 0;
 
-    public bool IsOtpAvailable(SmsGatewaySettings settings)
+    public bool IsTemplateAvailable(SmsGatewaySettings settings)
         => settings.SmsIrEnabled && settings.SmsIrOtpEnabled &&
-            !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) &&
-            settings.SmsIrTemplateId is > 0 && IsValidParameterName(settings.SmsIrCodeParameter);
+            !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey);
+    public bool IsValidMapping(string externalId, IEnumerable<string> slots)
+        => SmsTemplateRules.IsPositiveId(externalId) && slots.All(IsValidParameterName);
 
     public Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken)
     {
@@ -51,19 +52,16 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
         }, settings, false, cancelToken);
     }
 
-    public Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken cancelToken)
+    public Task<string> SendTemplateAsync(string phone, SmsTemplatePayload template, SmsGatewaySettings settings, CancellationToken ct)
     {
-        if (!IsOtpAvailable(settings))
-            throw new SmsProviderException("SMS.ir Verify template is not configured.", true, reason: SmsFailureReason.ProviderUnavailable);
-        if (verificationCode is not { Length: 6 } || !verificationCode.All(char.IsAsciiDigit))
-            throw new ArgumentException("Invalid verification code.");
-
+        if (!IsTemplateAvailable(settings) || !IsValidMapping(template.ExternalTemplateId, template.Parameters.Keys))
+            throw new SmsProviderException("SMS.ir template is not configured.", true);
         return PostAsync("verify", new
         {
             mobile = GetPhone(phone),
-            templateId = settings.SmsIrTemplateId.Value,
-            parameters = new[] { new { name = settings.SmsIrCodeParameter, value = verificationCode } }
-        }, settings, true, cancelToken);
+            templateId = int.Parse(template.ExternalTemplateId, CultureInfo.InvariantCulture),
+            parameters = template.Parameters.Select(p => new { name = p.Key, value = p.Value }).ToArray()
+        }, settings, true, ct);
     }
 
     private static string GetPhone(string phone)

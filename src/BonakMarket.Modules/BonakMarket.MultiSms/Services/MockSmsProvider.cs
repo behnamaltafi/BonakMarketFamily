@@ -4,7 +4,7 @@ using BonakMarket.MultiSms.Configuration;
 namespace BonakMarket.MultiSms.Services;
 
 /// <summary>Explicitly development-only transport; never reaches an external SMS endpoint.</summary>
-public sealed class MockSmsProvider : ISmsProvider, IOtpSmsProvider
+public sealed class MockSmsProvider : ISmsProvider, ITemplateSmsProvider
 {
     private readonly IHostEnvironment _environment;
     private readonly DevelopmentSmsInbox _inbox;
@@ -21,10 +21,10 @@ public sealed class MockSmsProvider : ISmsProvider, IOtpSmsProvider
     public bool IsAvailable(SmsGatewaySettings settings)
         => _environment.IsDevelopment() && settings.MockEnabled;
 
-    public bool IsOtpAvailable(SmsGatewaySettings settings) => IsAvailable(settings);
-
-    public Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken ct)
-        => SendAsync(phone, text, settings, ct);
+    public bool IsTemplateAvailable(SmsGatewaySettings settings) => IsAvailable(settings);
+    public bool IsValidMapping(string externalId, IEnumerable<string> slots) => true;
+    public Task<string> SendTemplateAsync(string phone, SmsTemplatePayload template, SmsGatewaySettings settings, CancellationToken ct)
+        => SendAsync(phone, template.ExternalTemplateId + ": " + string.Join(", ", template.Parameters.Select(p => p.Key + "=" + p.Value)), settings, ct);
 
     public Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken)
     {

@@ -7,7 +7,7 @@ namespace BonakMarket.MultiSms.Services;
 /// Kavenegar REST API: POST /v1/{apiKey}/sms/send.json.
 /// Do not use HttpClientFactory logging for this API: its URL contains the API key.
 /// </summary>
-public sealed class KavenegarSmsProvider : ISmsProvider, IOtpSmsProvider
+public sealed class KavenegarSmsProvider : ISmsProvider, ITemplateSmsProvider
 {
     private static readonly HttpClient Client = new(new SocketsHttpHandler
     {
@@ -33,10 +33,13 @@ public sealed class KavenegarSmsProvider : ISmsProvider, IOtpSmsProvider
            !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey) &&
            !string.IsNullOrWhiteSpace(settings.KavenegarSender);
 
-    public bool IsOtpAvailable(SmsGatewaySettings settings)
+    public bool IsTemplateAvailable(SmsGatewaySettings settings)
         => settings.KavenegarEnabled && settings.KavenegarOtpEnabled &&
-           !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey) &&
-           !string.IsNullOrWhiteSpace(settings.KavenegarOtpTemplate);
+           !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey);
+
+    public bool IsValidMapping(string externalId, IEnumerable<string> slots)
+        => !string.IsNullOrWhiteSpace(externalId) && externalId.Length <= 100 &&
+           slots.Contains("token") && slots.All(x => x is "token" or "token2" or "token3" or "token10" or "token20");
 
     public Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken)
     {
@@ -49,18 +52,15 @@ public sealed class KavenegarSmsProvider : ISmsProvider, IOtpSmsProvider
         }, settings, cancelToken);
     }
 
-    public Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken cancelToken)
+    public Task<string> SendTemplateAsync(string phone, SmsTemplatePayload template, SmsGatewaySettings settings, CancellationToken ct)
     {
-        if (!IsOtpAvailable(settings)) throw new SmsProviderException("Kavenegar OTP is not configured.", true);
-        if (verificationCode is not { Length: 6 } || !verificationCode.All(char.IsAsciiDigit))
-            throw new ArgumentException("Invalid verification code.");
-        return SendCoreAsync("verify/lookup.json", new Dictionary<string, string>
-        {
-            ["receptor"] = SmsPhoneNormalizer.ToProviderPhone(phone),
-            ["token"] = verificationCode,
-            ["template"] = settings.KavenegarOtpTemplate,
-            ["type"] = "sms"
-        }, settings, cancelToken);
+        if (!IsTemplateAvailable(settings) || !IsValidMapping(template.ExternalTemplateId, template.Parameters.Keys))
+            throw new SmsProviderException("Kavenegar template is not configured.", true);
+        var values = template.Parameters.ToDictionary(x => x.Key, x => x.Value);
+        values["receptor"] = SmsPhoneNormalizer.ToProviderPhone(phone);
+        values["template"] = template.ExternalTemplateId;
+        values["type"] = "sms";
+        return SendCoreAsync("verify/lookup.json", values, settings, ct);
     }
 
     private async Task<string> SendCoreAsync(string path, Dictionary<string, string> values, SmsGatewaySettings settings, CancellationToken cancelToken)

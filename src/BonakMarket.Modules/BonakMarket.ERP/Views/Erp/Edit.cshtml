@@ -11,22 +11,24 @@
     @foreach (var p in Model.Providers) { <option value="@p">@p</option> }
     </select></div>
     <div class="mb-3"><label asp-for="BaseUrl"></label><input asp-for="BaseUrl" class="form-control" /></div>
-    <div class="mb-3"><label asp-for="ODataPrefix"></label><input asp-for="ODataPrefix" class="form-control" /></div>
-    <div class="mb-3"><label asp-for="ProductsPath"></label><input asp-for="ProductsPath" class="form-control" /></div>
-    <div class="mb-3"><label asp-for="PricesPath"></label><input asp-for="PricesPath" class="form-control" /></div>
-    <div class="mb-3"><label asp-for="InventoryPath"></label><input asp-for="InventoryPath" class="form-control" /></div>
-    <div class="mb-3"><label asp-for="CategoriesPath"></label><input asp-for="CategoriesPath" class="form-control" /></div>
-    <div class="mb-3"><label asp-for="WarehousesPath"></label><input asp-for="WarehousesPath" class="form-control" /></div>
-    <div class="mb-3"><label asp-for="LoginPath"></label><input asp-for="LoginPath" class="form-control" /></div>
-    <div class="mb-3"><label asp-for="AuthorizationScheme"></label><input asp-for="AuthorizationScheme" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="ProviderSettingsJson">Provider settings (non-secret JSON)</label><textarea asp-for="ProviderSettingsJson" rows="9" class="form-control"></textarea></div>
+    <div class="mb-3"><label asp-for="AuthenticationType"></label><select asp-for="AuthenticationType" class="form-control">
+    @foreach (var a in Model.AuthenticationTypes) { <option value="@a">@a</option> }
+    </select></div>
+    <div class="mb-3"><label asp-for="AuthenticationSettingsJson">Authentication options (non-secret JSON)</label><textarea asp-for="AuthenticationSettingsJson" rows="8" class="form-control"></textarea></div>
+    <div class="mb-3"><label for="NewUsername">Username</label><input id="NewUsername" name="NewUsername" class="form-control" autocomplete="off" /></div>
+    <div class="mb-3"><label for="NewPassword">Password</label><input id="NewPassword" name="NewPassword" type="password" class="form-control" autocomplete="new-password" /></div>
+    <small>Enter both fields to replace credentials. Configured: @Model.HasCredentials. Legacy payload: @Model.LegacyLoginPayload.</small>
+    <div class="mb-3"><input asp-for="ClearCredentials" /><label asp-for="ClearCredentials"></label></div>
     <div class="mb-3"><label asp-for="TimeoutSeconds"></label><input asp-for="TimeoutSeconds" class="form-control" /></div>
-    <div class="mb-3"><input asp-for="UseLogin" /><label asp-for="UseLogin"></label></div>
     <div class="mb-3"><input asp-for="Enabled" /><label asp-for="Enabled"></label></div>
-    <div class="mb-3">
-        <label for="NewLoginBody">Login JSON (exact request body from ERP)</label>
-        <textarea name="NewLoginBody" id="NewLoginBody" class="form-control" autocomplete="off"></textarea>
-        <small>Encrypted at rest. Leave blank to preserve the stored secret. Configured: @Model.HasLoginBody</small>
-    </div>
-    <div class="mb-3"><input asp-for="ClearLoginBody" /><label asp-for="ClearLoginBody"></label></div>
     <button type="submit" class="btn btn-primary">Save</button>
 </form>
+@if (Model.Id > 0)
+{
+    <form asp-action="TestConnection" method="post" target="_blank" class="mt-3">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <select name="operation"><option>Products</option><option>Prices</option><option>Inventory</option><option>Categories</option><option>Warehouses</option></select>
+        <button type="submit" class="btn btn-secondary">Test saved connection (read only)</button>
+    </form>
+}

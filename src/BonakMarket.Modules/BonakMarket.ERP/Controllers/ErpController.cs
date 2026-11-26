@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core.Data;
@@ -7,104 +6,132 @@ using BonakMarket.Core.Catalog.Products;
 using BonakMarket.Core.Security;
 using BonakMarket.ERP.Domain;
 using BonakMarket.ERP.Models;
-using BonakMarket.ERP.Providers.Varanegar;
+using BonakMarket.ERP.Authentication;
+using BonakMarket.ERP.Contracts;
+using BonakMarket.ERP.Infrastructure;
 using BonakMarket.ERP.Services;
 using BonakMarket.Web.Controllers;
 
 namespace BonakMarket.ERP.Controllers;
 
 [Permission("configuration.setting")]
-public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolver, ErpSecrets secrets, ErpCatalogService catalog, ErpDraftProductService drafts) : AdminController
+public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolver, ErpSecrets secrets, ErpCatalogService catalog, ErpDraftProductService drafts, ErpAuthenticationResolver authentication, ErpEndpointPolicy endpoints) : AdminController
 {
     public async Task<IActionResult> Index(CancellationToken ct)
         => View(new ErpIndexModel(await db.Set<ErpConnection>().AsNoTracking().OrderBy(x => x.CompanyCode)
             .Select(x => new ErpConnectionListItem(x.Id, x.CompanyCode, x.Code, x.Name, x.Provider, x.Enabled)).ToListAsync(ct),
             await db.Set<ErpSyncRun>().AsNoTracking().OrderByDescending(x => x.Id).Take(50).ToListAsync(ct)));
 
+    private void PopulateOptions(ConnectionModel model)
+    {
+        model.Providers = resolver.Names;
+        model.AuthenticationTypes = authentication.Names;
+    }
+
     public async Task<IActionResult> Edit(int id, CancellationToken ct)
     {
-        if (id == 0) return View(new ConnectionModel { Providers = resolver.Names });
+        if (id == 0)
+        {
+            var model = new ConnectionModel();
+            PopulateOptions(model);
+            model.ProviderSettingsJson = resolver.Resolve<IErpProviderConfiguration>(model.Provider).DefaultSettingsJson;
+            model.AuthenticationSettingsJson = authentication.Resolve(model.AuthenticationType).DefaultSettingsJson;
+            return View(model);
+        }
         var c = await db.Set<ErpConnection>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (c == null) return NotFound();
-        return View(new ConnectionModel { Id = c.Id, CompanyCode = c.CompanyCode, Code = c.Code, Name = c.Name,
+        var existing = new ConnectionModel { Id = c.Id, CompanyCode = c.CompanyCode, Code = c.Code, Name = c.Name,
             Provider = c.Provider, BaseUrl = c.BaseUrl, Enabled = c.Enabled, TimeoutSeconds = c.TimeoutSeconds,
-            ODataPrefix = c.ODataPrefix, LoginPath = c.LoginPath, AuthorizationScheme = c.AuthorizationScheme,
-            ProductsPath = c.ProductsPath, PricesPath = c.PricesPath, InventoryPath = c.InventoryPath, CategoriesPath = c.CategoriesPath, WarehousesPath = c.WarehousesPath, UseLogin = c.UseLogin, HasLoginBody = !string.IsNullOrEmpty(c.EncryptedLoginBody), Providers = resolver.Names });
+            ProviderSettingsJson = c.ProviderSettingsJson, AuthenticationType = c.AuthenticationType,
+            AuthenticationSettingsJson = c.AuthenticationSettingsJson, HasCredentials = !string.IsNullOrEmpty(c.EncryptedAuthenticationSettings),
+            LegacyLoginPayload = c.LegacyLoginPayload };
+        PopulateOptions(existing);
+        return View(existing);
     }
 
     [HttpPost]
     public async Task<IActionResult> Edit(ConnectionModel model, CancellationToken ct)
     {
-        var c = model.Id == 0 ? new ErpConnection() : await db.Set<ErpConnection>().FirstOrDefaultAsync(x => x.Id == model.Id, ct);
-        if (c == null) return NotFound();
-        model.Providers = resolver.Names;
-        var secret = c.EncryptedLoginBody;
+        var current = model.Id == 0 ? new ErpConnection() : await db.Set<ErpConnection>().FirstOrDefaultAsync(x => x.Id == model.Id, ct);
+        if (current == null) return NotFound();
+        PopulateOptions(model);
+        model.HasCredentials = !string.IsNullOrEmpty(current.EncryptedAuthenticationSettings);
+        model.LegacyLoginPayload = current.LegacyLoginPayload;
         model.CompanyCode = model.CompanyCode?.Trim();
         model.Code = model.Code?.Trim();
         model.Name = model.Name?.Trim();
-        var invalidSecret = ModelState.TryGetValue(nameof(model.NewLoginBody), out var secretState) && secretState.Errors.Count != 0;
-        if (invalidSecret) ModelState.AddModelError("", "invalid_login_body");
+        var candidate = new ErpConnection
+        {
+            Id = current.Id, CompanyCode = model.CompanyCode, Code = model.Code, Name = model.Name,
+            Provider = model.Provider, BaseUrl = model.BaseUrl?.Trim(), Enabled = model.Enabled, TimeoutSeconds = model.TimeoutSeconds,
+            AuthenticationType = model.AuthenticationType, ProviderSettingsJson = model.ProviderSettingsJson,
+            AuthenticationSettingsJson = model.AuthenticationSettingsJson,
+            EncryptedAuthenticationSettings = current.EncryptedAuthenticationSettings, LegacyLoginPayload = current.LegacyLoginPayload
+        };
+        // Never echo submitted secrets, including failed validation requests.
+        var invalidCredentials = new[] { nameof(model.NewUsername), nameof(model.NewPassword) }
+            .Any(key => ModelState.TryGetValue(key, out var state) && state.Errors.Count != 0);
         try
         {
-            if (string.IsNullOrWhiteSpace(model.CompanyCode) || string.IsNullOrWhiteSpace(model.Code) || string.IsNullOrWhiteSpace(model.Name))
+            if (invalidCredentials) throw new ErpIntegrationException("invalid_credentials");
+            if (string.IsNullOrWhiteSpace(candidate.CompanyCode) || string.IsNullOrWhiteSpace(candidate.Code) || string.IsNullOrWhiteSpace(candidate.Name))
                 throw new ErpIntegrationException("invalid_connection_identity");
-            var uri = VaranegarProvider.ValidateBase(model.BaseUrl);
-            if (!string.IsNullOrWhiteSpace(model.ODataPrefix)) VaranegarProvider.Relative(uri, model.ODataPrefix);
-            if (c.Id != 0 && !string.IsNullOrEmpty(secret) && !string.Equals(VaranegarProvider.ValidateBase(c.BaseUrl).AbsoluteUri, uri.AbsoluteUri, StringComparison.Ordinal) &&
-                !model.ClearLoginBody && string.IsNullOrWhiteSpace(model.NewLoginBody))
-                throw new ErpIntegrationException("replace_credentials_when_changing_base_url");
-            VaranegarProvider.Relative(uri, model.LoginPath);
-            VaranegarProvider.Relative(uri, model.ProductsPath);
-            VaranegarProvider.Relative(uri, model.PricesPath);
-            VaranegarProvider.Relative(uri, model.InventoryPath);
-            VaranegarProvider.Relative(uri, model.CategoriesPath);
-            VaranegarProvider.Relative(uri, model.WarehousesPath);
-            if (!string.IsNullOrEmpty(model.AuthorizationScheme) && !Regex.IsMatch(model.AuthorizationScheme, "^[A-Za-z][A-Za-z0-9_-]{0,39}$"))
-                throw new ErpIntegrationException("invalid_authorization_scheme");
-            if (!resolver.Names.Contains(model.Provider, StringComparer.OrdinalIgnoreCase))
-                throw new ErpIntegrationException("unsupported_provider");
-            if (model.ClearLoginBody) secret = null;
-            else if (!invalidSecret && !string.IsNullOrWhiteSpace(model.NewLoginBody))
-            {
-                using var doc = JsonDocument.Parse(model.NewLoginBody);
-                if (doc.RootElement.ValueKind != JsonValueKind.Object) throw new ErpIntegrationException("login_body_must_be_object");
-                secret = secrets.Protect(model.NewLoginBody);
-            }
-            if (model.Enabled && model.UseLogin && string.IsNullOrEmpty(secret))
-                throw new ErpIntegrationException("login_not_configured");
-            // Company and provider identity cannot be reassigned after creation.
-            if (c.Id != 0 && (!string.Equals(c.CompanyCode, model.CompanyCode, StringComparison.OrdinalIgnoreCase) ||
-                !string.Equals(c.Provider, model.Provider, StringComparison.OrdinalIgnoreCase)))
+            var uri = endpoints.ValidateBase(candidate.BaseUrl);
+            if (current.Id != 0 && (!string.Equals(current.CompanyCode, candidate.CompanyCode, StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(current.Provider, candidate.Provider, StringComparison.OrdinalIgnoreCase)))
                 throw new ErpIntegrationException("connection_identity_is_immutable");
-            if (await db.Set<ErpConnection>().AnyAsync(x => x.Id != model.Id && x.CompanyCode == model.CompanyCode && x.Code == model.Code, ct))
+            var replace = !string.IsNullOrWhiteSpace(model.NewUsername) || !string.IsNullOrEmpty(model.NewPassword);
+            if (replace && (string.IsNullOrWhiteSpace(model.NewUsername) || string.IsNullOrEmpty(model.NewPassword) || model.ClearCredentials))
+                throw new ErpIntegrationException("enter_both_username_and_password");
+            if (candidate.AuthenticationType == "None" && replace)
+                throw new ErpIntegrationException("credentials_not_needed");
+            if (current.Id != 0 && model.HasCredentials &&
+                (!string.Equals(current.BaseUrl?.TrimEnd('/'), candidate.BaseUrl?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase) ||
+                !string.Equals(current.AuthenticationType, candidate.AuthenticationType, StringComparison.OrdinalIgnoreCase) ||
+                (current.LegacyLoginPayload && current.AuthenticationSettingsJson != candidate.AuthenticationSettingsJson)) &&
+                !replace && !model.ClearCredentials)
+                throw new ErpIntegrationException("replace_credentials_when_changing_authentication");
+            if (model.ClearCredentials || candidate.AuthenticationType == "None")
+            {
+                candidate.EncryptedAuthenticationSettings = null;
+                candidate.LegacyLoginPayload = false;
+            }
+            else if (replace)
+            {
+                candidate.EncryptedAuthenticationSettings = secrets.Protect(ErpSettingsJson.Write(new ErpUsernamePassword
+                { Username = model.NewUsername, Password = model.NewPassword }));
+                candidate.LegacyLoginPayload = false;
+            }
+            resolver.Resolve<IErpProviderConfiguration>(candidate.Provider).Validate(candidate);
+            var auth = authentication.Resolve(candidate.AuthenticationType);
+            auth.Validate(candidate);
+            if (await db.Set<ErpConnection>().AnyAsync(x => x.Id != candidate.Id && x.CompanyCode == candidate.CompanyCode && x.Code == candidate.Code, ct))
                 throw new ErpIntegrationException("duplicate_connection_code");
         }
         catch (ErpIntegrationException ex) { ModelState.AddModelError("", ex.Code); }
-        catch (JsonException) { ModelState.AddModelError("", "invalid_login_json"); }
-        model.NewLoginBody = null;
-        ModelState.Remove(nameof(model.NewLoginBody));
-        model.HasLoginBody = !string.IsNullOrEmpty(c.EncryptedLoginBody);
+        finally
+        {
+            model.NewUsername = null;
+            model.NewPassword = null;
+            ModelState.Remove(nameof(model.NewUsername));
+            ModelState.Remove(nameof(model.NewPassword));
+        }
         if (!ModelState.IsValid) return View(model);
-        c.CompanyCode = model.CompanyCode.Trim();
-        c.Code = model.Code.Trim();
-        c.Name = model.Name.Trim();
-        c.Provider = model.Provider;
-        c.BaseUrl = model.BaseUrl.Trim();
-        c.Enabled = model.Enabled;
-        c.TimeoutSeconds = model.TimeoutSeconds;
-        c.ODataPrefix = model.ODataPrefix?.Trim() ?? "";
-        c.LoginPath = model.LoginPath.Trim();
-        c.AuthorizationScheme = model.AuthorizationScheme;
-        c.ProductsPath = model.ProductsPath.Trim();
-        c.PricesPath = model.PricesPath.Trim();
-        c.InventoryPath = model.InventoryPath.Trim();
-        c.CategoriesPath = model.CategoriesPath.Trim();
-        c.WarehousesPath = model.WarehousesPath.Trim();
-        c.UseLogin = model.UseLogin;
-        c.EncryptedLoginBody = secret;
-        if (c.Id == 0) db.Set<ErpConnection>().Add(c);
+        if (current.Id == 0) db.Set<ErpConnection>().Add(candidate);
+        else db.Entry(current).CurrentValues.SetValues(candidate);
         await db.SaveChangesAsync(ct);
         return RedirectToAction(nameof(Index));
+    }
+
+    // Explicit read-only test of saved configuration, even when disabled.
+    [HttpPost]
+    public async Task<IActionResult> TestConnection(int id, string operation, CancellationToken ct)
+    {
+        var c = await db.Set<ErpConnection>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
+        if (c == null) return NotFound();
+        c.Enabled = true; // detached instance only
+        try { await catalog.PreviewAsync(c, operation ?? "Products", 0, 1, ct); return Json(new { success = true }); }
+        catch (ErpIntegrationException ex) { return BadRequest(new { error = ex.Code }); }
     }
 
     [HttpPost]
@@ -150,12 +177,13 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
     }
 
     [HttpPost]
+    [Permission(Permissions.Catalog.Product.Update)]
     public async Task<IActionResult> LinkProduct(int id, int productId, CancellationToken ct)
     {
         using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         var row = await db.Set<ErpCatalogProduct>().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (row == null) return NotFound();
-        if (productId <= 0 || !await db.Products.AnyAsync(x => x.Id == productId && !x.Deleted, ct))
+        if (productId <= 0 || !await db.Products.AnyAsync(x => x.Id == productId && !x.Deleted && x.ProductTypeId == (int)ProductType.SimpleProduct, ct))
             return BadRequest("invalid_product");
         if (row.ProductId.HasValue && row.ProductId != productId)
             return Conflict("mapping_already_exists");

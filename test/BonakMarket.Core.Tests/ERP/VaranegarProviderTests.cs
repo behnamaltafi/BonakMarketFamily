@@ -6,6 +6,10 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using BonakMarket.ERP.Authentication;
+using BonakMarket.ERP.Infrastructure;
 using NUnit.Framework;
 using BonakMarket.ERP.Domain;
 using BonakMarket.ERP.Providers.Varanegar;
@@ -19,9 +23,8 @@ public class VaranegarProviderTests
     private static ErpConnection Connection() => new()
     {
         BaseUrl = "https://erp.example.test/thirdparty/",
-        ODataPrefix = "odata/",
         Enabled = true,
-        UseLogin = false
+        AuthenticationType = "None"
     };
 
     [Test]
@@ -105,8 +108,8 @@ public class VaranegarProviderTests
     {
         var secrets = new ErpSecrets(new EphemeralDataProtectionProvider());
         var c = Connection();
-        c.UseLogin = true;
-        c.EncryptedLoginBody = secrets.Protect("{\"exampleField\":\"sample\"}");
+        c.AuthenticationType = "VaranegarLogin";
+        c.EncryptedAuthenticationSettings = secrets.Protect(ErpSettingsJson.Write(new ErpUsernamePassword { Username = "sample", Password = "secret" }));
         var received = false;
         using var handler = new FakeHandler(request =>
         {
@@ -115,15 +118,28 @@ public class VaranegarProviderTests
             received = request.Headers.Authorization?.ToString() == "Bearer test-token";
             return Reply("{\"value\":[]}");
         });
-        var provider = new VaranegarProvider(new FakeFactory(handler), secrets);
+        using var memory = new MemoryCache(new MemoryCacheOptions());
+        var provider = Provider(handler, secrets, memory);
+        await provider.GetProductsAsync(c, 0, 10, CancellationToken.None);
         await provider.GetProductsAsync(c, 0, 10, CancellationToken.None);
         Assert.That(received, Is.True);
-        Assert.That(handler.Requests, Has.Count.EqualTo(2));
+        Assert.That(handler.Requests, Has.Count.EqualTo(3));
         Assert.That(handler.Requests[0].AbsolutePath, Does.EndWith("/api/auth/login"));
     }
 
-    private static VaranegarProvider Provider(FakeHandler handler) =>
-        new(new FakeFactory(handler), new ErpSecrets(new EphemeralDataProtectionProvider()));
+    private static VaranegarProvider Provider(FakeHandler handler, ErpSecrets secrets = null, IMemoryCache memory = null)
+    {
+        var config = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>
+        { ["BonakMarket:ERP:AllowedAuthorities:0"] = "erp.example.test" }).Build();
+        var endpoints = new ErpEndpointPolicy(config);
+        var transport = new ErpHttpTransport(new FakeFactory(handler), endpoints);
+        var auth = new ErpAuthenticationResolver(new IErpAuthenticator[]
+        {
+            new NoAuthentication(), new VaranegarAuthenticator(transport, endpoints,
+                secrets ?? new ErpSecrets(new EphemeralDataProtectionProvider()), new ErpTokenCache(memory ?? new MemoryCache(new MemoryCacheOptions())))
+        });
+        return new VaranegarProvider(new VaranegarODataClient(new ErpHttpClient(transport, endpoints, auth), endpoints), endpoints);
+    }
     private static HttpResponseMessage Reply(string json) => new(HttpStatusCode.OK)
         { Content = new StringContent(json, Encoding.UTF8, "application/json") };
     private sealed class FakeFactory(FakeHandler handler) : IHttpClientFactory

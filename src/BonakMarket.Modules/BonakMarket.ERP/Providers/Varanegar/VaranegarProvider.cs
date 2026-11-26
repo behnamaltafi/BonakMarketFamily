@@ -7,7 +7,7 @@ using BonakMarket.ERP.Services;
 namespace BonakMarket.ERP.Providers.Varanegar;
 
 public sealed class VaranegarProvider(VaranegarODataClient odata, ErpEndpointPolicy endpoints) :
-    IErpProductProvider, IErpPriceProvider, IErpInventoryProvider, IErpClassificationProvider, IErpProviderConfiguration
+    IErpProductProvider, IErpPriceProvider, IErpInventoryProvider, IErpCategoryProvider, IErpWarehouseProvider, IErpProviderConfiguration
 {
     public string SystemName => "Varanegar";
     public string DefaultSettingsJson => ErpSettingsJson.Write(new VaranegarSettings());
@@ -19,7 +19,7 @@ public sealed class VaranegarProvider(VaranegarODataClient odata, ErpEndpointPol
         foreach (var path in new[] { s.ProductsPath, s.PricesPath, s.InventoryPath, s.CategoriesPath, s.WarehousesPath })
         {
             endpoints.Relative(root, path);
-            endpoints.Relative(root, string.IsNullOrEmpty(prefix) ? path : prefix + "/" + path);
+            endpoints.Relative(root, string.IsNullOrEmpty(prefix) ? path : prefix + "/" + path.TrimStart('/'));
         }
     }
 
@@ -29,7 +29,7 @@ public sealed class VaranegarProvider(VaranegarODataClient odata, ErpEndpointPol
                 Flag(x.NoSaleFlag), Flag(x.NoStockFlag), OptionalId(x.BrandRef), x.BrandName,
                 OptionalId(x.ManufacturerRef), x.ManufacturerName, OptionalId(x.GoodsGroupRef),
                 x.UnitName, x.PackUnitName, x.CartonType, x.DefaultBarcode ?? x.Barcode1, x.GTIN,
-                ValidPrice(x.SalePrice), ValidPrice(x.UserPrice), ValidPrice(x.ManufacturerPrice), x.Tax, x.Charge)).ToArray());
+                ValidPrice(x.SalePrice), ValidPrice(x.UserPrice), ValidPrice(x.ManufacturerPrice), x.Tax, x.Charge, x.ModifiedDate)).ToArray());
 
     public async Task<ErpPage<ErpPrice>> GetPricesAsync(ErpConnection c, int skip, int take, CancellationToken ct)
         => new((await odata.ReadAsync<PriceRow>(c, ErpSettingsJson.Read<VaranegarSettings>(c.ProviderSettingsJson).PricesPath, skip, take, ct))
@@ -43,10 +43,10 @@ public sealed class VaranegarProvider(VaranegarODataClient odata, ErpEndpointPol
     public async Task<ErpPage<ErpStock>> GetInventoryAsync(ErpConnection c, int skip, int take, CancellationToken ct)
         => new((await odata.ReadAsync<StockRow>(c, ErpSettingsJson.Read<VaranegarSettings>(c.ProviderSettingsJson).InventoryPath, skip, take, ct))
             .Select(x => new ErpStock(Id(x.Id), Id(x.GoodsRef),
-                x.StockDCRef is >= 0 ? x.StockDCRef.Value.ToString(CultureInfo.InvariantCulture) : throw new ErpIntegrationException("invalid_warehouse"),
+                x.StockDCRef is > 0 ? x.StockDCRef.Value.ToString(CultureInfo.InvariantCulture) : x.StockDCRef == 0 ? null : throw new ErpIntegrationException("invalid_warehouse"),
                 x.OnHandQty ?? throw new ErpIntegrationException("missing_quantity"),
                 x.CartonType, x.IsBatch ?? throw new ErpIntegrationException("missing_batch_flag"),
-                ValidPrice(x.SalePrice))).ToArray());
+                ValidPrice(x.SalePrice), x.StockDCRef == 0)).ToArray());
 
     public async Task<ErpPage<ErpCategory>> GetCategoriesAsync(ErpConnection c, int skip, int take, CancellationToken ct)
         => new((await odata.ReadAsync<CategoryRow>(c, ErpSettingsJson.Read<VaranegarSettings>(c.ProviderSettingsJson).CategoriesPath, skip, take, ct))

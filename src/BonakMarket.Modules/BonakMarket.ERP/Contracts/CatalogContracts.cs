@@ -10,7 +10,7 @@ public sealed record ErpProduct(string ExternalId, string Sku, string Name,
     string ManufacturerId, string ManufacturerName, string CategoryId,
     string UnitName, string PackUnitName, decimal? UnitsPerPack,
     string Barcode, string Gtin, decimal? PublicSalePrice, decimal? ConsumerPrice,
-    decimal? ManufacturerPrice, decimal? Tax, decimal? Charge);
+    decimal? ManufacturerPrice, decimal? Tax, decimal? Charge, string SourceModifiedDate = null);
 public sealed record ErpPrice(string ExternalId, string ProductExternalId,
     decimal? SalePrice, decimal? ConsumerPrice, decimal? ManufacturerPrice,
     string StartDate, string EndDate, string DistributionId, string CustomerId,
@@ -20,7 +20,7 @@ public sealed record ErpPrice(string ExternalId, string ProductExternalId,
     string SubCustomerTypeId, int? RateCode);
 public sealed record ErpStock(string ExternalId, string ProductExternalId,
     string WarehouseId, decimal AvailableQuantity, decimal? UnitsPerPack,
-    bool IsBatch, decimal? PublicSalePrice);
+    bool IsBatch, decimal? PublicSalePrice, bool IsAggregate = false);
 public sealed record ErpCategory(string ExternalId, string ParentExternalId, string Name, string Path);
 public sealed record ErpWarehouse(string ExternalId, string Code, string Name, string DistributionId);
 
@@ -36,8 +36,11 @@ public interface IErpInventoryProvider : IErpProvider
 {
     Task<ErpPage<ErpStock>> GetInventoryAsync(ErpConnection connection, int skip, int take, CancellationToken ct);
 }
-public interface IErpClassificationProvider : IErpProvider
+public interface IErpCategoryProvider : IErpProvider
 {
     Task<ErpPage<ErpCategory>> GetCategoriesAsync(ErpConnection connection, int skip, int take, CancellationToken ct);
+}
+public interface IErpWarehouseProvider : IErpProvider
+{
     Task<ErpPage<ErpWarehouse>> GetWarehousesAsync(ErpConnection connection, int skip, int take, CancellationToken ct);
 }

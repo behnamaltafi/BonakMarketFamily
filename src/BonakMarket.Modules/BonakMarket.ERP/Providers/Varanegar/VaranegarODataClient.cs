@@ -18,7 +18,7 @@ public sealed class VaranegarODataClient(ErpHttpClient http, ErpEndpointPolicy e
             throw new ErpIntegrationException("invalid_page_or_timeout");
         var root = endpoints.ValidateBase(c.BaseUrl);
         var prefix = ErpSettingsJson.Read<VaranegarSettings>(c.ProviderSettingsJson).ODataPrefix?.Trim('/');
-        var endpoint = endpoints.Relative(root, string.IsNullOrEmpty(prefix) ? entity : prefix + "/" + entity);
+        var endpoint = endpoints.Relative(root, string.IsNullOrEmpty(prefix) ? entity : prefix + "/" + entity.TrimStart('/'));
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(c.TimeoutSeconds));
         var token = timeout.Token;

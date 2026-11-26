@@ -17,8 +17,8 @@ public sealed class ErpCatalogService(SmartDbContext db, ErpProviderResolver res
             "Products" => (await resolver.Resolve<IErpProductProvider>(connection.Provider).GetProductsAsync(connection, skip, take, ct)).Items,
             "Prices" => (await resolver.Resolve<IErpPriceProvider>(connection.Provider).GetPricesAsync(connection, skip, take, ct)).Items,
             "Inventory" => (await resolver.Resolve<IErpInventoryProvider>(connection.Provider).GetInventoryAsync(connection, skip, take, ct)).Items,
-            "Categories" => (await resolver.Resolve<IErpClassificationProvider>(connection.Provider).GetCategoriesAsync(connection, skip, take, ct)).Items,
-            "Warehouses" => (await resolver.Resolve<IErpClassificationProvider>(connection.Provider).GetWarehousesAsync(connection, skip, take, ct)).Items,
+            "Categories" => (await resolver.Resolve<IErpCategoryProvider>(connection.Provider).GetCategoriesAsync(connection, skip, take, ct)).Items,
+            "Warehouses" => (await resolver.Resolve<IErpWarehouseProvider>(connection.Provider).GetWarehousesAsync(connection, skip, take, ct)).Items,
             _ => throw new ErpIntegrationException("unsupported_operation")
         };
     }

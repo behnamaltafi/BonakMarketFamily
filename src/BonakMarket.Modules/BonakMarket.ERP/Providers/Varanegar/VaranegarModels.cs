@@ -24,6 +24,7 @@ internal sealed class ProductRow
     public decimal? ManufacturerPrice { get; set; }
     public decimal? Tax { get; set; }
     public decimal? Charge { get; set; }
+    public string ModifiedDate { get; set; }
     public int? NoSaleFlag { get; set; }
     public int? NoStockFlag { get; set; }
 }

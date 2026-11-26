@@ -13,7 +13,8 @@ public static class ErpOperations
         "Products" => typeof(IErpProductProvider),
         "Prices" => typeof(IErpPriceProvider),
         "Inventory" => typeof(IErpInventoryProvider),
-        "Categories" or "Warehouses" => typeof(IErpClassificationProvider),
+        "Categories" => typeof(IErpCategoryProvider),
+        "Warehouses" => typeof(IErpWarehouseProvider),
         _ => throw new ErpIntegrationException("unsupported_operation")
     };
 }

@@ -12,6 +12,7 @@ using BonakMarket.ERP.Authentication;
 using BonakMarket.ERP.Infrastructure;
 using NUnit.Framework;
 using BonakMarket.ERP.Domain;
+using BonakMarket.ERP.Contracts;
 using BonakMarket.ERP.Providers.Varanegar;
 using BonakMarket.ERP.Services;
 
@@ -57,7 +58,8 @@ public class VaranegarProviderTests
         var page = await Provider(handler).GetInventoryAsync(Connection(), 0, 10, CancellationToken.None);
         Assert.Multiple(() =>
         {
-            Assert.That(page.Items[0].WarehouseId, Is.EqualTo("0"));
+            Assert.That(page.Items[0].WarehouseId, Is.Null);
+            Assert.That(page.Items[0].IsAggregate, Is.True);
             Assert.That(page.Items[0].AvailableQuantity, Is.EqualTo(12.5m));
             Assert.That(page.Items[0].PublicSalePrice, Is.Null);
             Assert.That(page.Items[0].IsBatch, Is.True);
@@ -125,6 +127,123 @@ public class VaranegarProviderTests
         Assert.That(received, Is.True);
         Assert.That(handler.Requests, Has.Count.EqualTo(3));
         Assert.That(handler.Requests[0].AbsolutePath, Does.EndWith("/api/auth/login"));
+    }
+
+    [Test]
+    public async Task Unauthorized_read_refreshes_token_once()
+    {
+        var secrets = new ErpSecrets(new EphemeralDataProtectionProvider());
+        var c = Connection();
+        c.AuthenticationType = "VaranegarLogin";
+        c.EncryptedAuthenticationSettings = secrets.Protect(ErpSettingsJson.Write(new ErpUsernamePassword { Username = "user", Password = "password" }));
+        var logins = 0;
+        var reads = 0;
+        using var handler = new FakeHandler(request =>
+        {
+            if (request.Method == HttpMethod.Post)
+            {
+                logins++;
+                return Reply("{\"Token\":\"token-" + logins + "\",\"expiresAt\":\"2099-01-01T00:00:00Z\"}");
+            }
+            reads++;
+            if (reads == 1) return new HttpResponseMessage(HttpStatusCode.Unauthorized);
+            Assert.That(request.Headers.Authorization?.ToString(), Is.EqualTo("Bearer token-2"));
+            return Reply("{\"value\":[]}");
+        });
+        using var memory = new MemoryCache(new MemoryCacheOptions());
+        await Provider(handler, secrets, memory).GetProductsAsync(c, 0, 10, CancellationToken.None);
+        Assert.Multiple(() =>
+        {
+            Assert.That(logins, Is.EqualTo(2));
+            Assert.That(reads, Is.EqualTo(2));
+        });
+    }
+
+    [Test]
+    public void Unauthorized_read_never_replays_more_than_once()
+    {
+        var secrets = new ErpSecrets(new EphemeralDataProtectionProvider());
+        var c = Connection();
+        c.AuthenticationType = "VaranegarLogin";
+        c.EncryptedAuthenticationSettings = secrets.Protect(ErpSettingsJson.Write(new ErpUsernamePassword { Username = "user", Password = "password" }));
+        using var handler = new FakeHandler(request => request.Method == HttpMethod.Post
+            ? Reply("{\"Token\":\"test-token\",\"expiresAt\":\"2099-01-01T00:00:00Z\"}")
+            : new HttpResponseMessage(HttpStatusCode.Unauthorized));
+        using var memory = new MemoryCache(new MemoryCacheOptions());
+        var error = Assert.ThrowsAsync<ErpIntegrationException>(async () =>
+            await Provider(handler, secrets, memory).GetProductsAsync(c, 0, 10, CancellationToken.None));
+        Assert.That(error.Code, Is.EqualTo("http_401"));
+        Assert.That(handler.Requests, Has.Count.EqualTo(4));
+    }
+
+    [Test]
+    public async Task Connection_settings_version_invalidates_cached_token()
+    {
+        var secrets = new ErpSecrets(new EphemeralDataProtectionProvider());
+        var c = Connection();
+        c.AuthenticationType = "VaranegarLogin";
+        c.EncryptedAuthenticationSettings = secrets.Protect(ErpSettingsJson.Write(new ErpUsernamePassword { Username = "user", Password = "password" }));
+        var logins = 0;
+        using var handler = new FakeHandler(request =>
+        {
+            if (request.Method == HttpMethod.Post)
+            {
+                logins++;
+                return Reply("{\"Token\":\"test-token\",\"expiresAt\":\"2099-01-01T00:00:00Z\"}");
+            }
+            return Reply("{\"value\":[]}");
+        });
+        using var memory = new MemoryCache(new MemoryCacheOptions());
+        var provider = Provider(handler, secrets, memory);
+        await provider.GetProductsAsync(c, 0, 10, CancellationToken.None);
+        c.ConfigurationVersion = Guid.NewGuid();
+        await provider.GetProductsAsync(c, 0, 10, CancellationToken.None);
+        Assert.That(logins, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void Unlisted_destination_is_blocked_before_login_or_read()
+    {
+        using var handler = new FakeHandler(_ => Reply("{\"value\":[]}"));
+        var c = Connection();
+        c.BaseUrl = "https://not-approved.example.test/";
+        var error = Assert.ThrowsAsync<ErpIntegrationException>(async () =>
+            await Provider(handler).GetProductsAsync(c, 0, 10, CancellationToken.None));
+        Assert.That(error.Code, Is.EqualTo("erp_destination_not_allowed"));
+        Assert.That(handler.Requests, Is.Empty);
+    }
+
+    [Test]
+    public void Unsupported_schedule_and_cross_company_route_are_rejected()
+    {
+        using var handler = new FakeHandler(_ => Reply("{\"value\":[]}"));
+        var provider = Provider(handler);
+        var router = new ErpOperationRouter(null, new ErpProviderResolver(new IErpProvider[] { provider }));
+        var c = Connection();
+        c.CompanyCode = "company-a";
+        c.Provider = "Varanegar";
+        var route = new ErpOperationConfiguration { CompanyCode = "company-b", Operation = "Products" };
+        Assert.That(Assert.Throws<ErpIntegrationException>(() => router.Validate(route, c)).Code, Is.EqualTo("connection_company_mismatch"));
+        route.CompanyCode = c.CompanyCode;
+        route.Operation = "Prices";
+        route.ScheduleEnabled = true;
+        Assert.That(Assert.Throws<ErpIntegrationException>(() => router.Validate(route, c)).Code, Is.EqualTo("operation_schedule_not_supported"));
+    }
+
+    [Test]
+    public async Task Odata_server_paging_is_followed_within_requested_batch()
+    {
+        var calls = 0;
+        using var handler = new FakeHandler(_ =>
+        {
+            calls++;
+            return calls == 1
+                ? Reply("{\"value\":[{\"Id\":1,\"GoodsCode\":\"a\",\"GoodsName\":\"A\",\"NoSaleFlag\":0,\"NoStockFlag\":0}],\"@odata.nextLink\":\"?page=2\"}")
+                : Reply("{\"value\":[{\"Id\":2,\"GoodsCode\":\"b\",\"GoodsName\":\"B\",\"NoSaleFlag\":0,\"NoStockFlag\":0}]}");
+        });
+        var result = await Provider(handler).GetProductsAsync(Connection(), 0, 2, CancellationToken.None);
+        Assert.That(result.Items, Has.Count.EqualTo(2));
+        Assert.That(calls, Is.EqualTo(2));
     }
 
     private static VaranegarProvider Provider(FakeHandler handler, ErpSecrets secrets = null, IMemoryCache memory = null)

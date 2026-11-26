@@ -131,7 +131,7 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
                 // SMS.ir explicitly reports zero for blacklist and null for an invalid recipient/message.
                 if (id.ValueKind == JsonValueKind.Null ||
                     (id.ValueKind == JsonValueKind.Number && id.TryGetInt64(out long value) && value == 0))
-                    throw new SmsProviderException("SMS.ir did not accept the recipient.", true, httpStatusCode: httpStatus,
+                    throw new SmsProviderException("SMS.ir did not accept the recipient.", false, httpStatusCode: httpStatus,
                         providerStatus: 1, providerErrorCode: id.ValueKind == JsonValueKind.Null ? null : 0);
             }
 

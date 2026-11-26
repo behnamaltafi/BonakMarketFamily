@@ -127,6 +127,7 @@ public sealed class MultiSmsController : AdminController
             model.NewMelipayamakApiToken = null;
             ModelState.Remove(nameof(model.NewMelipayamakApiToken));
             model.HasMelipayamakApiToken = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakApiToken);
+            model.RoutingConfigured = settings.RoutingConfigured;
             model.AvailableProviders = _providerNames;
             model.DevelopmentMode = _environment.IsDevelopment();
             return View(model);
@@ -186,7 +187,7 @@ public sealed class MultiSmsController : AdminController
         model.TestProvider = input.TestProvider;
         model.TestOtp = input.TestOtp;
         model.TestMessage = null; // Do not echo OTP-like text or the submitted body in a response.
-        ModelState.Remove(nameof(model.TestMessage));
+        ModelState.Clear();
 
         try
         {
@@ -198,7 +199,7 @@ public sealed class MultiSmsController : AdminController
             if (input.TestOtp)
             {
                 var code = System.Security.Cryptography.RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
-                request = new SmsSendRequest(phone, "Test verification code", SmsMessageKind.Otp) { VerificationCode = code };
+                request = new SmsSendRequest(phone, $"Test verification code: {code}", SmsMessageKind.Otp) { VerificationCode = code };
             }
             else
             {

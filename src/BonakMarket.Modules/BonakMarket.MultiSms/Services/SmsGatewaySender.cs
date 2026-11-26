@@ -74,7 +74,9 @@ public sealed class SmsGatewaySender : ISmsSender
         {
             try
             {
-                historyMessage = await _history.BeginAsync(request, settings, cancelToken);
+                var historyRequest = testProvider is not null
+                    ? request with { Kind = SmsMessageKind.Test, VerificationCode = null } : request;
+                historyMessage = await _history.BeginAsync(historyRequest, settings, cancelToken);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {

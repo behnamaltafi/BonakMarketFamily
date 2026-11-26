@@ -70,33 +70,35 @@ public sealed class KavenegarSmsProvider : ISmsProvider, IOtpSmsProvider
 
         // Never log the outgoing URL or raw response: they can contain credentials or OTPs.
         using var response = await Client.PostAsync(url, body, cancelToken);
-        if (!response.IsSuccessStatusCode)
+        return ParseConfirmation(await response.Content.ReadAsStringAsync(cancelToken), (int)response.StatusCode);
+    }
+
+    public static string ParseConfirmation(string raw, int httpStatus)
+    {
+        if (httpStatus is < 200 or >= 300)
         {
-            bool safe = response.StatusCode is HttpStatusCode.Unauthorized or
-                HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests;
-            throw new SmsProviderException($"Kavenegar HTTP {(int)response.StatusCode}.", safe,
-                httpStatusCode: (int)response.StatusCode);
+            bool safe = IsSafeRejection(httpStatus);
+            throw new SmsProviderException($"Kavenegar HTTP {httpStatus}.", safe, httpStatusCode: httpStatus);
         }
 
-        var raw = await response.Content.ReadAsStringAsync(cancelToken);
         try
         {
             using var json = JsonDocument.Parse(raw);
             int status = json.RootElement.GetProperty("return").GetProperty("status").GetInt32();
             if (status != 200)
             {
-                throw new SmsProviderException($"Kavenegar rejected SMS (status {status}).", safeToFailover: status is 401 or 403 or 411 or 412 or 418 or 424 or 429,
-                    httpStatusCode: (int)response.StatusCode, providerStatus: status);
+                throw new SmsProviderException($"Kavenegar rejected SMS (status {status}).", safeToFailover: IsSafeRejection(status),
+                    httpStatusCode: httpStatus, providerStatus: status);
             }
 
             var entries = json.RootElement.GetProperty("entries");
-            if (entries.ValueKind != JsonValueKind.Array || entries.GetArrayLength() == 0)
-            {
+            var entry = entries.ValueKind == JsonValueKind.Array && entries.GetArrayLength() == 1
+                ? entries[0] : entries;
+            // VerifyLookup returns an object; Send returns an array.
+            if (entry.ValueKind != JsonValueKind.Object)
                 throw new SmsProviderException("Kavenegar returned no message confirmation.",
-                    httpStatusCode: (int)response.StatusCode, reason: SmsFailureReason.MissingConfirmation);
-            }
-
-            var id = entries[0].GetProperty("messageid");
+                    httpStatusCode: httpStatus, reason: SmsFailureReason.MissingConfirmation);
+            var id = entry.GetProperty("messageid");
             var value = id.ValueKind == JsonValueKind.String ? id.GetString() : id.GetRawText();
             if (!long.TryParse(value, out var number) || number <= 0)
                 throw new SmsProviderException("Kavenegar returned an invalid message ID.");
@@ -105,12 +107,17 @@ public sealed class KavenegarSmsProvider : ISmsProvider, IOtpSmsProvider
         catch (JsonException)
         {
             throw new SmsProviderException("Kavenegar response could not be validated.",
-                    httpStatusCode: (int)response.StatusCode, reason: SmsFailureReason.InvalidResponse);
+                    httpStatusCode: httpStatus, reason: SmsFailureReason.InvalidResponse);
+        }
+        catch (InvalidOperationException)
+        {
+            throw new SmsProviderException("Kavenegar returned an invalid response.", httpStatusCode: httpStatus, reason: SmsFailureReason.InvalidResponse);
         }
         catch (KeyNotFoundException)
         {
             throw new SmsProviderException("Kavenegar confirmation is incomplete.",
-                    httpStatusCode: (int)response.StatusCode, reason: SmsFailureReason.IncompleteConfirmation);
+                    httpStatusCode: httpStatus, reason: SmsFailureReason.IncompleteConfirmation);
         }
     }
+    private static bool IsSafeRejection(int status) => status is 401 or 403 or 412 or 418 or 424 or 429;
 }

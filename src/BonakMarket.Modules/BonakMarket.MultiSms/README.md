@@ -42,9 +42,17 @@ Run in Development, configure and enable Mock in MultiSms and enable OTP in Iden
 
 Preserve existing SQL history and Data Protection keys during upgrade. See ../BonakMarket.Identity/README.md for account API and migration instructions.
 
-## SMS.ir configuration
+## Routing and upgrade
 
-Select SmsIr as primary or safe fallback in SMS Gateway. Enable it and set the encrypted API key. Set the numeric dedicated line number for free-text messages and the existing manual Test SMS action. For OTP, optionally enter an approved SMS.ir Verify template ID and its exact code parameter name (default Code). When the template is configured, OTP uses /v1/send/verify with the original six-digit code (not parsed from message text); the message body is controlled by the approved provider template. Without a template ID, OTP uses /v1/send/bulk and the Identity message template. A Verify-only configuration does not support free-text tests or general SMS. Verify requires an approved SMS.ir template and appropriate account permissions. Test real delivery with your own account after deployment. No raw responses or OTPs are logged. No automatic retry on ambiguous delivery.
+Legacy routes are inactive until the administrator re-enters credentials and saves the new routes. Preserve existing history and Data Protection keys. Keep a non-SMS admin login available before upgrading.
+
+OTP and General each have a primary and up to two ordered fallbacks. No automatic free-text fallback for OTP. Mock must be alone in a route and enabled only in Development. A route may be empty if the corresponding message type is unused.
+
+- Kavenegar: Send for general, VerifyLookup with approved template name and token for OTP.
+- Melipayamak: choose Console (API token, simple/shared JSON) or Legacy (username + API key, SendSMS/BaseServiceNumber). OTP requires approved Body ID and exactly one positional variable. Console contract must be verified with a real account; ambiguous responses stop failover.
+- SMS.ir: Bulk for general, Verify with template ID and exact parameter name for OTP.
+
+Save before testing. Tests use exactly the selected provider, without failover. OTP tests create no login challenge and are recorded as Test without storing the code. Real sends are billed. Accepted is not delivered.
 
 ## Optional OTP code history
 

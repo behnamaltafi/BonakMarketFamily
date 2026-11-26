@@ -5,6 +5,7 @@
     <div asp-validation-summary="All"></div>
     <input asp-for="Id" type="hidden" />
     <div class="mb-3"><label asp-for="CompanyCode"></label><input asp-for="CompanyCode" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="SourceCode">Stable source code</label><input asp-for="SourceCode" class="form-control" /><small>Same code only for connections to the same external product identity namespace. Immutable after creation.</small></div>
     <div class="mb-3"><label asp-for="Code"></label><input asp-for="Code" class="form-control" /></div>
     <div class="mb-3"><label asp-for="Name"></label><input asp-for="Name" class="form-control" /></div>
     <div class="mb-3"><label asp-for="Provider"></label><select asp-for="Provider" class="form-control">

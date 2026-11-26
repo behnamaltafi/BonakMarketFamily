@@ -11,7 +11,7 @@ public sealed class ErpOperationRunner(SmartDbContext db, ErpOperationRouter rou
     {
         var initial = await router.ResolveAsync(company, "Products", ct);
         if (initial.Connection.Id != expectedConnectionId) throw new ErpIntegrationException("operation_connection_mismatch");
-        await using var lease = await locks.AcquireAsync("BonakMarket:ERP:Products:" + initial.Route.Id, ct);
+        await using var lease = await locks.AcquireAsync(ErpOperationLock.ProductsKey(company), ct);
         var current = await router.ResolveAsync(company, "Products", ct);
         if (current.Connection.Id != expectedConnectionId) throw new ErpIntegrationException("operation_connection_mismatch");
         return await catalog.StageProductsAsync(current.Connection, skip, take, ct);
@@ -19,7 +19,10 @@ public sealed class ErpOperationRunner(SmartDbContext db, ErpOperationRouter rou
 
     public async Task RunScheduledPageAsync(int routeId, CancellationToken ct)
     {
-        await using var lease = await locks.AcquireAsync("BonakMarket:ERP:Products:" + routeId, ct);
+        var company = await db.Set<ErpOperationConfiguration>().AsNoTracking().Where(x => x.Id == routeId)
+            .Select(x => x.CompanyCode).SingleOrDefaultAsync(ct);
+        if (company == null) return;
+        await using var lease = await locks.AcquireAsync(ErpOperationLock.ProductsKey(company), ct);
         var route = await db.Set<ErpOperationConfiguration>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == routeId, ct);
         if (route == null || !route.Enabled || !route.ScheduleEnabled || route.Operation != "Products" ||
             (route.NextRunUtc.HasValue && route.NextRunUtc.Value > DateTime.UtcNow)) return;

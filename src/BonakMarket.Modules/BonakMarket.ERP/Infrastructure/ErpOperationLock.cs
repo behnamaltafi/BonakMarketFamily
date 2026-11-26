@@ -9,6 +9,8 @@ namespace BonakMarket.ERP.Infrastructure;
 // transaction during ERP HTTP calls. Released on disposal or session loss.
 public sealed class ErpOperationLock(SmartDbContext db)
 {
+    public static string ProductsKey(string companyCode) => "BonakMarket:ERP:Products:" + companyCode.Trim().ToUpperInvariant();
+
     public async Task<IAsyncDisposable> AcquireAsync(string resource, CancellationToken ct)
     {
         await db.Database.OpenConnectionAsync(ct);

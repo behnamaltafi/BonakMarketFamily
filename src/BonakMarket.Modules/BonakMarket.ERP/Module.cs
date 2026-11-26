@@ -3,6 +3,7 @@ global using System.Collections.Generic;
 global using System.Linq;
 global using System.Threading;
 global using System.Threading.Tasks;
+using BonakMarket.Core;
 using BonakMarket.Engine.Modularity;
 using BonakMarket.Http;
 using BonakMarket.Scheduling;

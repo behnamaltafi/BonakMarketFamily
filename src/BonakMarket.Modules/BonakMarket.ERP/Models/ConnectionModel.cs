@@ -7,6 +7,7 @@ public sealed class ConnectionModel
 {
     public int Id { get; set; }
     [Required, MaxLength(80)] public string CompanyCode { get; set; }
+    [Required, MaxLength(80)] public string SourceCode { get; set; }
     [Required, MaxLength(80)] public string Code { get; set; }
     [Required, MaxLength(150)] public string Name { get; set; }
     [Required, MaxLength(80)] public string Provider { get; set; } = "Varanegar";
@@ -25,6 +26,6 @@ public sealed class ConnectionModel
     public string[] AuthenticationTypes { get; set; } = [];
 }
 public sealed record ErpIndexModel(IReadOnlyList<ErpConnectionListItem> Connections, IReadOnlyList<ErpSyncRun> Runs);
-public sealed record ErpConnectionListItem(int Id, string CompanyCode, string Code, string Name, string Provider, bool Enabled);
+public sealed record ErpConnectionListItem(int Id, string CompanyCode, string Code, string Name, string Provider, bool Enabled, string SourceCode);
 public sealed record CatalogModel(int ConnectionId, int Skip, IReadOnlyList<ErpCatalogProduct> Rows, IReadOnlyList<ProductTemplateOption> Templates);
 public sealed record ProductTemplateOption(int Id, string Name);

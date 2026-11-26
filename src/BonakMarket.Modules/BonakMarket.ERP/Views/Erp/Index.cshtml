@@ -6,11 +6,11 @@
 <a class="btn btn-primary" asp-action="Edit" asp-route-id="0">New connection</a>
 <a class="btn btn-secondary" asp-action="Operations">Operations and schedules</a>
 <table class="table">
-    <thead><tr><th>Company</th><th>Connection</th><th>Provider</th><th>Enabled</th><th></th></tr></thead>
+    <thead><tr><th>Company</th><th>Source</th><th>Connection</th><th>Provider</th><th>Enabled</th><th></th></tr></thead>
     <tbody>
     @foreach (var c in Model.Connections)
     {
-        <tr><td>@c.CompanyCode</td><td>@c.Name (@c.Code)</td><td>@c.Provider</td><td>@c.Enabled</td>
+        <tr><td>@c.CompanyCode</td><td>@c.SourceCode</td><td>@c.Name (@c.Code)</td><td>@c.Provider</td><td>@c.Enabled</td>
             <td><a asp-action="Edit" asp-route-id="@c.Id">Configure</a> | <a asp-action="Catalog" asp-route-id="@c.Id">Catalog</a></td></tr>
     }
     </tbody>

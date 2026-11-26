@@ -30,12 +30,62 @@
             </div>
         </div>
         <div class="adminRow">
-            <div class="adminTitle">
-                <smart-label asp-for="OtpMessageTemplate" />
-            </div>
+            <div class="adminTitle"><smart-label asp-for="LoginOtpTemplateKey" /></div>
             <div class="adminData">
-                <textarea asp-for="OtpMessageTemplate" class="form-control" rows="6" dir="auto"></textarea>
-                <span asp-validation-for="OtpMessageTemplate"></span>
+                <select asp-for="LoginOtpTemplateKey" class="form-control">
+                    @if (!Model.OtpTemplates.Any(t => string.Equals(t.Key, Model.LoginOtpTemplateKey, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@Model.LoginOtpTemplateKey">@Model.LoginOtpTemplateKey — @T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort")</option>
+                    }
+                    @foreach (var template in Model.OtpTemplates)
+                    {
+                        <option value="@template.Key">@template.Title (@template.Key) @(template.IsReady ? "" : "— " + T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort").Value)</option>
+                    }
+                </select>
+                <span asp-validation-for="LoginOtpTemplateKey"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="PhoneEnrollmentOtpTemplateKey" /></div>
+            <div class="adminData">
+                <select asp-for="PhoneEnrollmentOtpTemplateKey" class="form-control">
+                    @if (!Model.OtpTemplates.Any(t => string.Equals(t.Key, Model.PhoneEnrollmentOtpTemplateKey, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@Model.PhoneEnrollmentOtpTemplateKey">@Model.PhoneEnrollmentOtpTemplateKey — @T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort")</option>
+                    }
+                    @foreach (var template in Model.OtpTemplates)
+                    {
+                        <option value="@template.Key">@template.Title (@template.Key) @(template.IsReady ? "" : "— " + T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort").Value)</option>
+                    }
+                </select>
+                <span asp-validation-for="PhoneEnrollmentOtpTemplateKey"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="ReauthenticationOtpTemplateKey" /></div>
+            <div class="adminData">
+                <select asp-for="ReauthenticationOtpTemplateKey" class="form-control">
+                    @if (!Model.OtpTemplates.Any(t => string.Equals(t.Key, Model.ReauthenticationOtpTemplateKey, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@Model.ReauthenticationOtpTemplateKey">@Model.ReauthenticationOtpTemplateKey — @T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort")</option>
+                    }
+                    @foreach (var template in Model.OtpTemplates)
+                    {
+                        <option value="@template.Key">@template.Title (@template.Key) @(template.IsReady ? "" : "— " + T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort").Value)</option>
+                    }
+                </select>
+                <span asp-validation-for="ReauthenticationOtpTemplateKey"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"></div>
+            <div class="adminData">
+                <p class="text-muted">@T("Plugins.Identity.Customer.Fields.OtpTemplateHelp")</p>
+                @if (!Model.OtpTemplates.Any(t => t.IsReady))
+                {
+                    <div class="alert alert-warning">@T("Plugins.Identity.Customer.Fields.NoReadyOtpTemplates")</div>
+                }
+                <a asp-area="Admin" asp-controller="MultiSms" asp-action="Templates" class="btn btn-outline-secondary">@T("Plugins.Identity.Customer.Fields.ManageOtpTemplates")</a>
             </div>
         </div>
         <div class="adminRow">

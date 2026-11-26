@@ -1,3 +1,6 @@
+using BonakMarket.Core.Messaging;
+using BonakMarket.Identity.Configuration;
+
 namespace BonakMarket.Identity.Models;
 
 [LocalizedDisplay("Plugins.Identity.Customer.Fields.")]
@@ -6,8 +9,16 @@ public sealed class IdentityConfigurationModel : ModelBase
     [LocalizedDisplay("*OtpLoginEnabled")]
     public bool OtpLoginEnabled { get; set; }
 
-    [LocalizedDisplay("*OtpMessageTemplate")]
-    public string OtpMessageTemplate { get; set; }
+    [LocalizedDisplay("*LoginOtpTemplateKey")]
+    public string LoginOtpTemplateKey { get; set; } = CustomerIdentitySettings.DefaultOtpTemplateKey;
+
+    [LocalizedDisplay("*PhoneEnrollmentOtpTemplateKey")]
+    public string PhoneEnrollmentOtpTemplateKey { get; set; } = CustomerIdentitySettings.DefaultOtpTemplateKey;
+
+    [LocalizedDisplay("*ReauthenticationOtpTemplateKey")]
+    public string ReauthenticationOtpTemplateKey { get; set; } = CustomerIdentitySettings.DefaultOtpTemplateKey;
+
+    public IReadOnlyList<SmsOtpTemplateOption> OtpTemplates { get; set; } = Array.Empty<SmsOtpTemplateOption>();
 
     [LocalizedDisplay("*OtpResendIntervalSeconds")]
     [System.ComponentModel.DataAnnotations.Range(30, 300)]

@@ -54,10 +54,13 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
         _events = events;
     }
 
-    public async Task<bool> IsEnabledAsync()
+    public Task<bool> IsEnabledAsync() => IsEnabledForPurposeAsync("login");
+
+    private async Task<bool> IsEnabledForPurposeAsync(string purpose, CancellationToken ct = default)
     {
-        var settings = await _settings.LoadSettingsAsync<CustomerIdentitySettings>();
-        return settings.OtpLoginEnabled && await _delivery.IsEnabledAsync();
+        var settings = await GetOtpSettingsAsync();
+        return settings.OtpLoginEnabled &&
+            await _delivery.IsOtpTemplateAvailableAsync(settings.GetOtpTemplateKey(purpose), ct);
     }
 
     public Task<CustomerIdentitySettings> GetOtpSettingsAsync()
@@ -73,7 +76,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
         if (canonical is null || customer is null || !customer.Active || customer.Deleted ||
-            !customer.IsRegistered() || !await IsEnabledAsync())
+            !customer.IsRegistered() || !await IsEnabledForPurposeAsync("enroll:" + customer.Id, ct))
         {
             return false;
         }
@@ -102,7 +105,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     public async Task RequestLoginCodeAsync(string phone, CancellationToken ct = default)
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
-        if (canonical is null || !await IsEnabledAsync())
+        if (canonical is null || !await IsEnabledForPurposeAsync("login", ct))
         {
             return;
         }
@@ -165,7 +168,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
     public async Task<bool> RequestReauthAsync(Customer customer, CancellationToken ct = default)
     {
-        if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered() || !await IsEnabledAsync()) return false;
+        if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered() || !await IsEnabledForPurposeAsync("reauth:" + customer.Id, ct)) return false;
         var phone = await GetVerifiedPhoneAsync(customer.Id, ct);
         if (phone == null || !await ConsumeQuotaAsync("reauth-account:" + customer.Id, TimeSpan.FromSeconds((await GetOtpSettingsAsync()).EffectiveOtpResendIntervalSeconds()), ct)) return false;
         return await IssueCodeAsync(phone, "reauth:" + customer.Id, ct);
@@ -173,7 +176,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
     public async Task<string> ConfirmReauthAsync(Customer customer, string code, CancellationToken ct = default)
     {
-        if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered() || !await IsEnabledAsync()) return null;
+        if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered() || !await IsEnabledForPurposeAsync("reauth:" + customer.Id, ct)) return null;
         var phone = await GetVerifiedPhoneAsync(customer.Id, ct);
         if (phone == null) return null;
         var challenge = await ValidateCodeAsync(phone, "reauth:" + customer.Id, code, ct);
@@ -219,7 +222,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
         if (canonical == null || customer == null || !customer.Active || customer.Deleted ||
-            !customer.IsRegistered() || !await IsEnabledAsync()) return false;
+            !customer.IsRegistered() || !await IsEnabledForPurposeAsync("enroll:" + customer.Id, ct)) return false;
         var binding = await _db.Set<SmsLoginPhone>().FirstOrDefaultAsync(x => x.CustomerId == customer.Id, ct);
         var old = binding?.Phone;
         var grant = old == null ? null : await GetReauthProofAsync(customer.Id, old, proof, ct);
@@ -284,7 +287,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     private async Task<Customer> ConfirmLoginCoreAsync(string phone, string code, long? sentTicks, CancellationToken ct)
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
-        if (canonical is null || !await IsEnabledAsync())
+        if (canonical is null || !await IsEnabledForPurposeAsync("login", ct))
         {
             return null;
         }
@@ -540,6 +543,10 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     private async Task<bool> IssueCodeAsync(string phone, string purpose, CancellationToken ct)
     {
         var settings = await GetOtpSettingsAsync();
+        var templateKey = settings.GetOtpTemplateKey(purpose);
+        if (!settings.OtpLoginEnabled || !await _delivery.IsOtpTemplateAvailableAsync(templateKey, ct))
+            return false;
+
         var now = DateTime.UtcNow;
         var challenges = _db.Set<SmsOtpChallenge>();
         var current = await challenges.FirstOrDefaultAsync(
@@ -599,8 +606,12 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
         try
         {
-            await _sms.SendAsync(new SmsSendRequest(phone,
-                settings.FormatOtpMessage(code), SmsMessageKind.Otp) { VerificationCode = code }, ct);
+            await _sms.SendAsync(new SmsSendRequest(phone, null, SmsMessageKind.Otp)
+            {
+                DeliveryMode = SmsDeliveryMode.Template,
+                TemplateKey = templateKey,
+                VerificationCode = code
+            }, ct);
             return true;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

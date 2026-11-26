@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using BonakMarket.Core.Data;
 using BonakMarket.MultiSms.Domain;
 
@@ -6,12 +7,14 @@ namespace BonakMarket.MultiSms.Services;
 
 public sealed record SmsTemplateMapping(string ExternalTemplateId, IReadOnlyDictionary<string, string> Parameters);
 public sealed record SmsTemplateDefinition(string Key, bool IsOtp, bool IsActive, string[] Parameters,
-    IReadOnlyDictionary<string, SmsTemplateMapping> Providers);
+    IReadOnlyDictionary<string, SmsTemplateMapping> Providers, string Title = null);
 public sealed record SmsTemplatePayload(string ExternalTemplateId, IReadOnlyDictionary<string, string> Parameters);
 
 public interface ISmsTemplateCatalog
 {
     Task<SmsTemplateDefinition> FindAsync(string key, CancellationToken ct);
+    Task<IReadOnlyList<SmsTemplateDefinition>> ListActiveOtpAsync(CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<SmsTemplateDefinition>>(Array.Empty<SmsTemplateDefinition>());
 }
 
 public sealed class SmsTemplateCatalog(SmartDbContext db) : ISmsTemplateCatalog
@@ -23,10 +26,29 @@ public sealed class SmsTemplateCatalog(SmartDbContext db) : ISmsTemplateCatalog
         var template = await db.Set<SmsTemplate>().AsNoTracking().SingleOrDefaultAsync(x => x.Key == key, ct);
         if (template is null) return null;
         var rows = await db.Set<SmsTemplateProvider>().AsNoTracking().Where(x => x.TemplateId == template.Id).ToListAsync(ct);
+        return ToDefinition(template, rows);
+    }
+
+    public async Task<IReadOnlyList<SmsTemplateDefinition>> ListActiveOtpAsync(CancellationToken ct)
+    {
+        var definitions = await db.Set<SmsTemplate>().AsNoTracking()
+            .Where(x => x.IsOtp && x.IsActive).OrderBy(x => x.Key).ToListAsync(ct);
+        if (definitions.Count == 0) return Array.Empty<SmsTemplateDefinition>();
+
+        // A bounded number of database queries regardless of the number of templates.
+        var rows = await db.Set<SmsTemplateProvider>().AsNoTracking()
+            .Where(x => x.Template.IsOtp && x.Template.IsActive).ToListAsync(ct);
+        var byTemplate = rows.ToLookup(x => x.TemplateId);
+        return definitions.Select(t => ToDefinition(t, byTemplate[t.Id])).ToArray();
+    }
+
+    private static SmsTemplateDefinition ToDefinition(SmsTemplate template, IEnumerable<SmsTemplateProvider> rows)
+    {
         return new SmsTemplateDefinition(template.Key, template.IsOtp, template.IsActive,
             JsonSerializer.Deserialize<string[]>(template.Parameters),
             rows.ToDictionary(x => x.ProviderName, x => new SmsTemplateMapping(x.ExternalTemplateId,
-                JsonSerializer.Deserialize<Dictionary<string, string>>(x.ParameterMapping)), StringComparer.OrdinalIgnoreCase));
+                JsonSerializer.Deserialize<Dictionary<string, string>>(x.ParameterMapping)), StringComparer.OrdinalIgnoreCase),
+            template.Title);
     }
 }
 

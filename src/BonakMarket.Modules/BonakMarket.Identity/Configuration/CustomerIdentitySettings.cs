@@ -2,22 +2,24 @@ using BonakMarket.Core.Configuration;
 namespace BonakMarket.Identity.Configuration;
 public sealed class CustomerIdentitySettings : ISettings
 {
-    public const string CodePlaceholder = "{Code}";
-    public const string DefaultOtpMessageTemplate =
-        "بنک مارکت\n" +
-        "«محرمانه»\n" +
-        "از در اختیار قرار دادن محتوای این پیامک به دیگران، اکیدا خودداری کنید.\n" +
-        "کد احراز هویت جهت ورود:\n" +
-        CodePlaceholder;
+    public const string DefaultOtpTemplateKey = "LOGINOTP";
 
-    public string OtpMessageTemplate { get; set; } = DefaultOtpMessageTemplate;
+    public string LoginOtpTemplateKey { get; set; } = DefaultOtpTemplateKey;
+    public string PhoneEnrollmentOtpTemplateKey { get; set; } = DefaultOtpTemplateKey;
+    public string ReauthenticationOtpTemplateKey { get; set; } = DefaultOtpTemplateKey;
 
-    public static bool IsValidOtpMessageTemplate(string template)
-        => !string.IsNullOrWhiteSpace(template) && template.Contains(CodePlaceholder, StringComparison.Ordinal);
+    public static string EffectiveTemplateKey(string key)
+        => string.IsNullOrWhiteSpace(key) ? DefaultOtpTemplateKey : key.Trim().ToUpperInvariant();
 
-    public string FormatOtpMessage(string code)
-        => (IsValidOtpMessageTemplate(OtpMessageTemplate) ? OtpMessageTemplate : DefaultOtpMessageTemplate)
-            .Replace(CodePlaceholder, code, StringComparison.Ordinal);
+    public string GetOtpTemplateKey(string purpose)
+    {
+        if (purpose == "login") return EffectiveTemplateKey(LoginOtpTemplateKey);
+        if (purpose?.StartsWith("enroll:", StringComparison.Ordinal) == true)
+            return EffectiveTemplateKey(PhoneEnrollmentOtpTemplateKey);
+        if (purpose?.StartsWith("reauth:", StringComparison.Ordinal) == true)
+            return EffectiveTemplateKey(ReauthenticationOtpTemplateKey);
+        throw new ArgumentException("Unknown OTP purpose.", nameof(purpose));
+    }
 
     public int OtpResendIntervalSeconds { get; set; } = 60;
     public int EffectiveOtpResendIntervalSeconds() => Math.Clamp(OtpResendIntervalSeconds, 30, 300);

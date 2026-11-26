@@ -2,14 +2,14 @@ name: Native BonakMarket SMS OTP - build and tests
 
 on:
   push:
-    branches: [feature/native-sms-otp-login]
+    branches: [feature/native-sms-otp-login, feature/sms-gateway-provider-routing]
     paths:
       - 'src/BonakMarket.Modules/BonakMarket.MultiSms/**'
       - 'src/BonakMarket.Core/Platform/Messaging/Services/ISmsSender.cs'
       - 'test/BonakMarket.Core.Tests/**'
       - '.github/workflows/native-sms-otp-ci.yml'
   pull_request:
-    branches: [main]
+    branches: [main, develop]
     paths:
       - 'src/BonakMarket.Modules/BonakMarket.MultiSms/**'
       - 'src/BonakMarket.Core/Platform/Messaging/Services/ISmsSender.cs'
@@ -38,4 +38,4 @@ jobs:
       - name: Build full BonakMarket solution and SMS module
         run: dotnet build BonakMarket.sln -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-self-contained
       - name: Test OTP, provider failover, mock isolation, history helpers and API
-        run: dotnet test test/BonakMarket.Core.Tests/BonakMarket.Core.Tests.csproj -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsMockAndHistoryTests|FullyQualifiedName~SmsHistoryTransportTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"
+        run: dotnet test test/BonakMarket.Core.Tests/BonakMarket.Core.Tests.csproj -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~SmsProviderRoutingTests|FullyQualifiedName~SmsIrProviderTests|FullyQualifiedName~SmsDiagnosticsTests|FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsMockAndHistoryTests|FullyQualifiedName~SmsHistoryTransportTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"

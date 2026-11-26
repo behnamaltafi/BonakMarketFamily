@@ -128,6 +128,8 @@ public sealed class MultiSmsController : AdminController
             ModelState.Remove(nameof(model.NewMelipayamakApiToken));
             model.HasMelipayamakApiToken = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakApiToken);
             model.RoutingConfigured = settings.RoutingConfigured;
+            model.OtpReadyProviders = GetReadyProviders(settings, true);
+            model.GeneralReadyProviders = GetReadyProviders(settings, false);
             model.AvailableProviders = _providerNames;
             model.DevelopmentMode = _environment.IsDevelopment();
             return View(model);
@@ -310,6 +312,8 @@ public sealed class MultiSmsController : AdminController
             AvailableProviders = _providerNames,
             DevelopmentMode = _environment.IsDevelopment(),
             RoutingConfigured = settings.RoutingConfigured,
+            OtpReadyProviders = GetReadyProviders(settings, true),
+            GeneralReadyProviders = GetReadyProviders(settings, false),
             Enabled = settings.RoutingConfigured && settings.Enabled,
             MockEnabled = settings.RoutingConfigured ? settings.MockEnabled : default,
             HistoryEnabled = settings.HistoryEnabled,
@@ -347,6 +351,11 @@ public sealed class MultiSmsController : AdminController
             HasSmsIrApiKey = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey),
             HasMelipayamakApiToken = settings.RoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakApiToken),
         };
+
+    private string[] GetReadyProviders(SmsGatewaySettings settings, bool otp)
+        => !settings.RoutingConfigured ? [] : _providers
+            .Where(p => IsValidProvider(p.Name) && SmsRouting.IsReady(p, settings, otp))
+            .Select(p => p.Name).ToArray();
 
     private bool IsValidProvider(string provider)
         => _providerNames.Contains(provider, StringComparer.OrdinalIgnoreCase);

@@ -112,6 +112,9 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*TestMessage")]
     public string TestMessage { get; set; }
 
+    public string[] OtpReadyProviders { get; set; } = [];
+    public string[] GeneralReadyProviders { get; set; } = [];
+
     public string[] AvailableProviders { get; set; } = [];
 
     public bool? TestSucceeded { get; set; }

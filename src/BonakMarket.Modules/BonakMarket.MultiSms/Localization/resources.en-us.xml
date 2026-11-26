@@ -1,5 +1,5 @@
 <Language Name="English" IsDefault="false" IsRightToLeft="false">
-    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.MultiSms" AppendRootKey="false"><Value>Multi-provider SMS Gateway</Value></LocaleResource>
+    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.MultiSms" AppendRootKey="false"><Value>SMS Gateway</Value></LocaleResource>
     <LocaleResource Name="Plugins.Description.BonakMarket.MultiSms" AppendRootKey="false"><Value>Switchable SMS gateway with Kavenegar, Melipayamak and SMS.ir</Value></LocaleResource>
     <LocaleResource Name="Intro"><Value>Configure two independent SMS providers. Changes take effect on the next message without restarting. Failover occurs only on explicit rejection; ambiguous timeouts are never retried automatically.</Value></LocaleResource>
     <LocaleResource Name="SecretHint"><Value>Leave blank to keep the stored secret; use Clear to remove it. Credentials are encrypted in settings.</Value></LocaleResource>
@@ -86,4 +86,57 @@
     <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>Off by default. Encrypted code is visible immediately in all environments for 15 minutes. Active codes grant account access; enable only for troubleshooting.</Value></LocaleResource>
     <LocaleResource Name="HistoryOtpCode"><Value>OTP code</Value></LocaleResource>
     <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>Unavailable: not captured or retention window expired.</Value></LocaleResource>
+    <LocaleResource Name="Routing.Title"><Value>SMS Gateway</Value></LocaleResource>
+    <LocaleResource Name="Routing.Intro"><Value>OTP uses approved service templates only. General SMS uses free text. Save settings before testing.</Value></LocaleResource>
+    <LocaleResource Name="Routing.Reset"><Value>Reconfiguration required. Existing SMS routes are disabled until saved again. Enter provider credentials and configure routes.</Value></LocaleResource>
+    <LocaleResource Name="Routing.DevInbox"><Value>Development inbox</Value></LocaleResource>
+    <LocaleResource Name="Routing.Enabled"><Value>Enable SMS Gateway</Value></LocaleResource>
+    <LocaleResource Name="Routing.Mock"><Value>Enable development-only Mock provider</Value></LocaleResource>
+    <LocaleResource Name="Routing.OtpRoute"><Value>OTP routing — service templates</Value></LocaleResource>
+    <LocaleResource Name="Routing.GeneralRoute"><Value>General SMS routing — free text</Value></LocaleResource>
+    <LocaleResource Name="Routing.Primary"><Value>Primary</Value></LocaleResource>
+    <LocaleResource Name="Routing.Fallback1"><Value>Fallback 1</Value></LocaleResource>
+    <LocaleResource Name="Routing.Fallback2"><Value>Fallback 2</Value></LocaleResource>
+    <LocaleResource Name="Routing.SafeFailover"><Value>Enable safe failover</Value></LocaleResource>
+    <LocaleResource Name="Routing.History"><Value>History settings</Value></LocaleResource>
+    <LocaleResource Name="Routing.Kave"><Value>Enable Kavenegar</Value></LocaleResource>
+    <LocaleResource Name="Routing.Meli"><Value>Enable Melipayamak</Value></LocaleResource>
+    <LocaleResource Name="Routing.Ir"><Value>Enable SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Routing.ApiKey"><Value>API key</Value></LocaleResource>
+    <LocaleResource Name="Routing.Clear"><Value>Clear saved secret</Value></LocaleResource>
+    <LocaleResource Name="Routing.General"><Value>General SMS</Value></LocaleResource>
+    <LocaleResource Name="Routing.GeneralEnabled"><Value>Enable general SMS</Value></LocaleResource>
+    <LocaleResource Name="Routing.Sender"><Value>Sender number</Value></LocaleResource>
+    <LocaleResource Name="Routing.OtpEnabled"><Value>Enable OTP</Value></LocaleResource>
+    <LocaleResource Name="Routing.KaveOtp"><Value>OTP / Verify Lookup</Value></LocaleResource>
+    <LocaleResource Name="Routing.KaveTemplate"><Value>Approved template name</Value></LocaleResource>
+    <LocaleResource Name="Routing.KaveHint"><Value>The code is passed as token.</Value></LocaleResource>
+    <LocaleResource Name="Routing.AuthMode"><Value>Authentication mode</Value></LocaleResource>
+    <LocaleResource Name="Routing.Console"><Value>Console API Token</Value></LocaleResource>
+    <LocaleResource Name="Routing.Legacy"><Value>Legacy REST (username + API key)</Value></LocaleResource>
+    <LocaleResource Name="Routing.Username"><Value>Username</Value></LocaleResource>
+    <LocaleResource Name="Routing.LegacyKey"><Value>Legacy API key (password field)</Value></LocaleResource>
+    <LocaleResource Name="Routing.MeliOtp"><Value>OTP / shared service line</Value></LocaleResource>
+    <LocaleResource Name="Routing.BodyId"><Value>Approved Body ID</Value></LocaleResource>
+    <LocaleResource Name="Routing.MeliHint"><Value>Use a template with one positional OTP variable.</Value></LocaleResource>
+    <LocaleResource Name="Routing.Line"><Value>Line number</Value></LocaleResource>
+    <LocaleResource Name="Routing.IrOtp"><Value>OTP / Verify</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateId"><Value>Approved template ID</Value></LocaleResource>
+    <LocaleResource Name="Routing.Parameter"><Value>Exact template parameter name</Value></LocaleResource>
+    <LocaleResource Name="Routing.HistoryEnabled"><Value>Enable history</Value></LocaleResource>
+    <LocaleResource Name="Routing.Retention"><Value>Retention (days)</Value></LocaleResource>
+    <LocaleResource Name="Routing.ShowOtp"><Value>Show OTP code in history</Value></LocaleResource>
+    <LocaleResource Name="Routing.StoreBody"><Value>Store ordinary message body</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestTitle"><Value>Test a specific provider</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestHint"><Value>Uses saved settings. No failover. OTP test does not create a login challenge.</Value></LocaleResource>
+    <LocaleResource Name="Routing.Provider"><Value>Provider</Value></LocaleResource>
+    <LocaleResource Name="Routing.Recipient"><Value>Recipient</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestMessage"><Value>General test message</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestGeneral"><Value>Test General SMS</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestOtp"><Value>Test OTP Template</Value></LocaleResource>
+    <LocaleResource Name="Routing.Method"><Value>Method</Value></LocaleResource>
+    <LocaleResource Name="Routing.Ready"><Value>Configured</Value></LocaleResource>
+    <LocaleResource Name="Routing.NotReady"><Value>Not configured</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestProvider"><Value>Test this provider</Value></LocaleResource>
+    <LocaleResource Name="Routing.SavedState"><Value>Saved configuration</Value></LocaleResource>
 </Language>

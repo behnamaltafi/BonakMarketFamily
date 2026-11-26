@@ -1,5 +1,5 @@
 <Language Name="فارسی" IsDefault="false" IsRightToLeft="true">
-    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.MultiSms" AppendRootKey="false"><Value>درگاه پیامک چندتأمین‌کننده</Value></LocaleResource>
+    <LocaleResource Name="Plugins.FriendlyName.BonakMarket.MultiSms" AppendRootKey="false"><Value>درگاه پیامک</Value></LocaleResource>
     <LocaleResource Name="Plugins.Description.BonakMarket.MultiSms" AppendRootKey="false"><Value>ارسال پیامک با کاوه‌نگار و ملی‌پیامک</Value></LocaleResource>
     <LocaleResource Name="Intro"><Value>دو تأمین‌کننده پیامک را تنظیم کنید. تغییر تأمین‌کننده بدون راه‌اندازی مجدد اعمال می‌شود. تغییر مسیر خودکار فقط در صورت رد قطعی ارسال انجام می‌شود.</Value></LocaleResource>
     <LocaleResource Name="SecretHint"><Value>برای حفظ کلید قبلی، این فیلد را خالی بگذارید. برای حذف کلید از گزینه حذف استفاده کنید.</Value></LocaleResource>
@@ -86,4 +86,57 @@
     <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>پیش‌فرض خاموش است. کد رمزنگاری‌شده در تمام محیط‌ها بلافاصله و تا ۱۵ دقیقه قابل مشاهده است. کد فعال امکان ورود به حساب را می‌دهد؛ فقط برای عیب‌یابی فعال کنید.</Value></LocaleResource>
     <LocaleResource Name="HistoryOtpCode"><Value>کد احراز هویت</Value></LocaleResource>
     <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>کد ثبت نشده یا مهلت نمایش آن پایان یافته است.</Value></LocaleResource>
+    <LocaleResource Name="Routing.Title"><Value>درگاه پیامک</Value></LocaleResource>
+    <LocaleResource Name="Routing.Intro"><Value>رمز یک‌بارمصرف فقط با الگوی خدماتی و پیامک عادی با متن آزاد ارسال می‌شود. قبل از تست تنظیمات را ذخیره کنید.</Value></LocaleResource>
+    <LocaleResource Name="Routing.Reset"><Value>پیکربندی مجدد لازم است. مسیرهای قبلی غیرفعال هستند؛ اطلاعات اتصال و مسیرهای جدید را وارد و ذخیره کنید.</Value></LocaleResource>
+    <LocaleResource Name="Routing.DevInbox"><Value>صندوق پیامک توسعه</Value></LocaleResource>
+    <LocaleResource Name="Routing.Enabled"><Value>فعال‌سازی درگاه پیامک</Value></LocaleResource>
+    <LocaleResource Name="Routing.Mock"><Value>فعال‌سازی شبیه‌ساز (فقط توسعه)</Value></LocaleResource>
+    <LocaleResource Name="Routing.OtpRoute"><Value>مسیر رمز یک‌بارمصرف — الگوی خدماتی</Value></LocaleResource>
+    <LocaleResource Name="Routing.GeneralRoute"><Value>مسیر پیامک عادی — متن آزاد</Value></LocaleResource>
+    <LocaleResource Name="Routing.Primary"><Value>تأمین‌کننده اصلی</Value></LocaleResource>
+    <LocaleResource Name="Routing.Fallback1"><Value>جایگزین اول</Value></LocaleResource>
+    <LocaleResource Name="Routing.Fallback2"><Value>جایگزین دوم</Value></LocaleResource>
+    <LocaleResource Name="Routing.SafeFailover"><Value>فعال‌سازی تغییر مسیر امن</Value></LocaleResource>
+    <LocaleResource Name="Routing.History"><Value>تنظیمات تاریخچه</Value></LocaleResource>
+    <LocaleResource Name="Routing.Kave"><Value>فعال‌سازی کاوه‌نگار</Value></LocaleResource>
+    <LocaleResource Name="Routing.Meli"><Value>فعال‌سازی ملی‌پیامک</Value></LocaleResource>
+    <LocaleResource Name="Routing.Ir"><Value>فعال‌سازی SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Routing.ApiKey"><Value>کلید API</Value></LocaleResource>
+    <LocaleResource Name="Routing.Clear"><Value>حذف کلید ذخیره‌شده</Value></LocaleResource>
+    <LocaleResource Name="Routing.General"><Value>پیامک عادی</Value></LocaleResource>
+    <LocaleResource Name="Routing.GeneralEnabled"><Value>فعال‌سازی پیامک عادی</Value></LocaleResource>
+    <LocaleResource Name="Routing.Sender"><Value>شماره فرستنده</Value></LocaleResource>
+    <LocaleResource Name="Routing.OtpEnabled"><Value>فعال‌سازی OTP</Value></LocaleResource>
+    <LocaleResource Name="Routing.KaveOtp"><Value>رمز یک‌بارمصرف / Verify Lookup</Value></LocaleResource>
+    <LocaleResource Name="Routing.KaveTemplate"><Value>نام الگوی تأییدشده</Value></LocaleResource>
+    <LocaleResource Name="Routing.KaveHint"><Value>کد در پارامتر token ارسال می‌شود.</Value></LocaleResource>
+    <LocaleResource Name="Routing.AuthMode"><Value>روش احراز هویت</Value></LocaleResource>
+    <LocaleResource Name="Routing.Console"><Value>توکن API کنسول</Value></LocaleResource>
+    <LocaleResource Name="Routing.Legacy"><Value>REST قدیمی (نام کاربری و کلید API)</Value></LocaleResource>
+    <LocaleResource Name="Routing.Username"><Value>نام کاربری</Value></LocaleResource>
+    <LocaleResource Name="Routing.LegacyKey"><Value>کلید API قدیمی (فیلد password)</Value></LocaleResource>
+    <LocaleResource Name="Routing.MeliOtp"><Value>رمز یک‌بارمصرف / خط خدماتی اشتراکی</Value></LocaleResource>
+    <LocaleResource Name="Routing.BodyId"><Value>شناسه Body ID تأییدشده</Value></LocaleResource>
+    <LocaleResource Name="Routing.MeliHint"><Value>الگو باید یک متغیر ترتیبی برای رمز داشته باشد.</Value></LocaleResource>
+    <LocaleResource Name="Routing.Line"><Value>شماره خط</Value></LocaleResource>
+    <LocaleResource Name="Routing.IrOtp"><Value>رمز یک‌بارمصرف / Verify</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateId"><Value>شناسه الگوی تأییدشده</Value></LocaleResource>
+    <LocaleResource Name="Routing.Parameter"><Value>نام دقیق پارامتر الگو</Value></LocaleResource>
+    <LocaleResource Name="Routing.HistoryEnabled"><Value>فعال‌سازی تاریخچه</Value></LocaleResource>
+    <LocaleResource Name="Routing.Retention"><Value>مدت نگهداری (روز)</Value></LocaleResource>
+    <LocaleResource Name="Routing.ShowOtp"><Value>نمایش کد OTP در تاریخچه</Value></LocaleResource>
+    <LocaleResource Name="Routing.StoreBody"><Value>ذخیره متن پیام عادی</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestTitle"><Value>تست پروایدر مشخص</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestHint"><Value>تست با تنظیمات ذخیره‌شده، بدون تغییر مسیر و بدون ایجاد درخواست ورود انجام می‌شود.</Value></LocaleResource>
+    <LocaleResource Name="Routing.Provider"><Value>تأمین‌کننده</Value></LocaleResource>
+    <LocaleResource Name="Routing.Recipient"><Value>گیرنده</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestMessage"><Value>متن پیام آزمایشی عادی</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestGeneral"><Value>تست پیامک عادی</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestOtp"><Value>تست الگوی OTP</Value></LocaleResource>
+    <LocaleResource Name="Routing.Method"><Value>روش ارسال</Value></LocaleResource>
+    <LocaleResource Name="Routing.Ready"><Value>پیکربندی شده</Value></LocaleResource>
+    <LocaleResource Name="Routing.NotReady"><Value>پیکربندی نشده</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestProvider"><Value>تست همین پروایدر</Value></LocaleResource>
+    <LocaleResource Name="Routing.SavedState"><Value>وضعیت تنظیمات ذخیره‌شده</Value></LocaleResource>
 </Language>

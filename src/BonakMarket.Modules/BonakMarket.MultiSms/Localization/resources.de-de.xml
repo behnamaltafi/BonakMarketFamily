@@ -139,4 +139,25 @@
     <LocaleResource Name="Routing.NotReady"><Value>Nicht konfiguriert</Value></LocaleResource>
     <LocaleResource Name="Routing.TestProvider"><Value>Diesen Anbieter testen</Value></LocaleResource>
     <LocaleResource Name="Routing.SavedState"><Value>Gespeicherte Konfiguration</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateRoute"><Value>Vorlagenroute — genehmigte Vorlagen</Value></LocaleResource>
+    <LocaleResource Name="Routing.FreeTextRoute"><Value>Freitext-Route</Value></LocaleResource>
+    <LocaleResource Name="Routing.FreeText"><Value>Freitext-SMS</Value></LocaleResource>
+    <LocaleResource Name="Routing.Template"><Value>Vorlagen-SMS</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateEnabled"><Value>Vorlagennachrichten aktivieren</Value></LocaleResource>
+    <LocaleResource Name="Routing.FreeTextEnabled"><Value>Freitext aktivieren</Value></LocaleResource>
+    <LocaleResource Name="Routing.Templates"><Value>SMS-Vorlagen</Value></LocaleResource>
+    <LocaleResource Name="Routing.ManageTemplates"><Value>Vorlagen und Anbieterzuordnungen verwalten</Value></LocaleResource>
+    <LocaleResource Name="Routing.DeliveryIntro"><Value>Unabhängige Routen für Vorlagen und Freitext. OTP nutzt immer Vorlagen.</Value></LocaleResource>
+    <LocaleResource Name="Routing.DeliveryReset"><Value>Neue Konfiguration erforderlich.</Value></LocaleResource>
+    <LocaleResource Name="Routing.DeliveryMode"><Value>Versandart</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateKey"><Value>Vorlagenschlüssel</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateHelp"><Value>Logische Vorlagen definieren und externen Vorlagen zuordnen.</Value></LocaleResource>
+    <LocaleResource Name="Routing.AddTemplate"><Value>Vorlage hinzufügen</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateTitle"><Value>Titel</Value></LocaleResource>
+    <LocaleResource Name="Routing.LogicalParameters"><Value>Logische Parameter</Value></LocaleResource>
+    <LocaleResource Name="Routing.ParameterHelp"><Value>Kommagetrennte Namen. OTP hat genau Code. Schema bleibt unverändert.</Value></LocaleResource>
+    <LocaleResource Name="Routing.ExternalTemplateId"><Value>Externe Vorlagen-ID</Value></LocaleResource>
+    <LocaleResource Name="Routing.Slots"><Value>Anbieterparameter</Value></LocaleResource>
+    <LocaleResource Name="Routing.SlotHelp"><Value>Je logischem Parameter einen Slot eingeben. Leer lassen zum Überspringen.</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestTemplate"><Value>Gespeicherte Vorlage testen</Value></LocaleResource>
 </Language>

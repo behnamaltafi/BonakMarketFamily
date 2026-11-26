@@ -46,6 +46,8 @@ public sealed class SmsGatewaySender : ISmsSender
     private async Task<SmsSendResult> SendCoreAsync(SmsSendRequest request, string testProvider, CancellationToken cancelToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        if (!Enum.IsDefined(request.EffectiveDeliveryMode) || !Enum.IsDefined(request.Kind))
+            throw new ArgumentException("Invalid SMS mode or purpose.");
         bool templateMode = request.EffectiveDeliveryMode == SmsDeliveryMode.Template;
         if (string.IsNullOrWhiteSpace(request.PhoneNumber) || request.PhoneNumber.Length > 20 ||
             !request.PhoneNumber.Select((ch, i) => (ch >= '0' && ch <= '9') || (i == 0 && ch == '+')).All(valid => valid) ||
@@ -53,6 +55,10 @@ public sealed class SmsGatewaySender : ISmsSender
         {
             throw new ArgumentException("Invalid SMS destination or message.");
         }
+
+        var phone = SmsPhoneNormalizer.Normalize(request.PhoneNumber);
+        if (phone is null) throw new ArgumentException("Invalid Iranian mobile number.");
+        request = request with { PhoneNumber = phone };
 
         var settings = await _settings.LoadSettingsAsync<SmsGatewaySettings>();
         if (!settings.Enabled && testProvider is null)
@@ -63,6 +69,8 @@ public sealed class SmsGatewaySender : ISmsSender
         bool otp = request.Kind == SmsMessageKind.Otp;
         if (otp && (!templateMode || request.VerificationCode is not { Length: 6 } || !request.VerificationCode.All(char.IsAsciiDigit)))
             throw new ArgumentException("OTP requires an approved template and six-digit code.");
+        if (otp && request.TemplateParameters is not null)
+            throw new ArgumentException("OTP parameters are derived only from VerificationCode.");
         if (!otp && !string.IsNullOrEmpty(request.VerificationCode))
             throw new ArgumentException("Verification code is only valid for OTP purpose.");
         if (!templateMode && (!string.IsNullOrWhiteSpace(request.TemplateKey) || request.TemplateParameters is not null))

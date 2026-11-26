@@ -139,4 +139,25 @@
     <LocaleResource Name="Routing.NotReady"><Value>پیکربندی نشده</Value></LocaleResource>
     <LocaleResource Name="Routing.TestProvider"><Value>تست همین پروایدر</Value></LocaleResource>
     <LocaleResource Name="Routing.SavedState"><Value>وضعیت تنظیمات ذخیره‌شده</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateRoute"><Value>مسیر پیامک قالب‌دار — الگوی خدماتی</Value></LocaleResource>
+    <LocaleResource Name="Routing.FreeTextRoute"><Value>مسیر پیامک بدون قالب — متن آزاد</Value></LocaleResource>
+    <LocaleResource Name="Routing.FreeText"><Value>پیامک بدون قالب</Value></LocaleResource>
+    <LocaleResource Name="Routing.Template"><Value>پیامک قالب‌دار</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateEnabled"><Value>فعال‌سازی پیامک قالب‌دار</Value></LocaleResource>
+    <LocaleResource Name="Routing.FreeTextEnabled"><Value>فعال‌سازی پیامک بدون قالب</Value></LocaleResource>
+    <LocaleResource Name="Routing.Templates"><Value>قالب‌های پیامک</Value></LocaleResource>
+    <LocaleResource Name="Routing.ManageTemplates"><Value>مدیریت قالب‌های منطقی و نگاشت پروایدرها</Value></LocaleResource>
+    <LocaleResource Name="Routing.DeliveryIntro"><Value>مسیرهای مستقل پیامک قالب‌دار و بدون قالب را تنظیم کنید. رمز یک‌بارمصرف همیشه قالب‌دار است. پیش از تست تنظیمات را ذخیره کنید.</Value></LocaleResource>
+    <LocaleResource Name="Routing.DeliveryReset"><Value>پیکربندی مجدد لازم است. مسیرهای قبلی تا ذخیره تنظیمات جدید غیرفعال هستند.</Value></LocaleResource>
+    <LocaleResource Name="Routing.DeliveryMode"><Value>روش ارسال</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateKey"><Value>کلید قالب</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateHelp"><Value>هر قالب منطقی را یک بار تعریف و به الگوی تأییدشده هر پروایدر متصل کنید. حروف کوچک و بزرگ کلید تفاوتی ندارند.</Value></LocaleResource>
+    <LocaleResource Name="Routing.AddTemplate"><Value>افزودن قالب</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateTitle"><Value>عنوان</Value></LocaleResource>
+    <LocaleResource Name="Routing.LogicalParameters"><Value>پارامترهای منطقی</Value></LocaleResource>
+    <LocaleResource Name="Routing.ParameterHelp"><Value>نام پارامترها را به ترتیب و با کاما جدا کنید. قالب OTP فقط پارامتر Code دارد. کلید، هدف و پارامترها پس از ایجاد ثابت هستند.</Value></LocaleResource>
+    <LocaleResource Name="Routing.ExternalTemplateId"><Value>نام یا شناسه قالب پروایدر</Value></LocaleResource>
+    <LocaleResource Name="Routing.Slots"><Value>جایگاه پارامترهای پروایدر</Value></LocaleResource>
+    <LocaleResource Name="Routing.SlotHelp"><Value>برای هر پارامتر منطقی یک جایگاه پروایدر به همان ترتیب بنویسید. برای عدم استفاده از پروایدر شناسه و جایگاه‌ها را خالی بگذارید.</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestTemplate"><Value>تست قالب ذخیره‌شده</Value></LocaleResource>
 </Language>

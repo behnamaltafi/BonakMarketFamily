@@ -139,4 +139,25 @@
     <LocaleResource Name="Routing.NotReady"><Value>Not configured</Value></LocaleResource>
     <LocaleResource Name="Routing.TestProvider"><Value>Test this provider</Value></LocaleResource>
     <LocaleResource Name="Routing.SavedState"><Value>Saved configuration</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateRoute"><Value>Template routing — approved service templates</Value></LocaleResource>
+    <LocaleResource Name="Routing.FreeTextRoute"><Value>FreeText routing — untemplated SMS</Value></LocaleResource>
+    <LocaleResource Name="Routing.FreeText"><Value>FreeText SMS</Value></LocaleResource>
+    <LocaleResource Name="Routing.Template"><Value>Template SMS</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateEnabled"><Value>Enable template messages</Value></LocaleResource>
+    <LocaleResource Name="Routing.FreeTextEnabled"><Value>Enable free-text messages</Value></LocaleResource>
+    <LocaleResource Name="Routing.Templates"><Value>SMS Templates</Value></LocaleResource>
+    <LocaleResource Name="Routing.ManageTemplates"><Value>Manage logical templates and provider mappings</Value></LocaleResource>
+    <LocaleResource Name="Routing.DeliveryIntro"><Value>Choose independent routes for approved templates and free text. OTP always uses templates. Save settings before testing.</Value></LocaleResource>
+    <LocaleResource Name="Routing.DeliveryReset"><Value>Reconfiguration required. Old routes remain disabled until you save the new settings.</Value></LocaleResource>
+    <LocaleResource Name="Routing.DeliveryMode"><Value>Delivery mode</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateKey"><Value>Template key</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateHelp"><Value>Define each logical template once; map it to approved external templates for each provider. Keys are case-insensitive.</Value></LocaleResource>
+    <LocaleResource Name="Routing.AddTemplate"><Value>Add template</Value></LocaleResource>
+    <LocaleResource Name="Routing.TemplateTitle"><Value>Title</Value></LocaleResource>
+    <LocaleResource Name="Routing.LogicalParameters"><Value>Logical parameters</Value></LocaleResource>
+    <LocaleResource Name="Routing.ParameterHelp"><Value>Comma-separated names, in order. OTP has exactly one parameter: Code. Key, purpose and parameters are immutable after creation.</Value></LocaleResource>
+    <LocaleResource Name="Routing.ExternalTemplateId"><Value>External template name / ID</Value></LocaleResource>
+    <LocaleResource Name="Routing.Slots"><Value>Provider parameter slots</Value></LocaleResource>
+    <LocaleResource Name="Routing.SlotHelp"><Value>Enter one provider slot per logical parameter in the same order. Leave ID and slots empty to omit this provider.</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestTemplate"><Value>Test saved template</Value></LocaleResource>
 </Language>

@@ -116,7 +116,7 @@ public class SmsHistoryTransportTests
         var sender = CreateSender(Config(), history.Object, primary, fallback);
         Assert.ThrowsAsync<HttpRequestException>(async () => await sender.SendAsync(Otp));
 
-        history.Verify(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(), "Kavenegar", "OTP",
+        history.Verify(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(), "Kavenegar", "Template",
             "Unknown", null, "Transport", It.IsAny<DateTime>(),
             It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
 
@@ -130,17 +130,17 @@ public class SmsHistoryTransportTests
         factory.Setup(x => x.LoadSettingsAsync<SmsGatewaySettings>(0))
             .ReturnsAsync(settings);
         return new SmsGatewaySender(factory.Object, providers,
-            NullLogger<SmsGatewaySender>.Instance, history);
+            NullLogger<SmsGatewaySender>.Instance, history, TestSmsTemplates.Catalog());
     }
 
     private static SmsGatewaySettings Config() => new()
     {
         Enabled = true, HistoryEnabled = true,
-        RoutingConfigured = true, OtpPrimary = "Kavenegar", OtpFailover = true,
-        OtpFallback1 = "Melipayamak"
+        DeliveryRoutingConfigured = true, TemplatePrimary = "Kavenegar", TemplateFailover = true,
+        TemplateFallback1 = "Melipayamak"
     };
 
-    private sealed class StubProvider : ISmsProvider, IOtpSmsProvider
+    private sealed class StubProvider : ISmsProvider, ITemplateSmsProvider
     {
         public StubProvider(string name) => Name = name;
         public string Name { get; }
@@ -148,9 +148,10 @@ public class SmsHistoryTransportTests
         public Exception Failure { get; set; }
 
         public bool IsAvailable(SmsGatewaySettings settings) => true;
-        public bool IsOtpAvailable(SmsGatewaySettings settings) => true;
-        public Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken ct)
-            => SendAsync(phone, text, settings, ct);
+        public bool IsTemplateAvailable(SmsGatewaySettings settings) => true;
+        public bool IsValidMapping(string externalId, IEnumerable<string> slots) => true;
+        public Task<string> SendTemplateAsync(string phone, SmsTemplatePayload template, SmsGatewaySettings settings, CancellationToken ct)
+            => SendAsync(phone, "", settings, ct);
 
         public Task<string> SendAsync(string phone, string text,
             SmsGatewaySettings settings, CancellationToken cancelToken)

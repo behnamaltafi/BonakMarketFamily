@@ -42,19 +42,20 @@ Run in Development, configure and enable Mock in MultiSms and enable OTP in Iden
 
 Preserve existing SQL history and Data Protection keys during upgrade. See ../BonakMarket.Identity/README.md for account API and migration instructions.
 
-## Routing and upgrade
+## Delivery modes and upgrade
 
-Legacy routes are inactive until the administrator re-enters credentials and saves the new routes. Preserve existing history and Data Protection keys. Keep a non-SMS admin login available before upgrading.
+Routes are now FreeText and Template, independent of the message purpose (General, Otp, Test).
+Old settings must be re-entered; there is no implicit legacy routing. The module migration creates MultiSmsTemplate and MultiSmsTemplateProvider, seeds LOGINOTP and adds nullable DeliveryMode and TemplateKey columns to message history. Existing history remains intact.
 
-OTP and General each have a primary and up to two ordered fallbacks. No automatic free-text fallback for OTP. Mock must be alone in a route and enabled only in Development. A route may be empty if the corresponding message type is unused.
+Configure provider credentials and capability switches in SMS Gateway. Use SMS Templates to define a logical key, title, purpose and parameter schema, then map the logical parameters to an approved external ID for each provider. Keys are case-insensitive and stored uppercase. Existing Identity calls default to LOGINOTP (shared for current login, enrollment and reauthentication flows); it requires Code and at least one usable mapping in the configured Template route. OTP cannot use FreeText. Define further logical keys when adding business notifications.
 
-- Kavenegar: Send for general, VerifyLookup with approved template name and token for OTP.
-- Melipayamak: choose Console (API token, simple/shared JSON) or Legacy (username + API key, SendSMS/BaseServiceNumber). OTP requires approved Body ID and exactly one positional variable. Console contract must be verified with a real account; ambiguous responses stop failover.
-- SMS.ir: Bulk for general, Verify with template ID and exact parameter name for OTP.
+Example OrderShipped: logical parameters OrderNumber, TrackingCode; Kavenegar slots token, token2; Melipayamak slots 0, 1; SMS.ir slots ORDER, TRACKING. A mapping missing on a provider permits moving to the next configured template provider only when safe failover is enabled. No cross-mode fallback. No raw template values are persisted.
 
-Save before testing. Direct admin tests can be run while the gateway is disabled. Tests use exactly the selected provider, without failover. OTP tests create no login challenge and are recorded as Test without storing the code. Real sends are billed. Accepted is not delivered.
+Template callers use ISmsSender.SendAsync with SmsSendRequest(phone, null) { DeliveryMode = SmsDeliveryMode.Template, TemplateKey = "OrderShipped", TemplateParameters = new Dictionary<string, string> { ... } }. Existing free-text callers remain unchanged.
 
-The module-owned migration SmsAttemptMethod adds a nullable Method column to attempt history; old rows remain unchanged.
+Melipayamak supports Console token (simple/shared) and Legacy REST (SendSMS/BaseServiceNumber). Console receives ordered args; legacy joins the ordered values with semicolon and rejects delimiter-containing values. Verify with real accounts before rollout.
+
+Admin tests use saved settings and exactly the selected provider. Template tests can be run from the template edit page; OTP test does not create a login challenge or persist test codes. Keep a non-SMS administrator login available until configuration is verified. Mock is isolated, Development only. Accepted is not handset delivery.
 
 ## Optional OTP code history
 

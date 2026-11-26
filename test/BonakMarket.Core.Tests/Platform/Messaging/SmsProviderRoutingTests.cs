@@ -16,12 +16,12 @@ public class SmsProviderRoutingTests
     }
 
     [Test]
-    public void Otp_and_general_have_independent_routes()
+    public void Template_and_freetext_have_independent_routes()
     {
         var settings = new SmsGatewaySettings
         {
-            RoutingConfigured = true, OtpPrimary = "SmsIr", OtpFailover = true,
-            OtpFallback1 = "Kavenegar", GeneralPrimary = "Melipayamak"
+            DeliveryRoutingConfigured = true, TemplatePrimary = "SmsIr", TemplateFailover = true,
+            TemplateFallback1 = "Kavenegar", FreeTextPrimary = "Melipayamak"
         };
         Assert.That(SmsRouting.Providers(settings, true), Is.EqualTo(new[] { "SmsIr", "Kavenegar" }));
         Assert.That(SmsRouting.Providers(settings, false), Is.EqualTo(new[] { "Melipayamak" }));
@@ -32,22 +32,22 @@ public class SmsProviderRoutingTests
     {
         var settings = new SmsGatewaySettings
         {
-            RoutingConfigured = true, OtpPrimary = "Mock", OtpFailover = true, OtpFallback1 = "SmsIr"
+            DeliveryRoutingConfigured = true, TemplatePrimary = "Mock", TemplateFailover = true, TemplateFallback1 = "SmsIr"
         };
         Assert.That(SmsRouting.Providers(settings, true), Is.Empty);
     }
 
     [Test]
-    public void Otp_only_configuration_does_not_require_a_sender()
+    public void Template_only_configuration_does_not_require_a_sender()
     {
         var s = new SmsGatewaySettings
         {
-            KavenegarEnabled = true, KavenegarOtpEnabled = true,
-            KavenegarOtpTemplate = "login", EncryptedKavenegarApiKey = "key",
-            SmsIrEnabled = true, SmsIrOtpEnabled = true, SmsIrTemplateId = 123,
+            KavenegarEnabled = true, KavenegarTemplateEnabled = true,
+            EncryptedKavenegarApiKey = "key",
+            SmsIrEnabled = true, SmsIrTemplateEnabled = true,
             EncryptedSmsIrApiKey = "key",
-            MelipayamakEnabled = true, MelipayamakOtpEnabled = true,
-            MelipayamakBodyId = 42, EncryptedMelipayamakApiToken = "key"
+            MelipayamakEnabled = true, MelipayamakTemplateEnabled = true,
+            EncryptedMelipayamakApiToken = "key"
         };
         foreach (ISmsProvider provider in new ISmsProvider[] { new KavenegarSmsProvider(null), new SmsIrSmsProvider(null), new MelipayamakSmsProvider(null) })
         {

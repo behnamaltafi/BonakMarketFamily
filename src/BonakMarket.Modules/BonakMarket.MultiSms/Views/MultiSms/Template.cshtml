@@ -64,7 +64,7 @@
         <div class="form-group"><label for="template-phone">@T("Plugins.Sms.MultiSms.Routing.Recipient")</label><input id="template-phone" name="phone" type="tel" class="form-control" required/></div>
         @if (!Model.IsOtp)
         {
-            @foreach (var parameter in parameterNames)
+            foreach (var parameter in parameterNames)
             {
                 <div class="form-group"><label>@parameter</label><input name="values" class="form-control" required/></div>
             }

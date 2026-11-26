@@ -4,6 +4,8 @@ namespace BonakMarket.ERP.Services;
 public sealed class ErpProviderResolver(IEnumerable<IErpProvider> providers)
 {
     public string[] Names => providers.Select(x => x.SystemName).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+    public bool Supports(string name, Type capability) => providers.Any(x =>
+        string.Equals(x.SystemName, name, StringComparison.OrdinalIgnoreCase) && capability.IsInstanceOfType(x));
     public T Resolve<T>(string name) where T : class, IErpProvider
         => providers.OfType<T>().SingleOrDefault(x => string.Equals(x.SystemName, name, StringComparison.OrdinalIgnoreCase))
             ?? throw new ErpIntegrationException("unsupported_provider_operation");

@@ -9,5 +9,5 @@ public interface IErpAuthenticator
     string DefaultSettingsJson { get; }
     void Validate(ErpConnection connection);
     Task AuthenticateAsync(ErpConnection connection, HttpRequestMessage request, CancellationToken ct);
-    void Invalidate(ErpConnection connection, HttpRequestMessage rejectedRequest);
+    Task InvalidateAsync(ErpConnection connection, HttpRequestMessage rejectedRequest, CancellationToken ct);
 }

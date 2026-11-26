@@ -29,10 +29,16 @@ public sealed class ErpTokenCache
         }
         finally { gate.Release(); }
     }
-    public void Invalidate(ErpConnection c, string rejected)
+    public async Task InvalidateAsync(ErpConnection c, string rejected, CancellationToken ct)
     {
         var key = Key(c);
-        if (_cache.TryGetValue<ErpAccessToken>(key, out var current) && current.Authorization == rejected)
-            _cache.Remove(key);
+        var gate = _locks[(int)((uint)key.GetHashCode() % (uint)_locks.Length)];
+        await gate.WaitAsync(ct);
+        try
+        {
+            if (_cache.TryGetValue<ErpAccessToken>(key, out var current) && current.Authorization == rejected)
+                _cache.Remove(key);
+        }
+        finally { gate.Release(); }
     }
 }

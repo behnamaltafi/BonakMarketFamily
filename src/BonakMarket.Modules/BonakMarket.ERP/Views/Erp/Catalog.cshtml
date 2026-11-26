@@ -1,7 +1,7 @@
 @model CatalogModel
 @{ Layout = "_ConfigureModule"; }
 <h3>ERP catalog staging</h3>
-<p>Read-only previews and staged products do not modify live prices or inventory.</p>
+<p>Read-only previews and staged products do not modify live prices or inventory. Staging requires an enabled Products route for this company and connection.</p>
 <form asp-action="Preview" method="post" target="_blank">
     <input type="hidden" name="id" value="@Model.ConnectionId" />
     <label>Operation</label>

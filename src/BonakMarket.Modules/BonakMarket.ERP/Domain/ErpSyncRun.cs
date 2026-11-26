@@ -13,6 +13,8 @@ public sealed class ErpSyncRun : BaseEntity
     [Required, MaxLength(30)] public string Status { get; set; }
     public DateTime StartedUtc { get; set; }
     public DateTime? FinishedUtc { get; set; }
+    public Guid? CorrelationId { get; set; }
+    public int Offset { get; set; }
     public int Rows { get; set; }
     [MaxLength(100)] public string ErrorCode { get; set; }
 }

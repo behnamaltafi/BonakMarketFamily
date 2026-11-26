@@ -23,7 +23,15 @@ public sealed class ErpCatalogService(SmartDbContext db, ErpProviderResolver res
     // inventory, publication state or existing product content is modified.
     public async Task<int> StageProductsAsync(ErpConnection c, int skip, int take, CancellationToken ct)
     {
-        var run = new ErpSyncRun { ConnectionId = c.Id, Operation = "Products", Status = "Running", StartedUtc = DateTime.UtcNow };
+        // The caller holds the operation lock; any older Running record for
+        // this connection and operation cannot still own that lock.
+        var now = DateTime.UtcNow;
+        await db.Set<ErpSyncRun>().Where(x => x.ConnectionId == c.Id && x.Operation == "Products" && x.Status == "Running")
+            .ExecuteUpdateAsync(u => u.SetProperty(x => x.Status, "Interrupted")
+                .SetProperty(x => x.ErrorCode, "previous_execution_interrupted")
+                .SetProperty(x => x.FinishedUtc, (DateTime?)now), ct);
+        var run = new ErpSyncRun { ConnectionId = c.Id, Operation = "Products", Status = "Running",
+            StartedUtc = now, Offset = skip, CorrelationId = Guid.NewGuid() };
         db.Set<ErpSyncRun>().Add(run);
         await db.SaveChangesAsync(ct);
         try
@@ -60,15 +68,19 @@ public sealed class ErpCatalogService(SmartDbContext db, ErpProviderResolver res
         catch (Exception ex)
         {
             // A failed or partial page cannot modify staging data. Record only a safe error code.
-            db.ChangeTracker.Clear();
-            var failed = await db.Set<ErpSyncRun>().FindAsync(new object[] { run.Id }, CancellationToken.None);
-            if (failed != null)
+            foreach (var entry in db.ChangeTracker.Entries().Where(x => x.Entity is ErpCatalogProduct || x.Entity is ErpSyncRun).ToArray())
+                entry.State = EntityState.Detached;
+            var status = ex is OperationCanceledException && ct.IsCancellationRequested ? "Cancelled" : "Failed";
+            var code = ex is ErpIntegrationException erp ? erp.Code : status == "Cancelled" ? "cancelled" : "catalog_sync_failed";
+            using var cleanup = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try
             {
-                failed.Status = "Failed";
-                failed.ErrorCode = ex is ErpIntegrationException erp ? erp.Code : "catalog_sync_failed";
-                failed.FinishedUtc = DateTime.UtcNow;
-                await db.SaveChangesAsync(CancellationToken.None);
+                await db.Set<ErpSyncRun>().Where(x => x.Id == run.Id)
+                    .ExecuteUpdateAsync(u => u.SetProperty(x => x.Status, status)
+                        .SetProperty(x => x.ErrorCode, code)
+                        .SetProperty(x => x.FinishedUtc, (DateTime?)DateTime.UtcNow), cleanup.Token);
             }
+            catch { /* Preserve original failure; next run marks stale state interrupted. */ }
             throw;
         }
     }

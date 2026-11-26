@@ -15,5 +15,5 @@ public sealed class NoAuthentication : IErpAuthenticator
     public void Validate(BonakMarket.ERP.Domain.ErpConnection connection) { }
     public Task AuthenticateAsync(BonakMarket.ERP.Domain.ErpConnection connection, System.Net.Http.HttpRequestMessage request, CancellationToken ct)
         => Task.CompletedTask;
-    public void Invalidate(BonakMarket.ERP.Domain.ErpConnection connection, System.Net.Http.HttpRequestMessage rejectedRequest) { }
+    public Task InvalidateAsync(BonakMarket.ERP.Domain.ErpConnection connection, System.Net.Http.HttpRequestMessage rejectedRequest, CancellationToken ct) => Task.CompletedTask;
 }

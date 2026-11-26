@@ -32,6 +32,9 @@ internal sealed class Startup : StarterBase
         services.AddScoped<IErpProvider, VaranegarProvider>();
         services.AddScoped<ErpProviderResolver>();
         services.AddScoped<ErpCatalogService>();
+        services.AddScoped<ErpOperationRouter>();
+        services.AddScoped<ErpOperationLock>();
+        services.AddScoped<ErpOperationRunner>();
         services.AddScoped<ErpDraftProductService>();
         services.AddSingleton<ErpSecrets>();
         services.AddTransient<IDbContextConfigurationSource<SmartDbContext>, ErpModelConfigurer>();

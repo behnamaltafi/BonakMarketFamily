@@ -39,11 +39,9 @@ public sealed class VaranegarAuthenticator(ErpHttpTransport transport, ErpEndpoi
         if (!request.Headers.TryAddWithoutValidation("Authorization", token.Authorization))
             throw new ErpIntegrationException("invalid_authorization");
     }
-    public void Invalidate(ErpConnection c, HttpRequestMessage rejectedRequest)
-    {
-        if (rejectedRequest.Headers.TryGetValues("Authorization", out var values))
-            cache.Invalidate(c, values.FirstOrDefault());
-    }
+    public Task InvalidateAsync(ErpConnection c, HttpRequestMessage rejectedRequest, CancellationToken ct)
+        => rejectedRequest.Headers.TryGetValues("Authorization", out var values)
+            ? cache.InvalidateAsync(c, values.FirstOrDefault(), ct) : Task.CompletedTask;
     private async Task<ErpAccessToken> LoginAsync(ErpConnection c, CancellationToken ct)
     {
         var s = ErpSettingsJson.Read<VaranegarAuthenticationSettings>(c.AuthenticationSettingsJson);

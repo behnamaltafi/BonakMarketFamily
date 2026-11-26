@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core.Data;
@@ -11,16 +10,71 @@ using BonakMarket.ERP.Contracts;
 using BonakMarket.ERP.Infrastructure;
 using BonakMarket.ERP.Services;
 using BonakMarket.Web.Controllers;
+using BonakMarket.Scheduling;
+using BonakMarket.ERP.Tasks;
 
 namespace BonakMarket.ERP.Controllers;
 
 [Permission("configuration.setting")]
-public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolver, ErpSecrets secrets, ErpCatalogService catalog, ErpDraftProductService drafts, ErpAuthenticationResolver authentication, ErpEndpointPolicy endpoints) : AdminController
+public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolver, ErpSecrets secrets, ErpCatalogService catalog, ErpDraftProductService drafts, ErpAuthenticationResolver authentication, ErpEndpointPolicy endpoints, ErpOperationRouter router, ErpOperationRunner runner, ITaskStore tasks) : AdminController
 {
     public async Task<IActionResult> Index(CancellationToken ct)
         => View(new ErpIndexModel(await db.Set<ErpConnection>().AsNoTracking().OrderBy(x => x.CompanyCode)
             .Select(x => new ErpConnectionListItem(x.Id, x.CompanyCode, x.Code, x.Name, x.Provider, x.Enabled)).ToListAsync(ct),
             await db.Set<ErpSyncRun>().AsNoTracking().OrderByDescending(x => x.Id).Take(50).ToListAsync(ct)));
+
+    public async Task<IActionResult> Operations(CancellationToken ct)
+        => View(new OperationsModel(await db.Set<ErpOperationConfiguration>().AsNoTracking().OrderBy(x => x.CompanyCode).ThenBy(x => x.Operation).ToListAsync(ct),
+            await db.Set<ErpConnection>().AsNoTracking().OrderBy(x => x.CompanyCode)
+                .Select(x => new ErpConnectionListItem(x.Id, x.CompanyCode, x.Code, x.Name, x.Provider, x.Enabled)).ToListAsync(ct),
+            ErpOperations.ReadOperations));
+
+    [HttpPost]
+    public async Task<IActionResult> SaveOperation(OperationModel model, CancellationToken ct)
+    {
+        if (!ModelState.IsValid) return BadRequest("invalid_operation");
+        var connection = await db.Set<ErpConnection>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == model.ConnectionId, ct);
+        if (connection == null) return NotFound();
+        var company = model.CompanyCode.Trim();
+        using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        var route = await db.Set<ErpOperationConfiguration>().SingleOrDefaultAsync(x => x.CompanyCode == company && x.Operation == model.Operation, ct);
+        var isNew = route == null;
+        route ??= new ErpOperationConfiguration { CompanyCode = company, Operation = model.Operation };
+        route.ConnectionId = connection.Id;
+        route.Enabled = model.Enabled;
+        route.ScheduleEnabled = model.ScheduleEnabled;
+        route.IntervalMinutes = model.IntervalMinutes;
+        route.BatchSize = model.BatchSize;
+        route.NextOffset = 0;
+        route.NextRunUtc = model.Enabled && model.ScheduleEnabled ? DateTime.UtcNow : null;
+        route.LastSucceededUtc = null;
+        route.Revision = Guid.NewGuid();
+        try { router.Validate(route, connection); }
+        catch (ErpIntegrationException ex) { return BadRequest(new { error = ex.Code }); }
+        if (isNew) db.Set<ErpOperationConfiguration>().Add(route);
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return RedirectToAction(nameof(Operations));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> PreviewOperation(string companyCode, string operation, CancellationToken ct)
+    {
+        try
+        {
+            var route = await router.ResolveAsync(companyCode, operation, ct);
+            return Json(await catalog.PreviewAsync(route.Connection, operation, 0, 25, ct));
+        }
+        catch (ErpIntegrationException ex) { return BadRequest(new { error = ex.Code }); }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RegisterSchedule()
+    {
+        await ErpSynchronizationTask.EnsureRegisteredAsync(tasks);
+        NotifySuccess("ERP scheduler registered. Enable product schedules in Operations.");
+        return RedirectToAction(nameof(Operations));
+    }
 
     private void PopulateOptions(ConnectionModel model)
     {
@@ -80,19 +134,21 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
             if (current.Id != 0 && (!string.Equals(current.CompanyCode, candidate.CompanyCode, StringComparison.OrdinalIgnoreCase) ||
                 !string.Equals(current.Provider, candidate.Provider, StringComparison.OrdinalIgnoreCase)))
                 throw new ErpIntegrationException("connection_identity_is_immutable");
+            candidate.AuthenticationType = authentication.Resolve(candidate.AuthenticationType).SystemName;
             var replace = !string.IsNullOrWhiteSpace(model.NewUsername) || !string.IsNullOrEmpty(model.NewPassword);
             if (replace && (string.IsNullOrWhiteSpace(model.NewUsername) || string.IsNullOrEmpty(model.NewPassword) || model.ClearCredentials))
                 throw new ErpIntegrationException("enter_both_username_and_password");
             if (candidate.AuthenticationType == "None" && replace)
                 throw new ErpIntegrationException("credentials_not_needed");
             if (current.Id != 0 && model.HasCredentials &&
-                (!string.Equals(current.BaseUrl?.TrimEnd('/'), candidate.BaseUrl?.TrimEnd('/'), StringComparison.OrdinalIgnoreCase) ||
+                (!string.Equals(endpoints.ValidateBase(current.BaseUrl).AbsoluteUri, uri.AbsoluteUri, StringComparison.Ordinal) ||
                 !string.Equals(current.AuthenticationType, candidate.AuthenticationType, StringComparison.OrdinalIgnoreCase) ||
                 (current.LegacyLoginPayload && current.AuthenticationSettingsJson != candidate.AuthenticationSettingsJson)) &&
                 !replace && !model.ClearCredentials)
                 throw new ErpIntegrationException("replace_credentials_when_changing_authentication");
             if (model.ClearCredentials || candidate.AuthenticationType == "None")
             {
+                if (candidate.AuthenticationType == "None") candidate.AuthenticationSettingsJson = "{}";
                 candidate.EncryptedAuthenticationSettings = null;
                 candidate.LegacyLoginPayload = false;
             }
@@ -148,7 +204,7 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
     {
         var c = await db.Set<ErpConnection>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (c == null) return NotFound();
-        try { var count = await catalog.StageProductsAsync(c, skip, take, ct); NotifySuccess($"Staged {count} products."); }
+        try { var count = await runner.StageProductsAsync(c.CompanyCode, c.Id, skip, take, ct); NotifySuccess($"Staged {count} products."); }
         catch (ErpIntegrationException ex) { NotifyError(ex.Code); }
         return RedirectToAction(nameof(Catalog), new { id });
     }

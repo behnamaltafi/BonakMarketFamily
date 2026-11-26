@@ -18,7 +18,7 @@ public sealed class ErpHttpClient(ErpHttpTransport transport, ErpEndpointPolicy 
         try { return await transport.SendAsync(connection, request, ct); }
         catch (ErpIntegrationException ex) when (ex.Code == "http_401" && auth.SystemName != "None")
         {
-            auth.Invalidate(connection, request);
+            await auth.InvalidateAsync(connection, request, ct);
             using var retry = new HttpRequestMessage(HttpMethod.Get, uri);
             await auth.AuthenticateAsync(connection, retry, ct);
             return await transport.SendAsync(connection, retry, ct);

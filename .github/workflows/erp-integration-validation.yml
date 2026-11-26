@@ -1,0 +1,29 @@
+name: ERP integration validation
+
+on:
+  push:
+    branches: [feature/erp-integration]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-provider-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build solution
+        run: dotnet build BonakMarket.sln -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-self-contained
+      - name: ERP provider contract tests
+        run: dotnet test test/BonakMarket.Core.Tests/BonakMarket.Core.Tests.csproj -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~VaranegarProviderTests" --logger "trx;LogFileName=erp.trx" --results-directory TestResults
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: erp-test-results
+          path: TestResults
+          if-no-files-found: ignore

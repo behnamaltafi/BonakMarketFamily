@@ -16,6 +16,11 @@ public sealed class ConnectionModel
     [MaxLength(200)] public string ODataPrefix { get; set; } = "odata/";
     [Required, MaxLength(200)] public string LoginPath { get; set; } = "api/auth/login";
     [MaxLength(40)] public string AuthorizationScheme { get; set; } = "Bearer";
+    [Required, MaxLength(200)] public string ProductsPath { get; set; } = "ThirdPartyProductInfoOData";
+    [Required, MaxLength(200)] public string PricesPath { get; set; } = "ThirdPartyPriceHistoryOData";
+    [Required, MaxLength(200)] public string InventoryPath { get; set; } = "ThirdPartyStockProductInfoOData";
+    [Required, MaxLength(200)] public string CategoriesPath { get; set; } = "ThirdPartyProductGroupInfoOData";
+    [Required, MaxLength(200)] public string WarehousesPath { get; set; } = "ThirdPartyStockDCListOData";
     public bool UseLogin { get; set; } = true;
     [MaxLength(8000)] public string NewLoginBody { get; set; }
     public bool ClearLoginBody { get; set; }
@@ -24,4 +29,5 @@ public sealed class ConnectionModel
 }
 public sealed record ErpIndexModel(IReadOnlyList<ErpConnectionListItem> Connections, IReadOnlyList<ErpSyncRun> Runs);
 public sealed record ErpConnectionListItem(int Id, string CompanyCode, string Code, string Name, string Provider, bool Enabled);
-public sealed record CatalogModel(int ConnectionId, int Skip, IReadOnlyList<ErpCatalogProduct> Rows);
+public sealed record CatalogModel(int ConnectionId, int Skip, IReadOnlyList<ErpCatalogProduct> Rows, IReadOnlyList<ProductTemplateOption> Templates);
+public sealed record ProductTemplateOption(int Id, string Name);

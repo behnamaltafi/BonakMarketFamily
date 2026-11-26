@@ -31,6 +31,16 @@
                 <input type="number" name="productId" min="1" required />
                 <button type="submit" class="btn btn-secondary">Link</button>
             </form>
+            <form asp-action="CreateDraft" method="post" class="mt-2">
+                <input type="hidden" name="id" value="@row.Id" />
+                <select name="templateId" required>
+                    @foreach (var template in Model.Templates)
+                    {
+                        <option value="@template.Id">@template.Name</option>
+                    }
+                </select>
+                <button type="submit" class="btn btn-outline-primary">Create unpublished draft</button>
+            </form>
         }
         </td></tr>
     }

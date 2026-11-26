@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core.Data;
+using BonakMarket.Core.Catalog.Products;
 using BonakMarket.Core.Security;
 using BonakMarket.ERP.Domain;
 using BonakMarket.ERP.Models;
@@ -13,7 +14,7 @@ using BonakMarket.Web.Controllers;
 namespace BonakMarket.ERP.Controllers;
 
 [Permission("configuration.setting")]
-public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolver, ErpSecrets secrets, ErpCatalogService catalog) : AdminController
+public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolver, ErpSecrets secrets, ErpCatalogService catalog, ErpDraftProductService drafts) : AdminController
 {
     public async Task<IActionResult> Index(CancellationToken ct)
         => View(new ErpIndexModel(await db.Set<ErpConnection>().AsNoTracking().OrderBy(x => x.CompanyCode)
@@ -28,7 +29,7 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
         return View(new ConnectionModel { Id = c.Id, CompanyCode = c.CompanyCode, Code = c.Code, Name = c.Name,
             Provider = c.Provider, BaseUrl = c.BaseUrl, Enabled = c.Enabled, TimeoutSeconds = c.TimeoutSeconds,
             ODataPrefix = c.ODataPrefix, LoginPath = c.LoginPath, AuthorizationScheme = c.AuthorizationScheme,
-            UseLogin = c.UseLogin, HasLoginBody = !string.IsNullOrEmpty(c.EncryptedLoginBody), Providers = resolver.Names });
+            ProductsPath = c.ProductsPath, PricesPath = c.PricesPath, InventoryPath = c.InventoryPath, CategoriesPath = c.CategoriesPath, WarehousesPath = c.WarehousesPath, UseLogin = c.UseLogin, HasLoginBody = !string.IsNullOrEmpty(c.EncryptedLoginBody), Providers = resolver.Names });
     }
 
     [HttpPost]
@@ -53,6 +54,11 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
                 !model.ClearLoginBody && string.IsNullOrWhiteSpace(model.NewLoginBody))
                 throw new ErpIntegrationException("replace_credentials_when_changing_base_url");
             VaranegarProvider.Relative(uri, model.LoginPath);
+            VaranegarProvider.Relative(uri, model.ProductsPath);
+            VaranegarProvider.Relative(uri, model.PricesPath);
+            VaranegarProvider.Relative(uri, model.InventoryPath);
+            VaranegarProvider.Relative(uri, model.CategoriesPath);
+            VaranegarProvider.Relative(uri, model.WarehousesPath);
             if (!string.IsNullOrEmpty(model.AuthorizationScheme) && !Regex.IsMatch(model.AuthorizationScheme, "^[A-Za-z][A-Za-z0-9_-]{0,39}$"))
                 throw new ErpIntegrationException("invalid_authorization_scheme");
             if (!resolver.Names.Contains(model.Provider, StringComparer.OrdinalIgnoreCase))
@@ -89,6 +95,11 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
         c.ODataPrefix = model.ODataPrefix?.Trim() ?? "";
         c.LoginPath = model.LoginPath.Trim();
         c.AuthorizationScheme = model.AuthorizationScheme;
+        c.ProductsPath = model.ProductsPath.Trim();
+        c.PricesPath = model.PricesPath.Trim();
+        c.InventoryPath = model.InventoryPath.Trim();
+        c.CategoriesPath = model.CategoriesPath.Trim();
+        c.WarehousesPath = model.WarehousesPath.Trim();
         c.UseLogin = model.UseLogin;
         c.EncryptedLoginBody = secret;
         if (c.Id == 0) db.Set<ErpConnection>().Add(c);
@@ -120,7 +131,22 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
         if (skip < 0 || !await db.Set<ErpConnection>().AnyAsync(x => x.Id == id, ct)) return BadRequest();
         var rows = await db.Set<ErpCatalogProduct>().AsNoTracking().Where(x => x.ConnectionId == id)
             .OrderBy(x => x.Id).Skip(skip).Take(100).ToListAsync(ct);
-        return View(new CatalogModel(id, skip, rows));
+        var templates = await db.Set<ProductTemplate>().AsNoTracking().OrderBy(x => x.DisplayOrder)
+            .Select(x => new ProductTemplateOption(x.Id, x.Name)).ToListAsync(ct);
+        return View(new CatalogModel(id, skip, rows, templates));
+    }
+
+    [HttpPost]
+    [Permission(Permissions.Catalog.Product.Create)]
+    public async Task<IActionResult> CreateDraft(int id, int templateId, CancellationToken ct)
+    {
+        try
+        {
+            var result = await drafts.CreateAsync(id, templateId, ct);
+            NotifySuccess("Unpublished draft created; price, tax, inventory and unit require review.");
+            return RedirectToAction(nameof(Catalog), new { id = result.ConnectionId });
+        }
+        catch (ErpIntegrationException ex) { return BadRequest(new { error = ex.Code }); }
     }
 
     [HttpPost]

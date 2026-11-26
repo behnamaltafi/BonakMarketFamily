@@ -21,7 +21,7 @@ public sealed class VaranegarProvider(IHttpClientFactory factory, ErpSecrets sec
     };
 
     public async Task<ErpPage<ErpProduct>> GetProductsAsync(ErpConnection c, int skip, int take, CancellationToken ct)
-        => new((await Read<ProductRow>(c, "ThirdPartyProductInfoOData", skip, take, ct))
+        => new((await Read<ProductRow>(c, c.ProductsPath, skip, take, ct))
             .Select(x => new ErpProduct(Id(x.Id), Required(x.GoodsCode), Required(x.GoodsName),
                 Flag(x.NoSaleFlag), Flag(x.NoStockFlag), OptionalId(x.BrandRef), x.BrandName,
                 OptionalId(x.ManufacturerRef), x.ManufacturerName, OptionalId(x.GoodsGroupRef),
@@ -29,7 +29,7 @@ public sealed class VaranegarProvider(IHttpClientFactory factory, ErpSecrets sec
                 ValidPrice(x.SalePrice), ValidPrice(x.UserPrice), ValidPrice(x.ManufacturerPrice), x.Tax, x.Charge)).ToArray());
 
     public async Task<ErpPage<ErpPrice>> GetPricesAsync(ErpConnection c, int skip, int take, CancellationToken ct)
-        => new((await Read<PriceRow>(c, "ThirdPartyPriceHistoryOData", skip, take, ct))
+        => new((await Read<PriceRow>(c, c.PricesPath, skip, take, ct))
             .Select(x => new ErpPrice(Id(x.Id), Id(x.GoodsRef), ValidPrice(x.SalePrice),
                 ValidPrice(x.UserPrice), ValidPrice(x.ManufacturerPrice), x.StartDate, x.EndDate,
                 OptionalId(x.DCRef), OptionalId(x.CustRef), OptionalId(x.CustCtgrRef), OptionalId(x.CustActRef),
@@ -38,7 +38,7 @@ public sealed class VaranegarProvider(IHttpClientFactory factory, ErpSecrets sec
                 OptionalId(x.MainCustTypeRef), OptionalId(x.SubCustTypeRef), x.Code)).ToArray());
 
     public async Task<ErpPage<ErpStock>> GetInventoryAsync(ErpConnection c, int skip, int take, CancellationToken ct)
-        => new((await Read<StockRow>(c, "ThirdPartyStockProductInfoOData", skip, take, ct))
+        => new((await Read<StockRow>(c, c.InventoryPath, skip, take, ct))
             .Select(x => new ErpStock(Id(x.Id), Id(x.GoodsRef),
                 x.StockDCRef is >= 0 ? x.StockDCRef.Value.ToString(CultureInfo.InvariantCulture) : throw new ErpIntegrationException("invalid_warehouse"),
                 x.OnHandQty ?? throw new ErpIntegrationException("missing_quantity"),
@@ -46,11 +46,11 @@ public sealed class VaranegarProvider(IHttpClientFactory factory, ErpSecrets sec
                 ValidPrice(x.SalePrice))).ToArray());
 
     public async Task<ErpPage<ErpCategory>> GetCategoriesAsync(ErpConnection c, int skip, int take, CancellationToken ct)
-        => new((await Read<CategoryRow>(c, "ThirdPartyProductGroupInfoOData", skip, take, ct))
+        => new((await Read<CategoryRow>(c, c.CategoriesPath, skip, take, ct))
             .Select(x => new ErpCategory(Id(x.Id), OptionalId(x.ParentId), Required(x.GoodsGroupName), x.GoodsGroupPath)).ToArray());
 
     public async Task<ErpPage<ErpWarehouse>> GetWarehousesAsync(ErpConnection c, int skip, int take, CancellationToken ct)
-        => new((await Read<WarehouseRow>(c, "ThirdPartyStockDCListOData", skip, take, ct))
+        => new((await Read<WarehouseRow>(c, c.WarehousesPath, skip, take, ct))
             .Select(x => new ErpWarehouse(Id(x.Id), x.StockDCCode, Required(x.StockDCName), OptionalId(x.DCRef))).ToArray());
 
     public static Uri ValidateBase(string value)

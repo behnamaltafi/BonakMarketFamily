@@ -19,6 +19,11 @@ public sealed class ErpConnection : BaseEntity
     [MaxLength(200)] public string ODataPrefix { get; set; } = "odata/";
     [Required, MaxLength(200)] public string LoginPath { get; set; } = "api/auth/login";
     [MaxLength(40)] public string AuthorizationScheme { get; set; } = "Bearer";
+    [Required, MaxLength(200)] public string ProductsPath { get; set; } = "ThirdPartyProductInfoOData";
+    [Required, MaxLength(200)] public string PricesPath { get; set; } = "ThirdPartyPriceHistoryOData";
+    [Required, MaxLength(200)] public string InventoryPath { get; set; } = "ThirdPartyStockProductInfoOData";
+    [Required, MaxLength(200)] public string CategoriesPath { get; set; } = "ThirdPartyProductGroupInfoOData";
+    [Required, MaxLength(200)] public string WarehousesPath { get; set; } = "ThirdPartyStockDCListOData";
     public bool UseLogin { get; set; } = true;
     public string EncryptedLoginBody { get; set; }
 }

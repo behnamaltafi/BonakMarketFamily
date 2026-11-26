@@ -19,6 +19,11 @@ internal sealed class Initial : Migration
             .WithColumn("ODataPrefix").AsString(200).NotNullable()
             .WithColumn("LoginPath").AsString(200).NotNullable()
             .WithColumn("AuthorizationScheme").AsString(40).Nullable()
+            .WithColumn("ProductsPath").AsString(200).NotNullable()
+            .WithColumn("PricesPath").AsString(200).NotNullable()
+            .WithColumn("InventoryPath").AsString(200).NotNullable()
+            .WithColumn("CategoriesPath").AsString(200).NotNullable()
+            .WithColumn("WarehousesPath").AsString(200).NotNullable()
             .WithColumn("UseLogin").AsBoolean().NotNullable()
             .WithColumn("EncryptedLoginBody").AsString(int.MaxValue).Nullable();
         Create.Index("UX_ErpConnection_Company_Code").OnTable("ErpConnection")

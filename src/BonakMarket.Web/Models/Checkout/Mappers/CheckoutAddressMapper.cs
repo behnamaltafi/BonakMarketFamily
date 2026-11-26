@@ -1,3 +1,5 @@
+using BonakMarket.Core.Identity;
+using Microsoft.AspNetCore.Mvc.Rendering;
 ﻿using System.Dynamic;
 using BonakMarket.ComponentModel;
 using BonakMarket.Core.Checkout.Cart;
@@ -68,7 +70,9 @@ public class CheckoutAddressMapper : Mapper<CheckoutContext, CheckoutAddressMode
         var shipping = parameters?.Shipping == true;
         var selectedCountryId = parameters?.SelectedCountryId as int?;
         var cart = from.Cart;
+        var ordinary = cart.Customer.IsRegistered() && !CustomerGuildPolicy.IsExempt(cart.Customer);
         var addresses = cart.Customer.Addresses.Where(x => x.Country == null || (shipping ? x.Country.AllowsShipping : x.Country.AllowsBilling));
+        if (ordinary) addresses = addresses.Where(x => x.Country?.TwoLetterIsoCode == "IR" && x.Country.Published);
 
         foreach (var address in addresses)
         {
@@ -85,7 +89,26 @@ public class CheckoutAddressMapper : Mapper<CheckoutContext, CheckoutAddressMode
         to.NewAddress.CountryId = selectedCountryId;
         to.NewAddress.Email = _workContext.CurrentCustomer.Email;
 
-        if (to.NewAddress.CountryEnabled)
+        if (ordinary)
+        {
+            var iran = await _db.Countries.AsNoTracking().Where(x => x.Published && x.TwoLetterIsoCode == "IR")
+                .ApplyStandardFilter(false, _storeContext.CurrentStore.Id).SingleOrDefaultAsync();
+            to.NewAddress.CountryFixed = true;
+            to.NewAddress.CountryId = iran?.Id;
+            to.NewAddress.CountryName = iran?.Name ?? "Iran";
+            if (iran != null)
+            {
+                var provinces = await _db.StateProvinces.AsNoTracking().Where(x => x.CountryId == iran.Id && x.Published)
+                    .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name).ToListAsync();
+                to.NewAddress.AvailableStates = provinces.Select(x => new SelectListItem(x.Name, x.Id.ToString())).ToList();
+                if (!to.NewAddress.StateProvinceRequired)
+                    to.NewAddress.AvailableStates.Insert(0, new SelectListItem(T("Common.PleaseSelect").Value, "0"));
+            }
+            to.NewAddress.FirstName ??= cart.Customer.FirstName;
+            to.NewAddress.LastName ??= cart.Customer.LastName;
+            to.NewAddress.PhoneNumber ??= cart.Customer.GenericAttributes.Phone;
+        }
+        else if (to.NewAddress.CountryEnabled)
         {
             var countriesQuery = _db.Countries.AsNoTracking();
 

@@ -22,12 +22,14 @@ public sealed class SmsCredentialProtection
     {
         if (string.IsNullOrWhiteSpace(ciphertext))
         {
-            throw new SmsProviderException("SMS provider credentials are not configured.", safeToFailover: true);
+            throw new SmsProviderException("SMS provider credentials are not configured.", safeToFailover: true,
+                reason: SmsFailureReason.CredentialsMissing);
         }
 
         if (!ciphertext.StartsWith(Prefix, StringComparison.Ordinal))
         {
-            throw new SmsProviderException("SMS provider credentials must be encrypted.", safeToFailover: true);
+            throw new SmsProviderException("SMS provider credentials must be encrypted.", safeToFailover: true,
+                reason: SmsFailureReason.CredentialsNotEncrypted);
         }
 
         try
@@ -36,7 +38,8 @@ public sealed class SmsCredentialProtection
         }
         catch (System.Security.Cryptography.CryptographicException)
         {
-            throw new SmsProviderException("SMS provider credentials cannot be decrypted.", safeToFailover: true);
+            throw new SmsProviderException("SMS provider credentials cannot be decrypted.", safeToFailover: true,
+                reason: SmsFailureReason.CredentialsDecryptionFailed);
         }
     }
 }

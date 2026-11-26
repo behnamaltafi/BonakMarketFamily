@@ -151,11 +151,28 @@ internal class Startup : StarterBase
 
             builder.Configure(StarterOrdering.BeforeRoutingMiddleware, app =>
             {
-                app.UseSwagger(o =>
+                // SwaggerGen is shared across modules. Serve only the native OData
+                // documents here, never customer documents (even when those UIs are disabled).
+                app.Use(async (context, next) =>
                 {
-                    o.RouteTemplate = routePrefix + "/{documentName}/swagger.{json|yaml}";
-                    //o.SerializeAsV2 = true;
+                    if (context.Request.Path.StartsWithSegments("/" + routePrefix, out var remainder))
+                    {
+                        var path = remainder.Value?.TrimEnd('/') ?? "";
+                        if ((path.EndsWith("/swagger.json", StringComparison.OrdinalIgnoreCase) ||
+                             path.EndsWith("/swagger.yaml", StringComparison.OrdinalIgnoreCase)) &&
+                            !IsIntegrationSwaggerDocument(context.Request.Path.Value, routePrefix))
+                        {
+                            context.Response.StatusCode = 404;
+                            return;
+                        }
+                    }
+                    await next();
                 });
+                app.UseWhen(ctx => IsIntegrationSwaggerDocument(ctx.Request.Path.Value, routePrefix), docs =>
+                    docs.UseSwagger(o =>
+                    {
+                        o.RouteTemplate = routePrefix + "/{documentName}/swagger.{json|yaml}";
+                    }));
 
                 app.UseSwaggerUI(o =>
                 {
@@ -238,6 +255,15 @@ internal class Startup : StarterBase
                 });
             });
         }
+    }
+
+    private static bool IsIntegrationSwaggerDocument(string path, string routePrefix)
+    {
+        if (path == null) return false;
+        var normalized = path.TrimEnd('/');
+        return WebApiGroupNames.All.Any(name =>
+            normalized.Equals("/" + routePrefix + "/" + name + "1/swagger.json", StringComparison.OrdinalIgnoreCase) ||
+            normalized.Equals("/" + routePrefix + "/" + name + "1/swagger.yaml", StringComparison.OrdinalIgnoreCase));
     }
 
     private static void ProcessException(HttpContext context, Exception ex)

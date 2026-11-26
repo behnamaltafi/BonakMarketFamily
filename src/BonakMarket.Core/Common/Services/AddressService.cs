@@ -119,7 +119,7 @@ public partial class AddressService : AsyncDbSaveHook<Address>, IAddressService
 
         if (_addressSettings.FaxEnabled &&
             _addressSettings.FaxRequired &&
-            address.FaxNumber.HasValue())
+            !address.FaxNumber.HasValue())
             return false;
 
         if (_addressSettings.CountryEnabled)
@@ -141,9 +141,9 @@ public partial class AddressService : AsyncDbSaveHook<Address>, IAddressService
                 if (hasStates)
                 {
                     if (address.StateProvinceId == null || address.StateProvinceId.Value == 0)
-                        return false;
+                        return !_addressSettings.StateProvinceRequired;
 
-                    var state = country.StateProvinces.FirstOrDefault(x => address.StateProvinceId.Value == x.Id);
+                    var state = country.StateProvinces.FirstOrDefault(x => address.StateProvinceId.Value == x.Id && x.Published);
                     if (state == null)
                         return false;
                 }

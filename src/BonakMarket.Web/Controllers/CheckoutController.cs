@@ -1,3 +1,4 @@
+using BonakMarket.Core.Identity;
 ﻿using BonakMarket.ComponentModel;
 using BonakMarket.Core.Checkout.Cart;
 using BonakMarket.Core.Checkout.Orders;
@@ -118,9 +119,31 @@ public class CheckoutController : PublicController
             return new(RedirectToRoute("ShoppingCart"));
         }
 
-        if (!_orderSettings.AnonymousCheckoutAllowed && !customer.IsRegistered())
+        if (!customer.IsRegistered())
         {
             return new(ChallengeOrForbid());
+        }
+        if (await CustomerGuildPolicy.RequiresGuildAsync(_db, customer))
+            return new(RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.RouteUrl("Checkout") }));
+
+        var ordinary = !CustomerGuildPolicy.IsExempt(customer);
+        var firstAddress = !customer.Addresses.Any();
+        if (ordinary)
+        {
+            var iran = await _db.Countries.Where(x => x.Published && x.TwoLetterIsoCode == "IR")
+                .ApplyStandardFilter(false, _storeContext.CurrentStore.Id).SingleOrDefaultAsync();
+            if (iran == null || (isShippingAddress ? !iran.AllowsShipping : !iran.AllowsBilling))
+                ModelState.AddModelError("NewAddress.CountryId", "Iran is not configured for checkout.");
+            else
+            {
+                if (model.NewAddress.CountryId.HasValue && model.NewAddress.CountryId != iran.Id)
+                    ModelState.AddModelError("NewAddress.CountryId", "Only Iranian addresses are accepted.");
+                model.NewAddress.CountryId = iran.Id;
+                if (model.NewAddress.StateProvinceId > 0 && !await _db.StateProvinces.AnyAsync(x =>
+                    x.Id == model.NewAddress.StateProvinceId && x.CountryId == iran.Id && x.Published))
+                    ModelState.AddModelError("NewAddress.StateProvinceId", "Invalid province.");
+            }
+            model.NewAddress.Email = customer.Email;
         }
 
         if (ModelState.IsValid)
@@ -130,6 +153,11 @@ public class CheckoutController : PublicController
 
             // Save to avoid duplicate addresses.
             await _db.SaveChangesAsync();
+            if (ordinary && firstAddress && address.Country?.AllowsBilling == true && address.Country.AllowsShipping)
+            {
+                ga.DefaultBillingAddressId = address.Id;
+                ga.DefaultShippingAddressId = address.Id;
+            }
 
             if (isShippingAddress)
             {

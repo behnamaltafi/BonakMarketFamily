@@ -135,6 +135,19 @@ public partial class MessageFactory : IMessageFactory
         var replyTo = await RenderEmailAddressAsync(messageTemplate.ReplyTo, messageContext, false);
         var bcc = await RenderTemplateAsync(messageTemplate.GetLocalized((x) => x.BccEmailAddresses, languageId), messageContext, false);
 
+        // Phone-only accounts retain a reserved internal email for native Identity.
+        // It must never become an actual outbound notification recipient.
+        if (!messageContext.TestMode)
+        {
+            var removed = to.RemoveAll(x => x.Address.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase));
+            if (removed > 0 && to.Count == 0)
+                return new CreateMessageResult { Model = model, MessageContext = messageContext };
+            replyTo?.RemoveAll(x => x.Address.EndsWith("@accounts.invalid", StringComparison.OrdinalIgnoreCase));
+            if (bcc?.Contains("@accounts.invalid", StringComparison.OrdinalIgnoreCase) == true)
+                bcc = string.Join(';', bcc.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Where(x => !x.Contains("@accounts.invalid", StringComparison.OrdinalIgnoreCase)));
+        }
+
         var subject = await RenderTemplateAsync(messageTemplate.GetLocalized((x) => x.Subject, languageId), messageContext);
         ((dynamic)model).Email.Subject = subject;
 

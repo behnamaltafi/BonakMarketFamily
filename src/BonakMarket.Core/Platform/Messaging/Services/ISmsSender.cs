@@ -19,7 +19,11 @@ public enum SmsMessageKind { General, Otp, Test }
 
 /// <summary>Mark OTP explicitly so audit storage never persists authentication secrets.</summary>
 public sealed record SmsSendRequest(
-    string PhoneNumber, string Text, SmsMessageKind Kind = SmsMessageKind.General);
+    string PhoneNumber, string Text, SmsMessageKind Kind = SmsMessageKind.General)
+{
+    /// <summary>Optional OTP value for template transports. Never persist or log it.</summary>
+    public string VerificationCode { get; init; }
+}
 
 /// <summary>
 /// The provider that accepted the message and its provider-generated identifier.

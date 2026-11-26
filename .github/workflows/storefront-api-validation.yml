@@ -1,0 +1,30 @@
+name: Storefront API validation
+
+on:
+  push:
+    branches: [feature/storefront-api]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-contract-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build complete solution
+        run: dotnet build BonakMarket.sln -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-self-contained
+      - name: Customer API and order safety tests
+        run: dotnet test test/BonakMarket.Core.Tests/BonakMarket.Core.Tests.csproj -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~Platform.Messaging|FullyQualifiedName~OrderPlacementSafetyTests" --logger "trx;LogFileName=storefront-api.trx" --results-directory TestResults
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storefront-api-test-results
+          path: TestResults
+          if-no-files-found: ignore

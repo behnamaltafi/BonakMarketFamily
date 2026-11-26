@@ -5,7 +5,7 @@ using BonakMarket.Domain;
 
 namespace BonakMarket.MultiSms.Domain;
 
-/// <summary>Persisted message metadata. OTP content and credentials are NEVER written here.</summary>
+/// <summary>Persisted metadata. OTP Body may contain only a short-lived protected code when explicitly enabled; never plaintext OTP or provider credentials.</summary>
 [Table("MultiSmsMessage")]
 [Index(nameof(CreatedOnUtc), Name = "IX_MultiSmsMessage_Created")]
 [Index(nameof(Phone), nameof(CreatedOnUtc), Name = "IX_MultiSmsMessage_Phone_Created")]

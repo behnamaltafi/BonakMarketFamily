@@ -1,0 +1,70 @@
+@model IdentityConfigurationModel
+@{
+    Layout = "_ConfigureModule";
+}
+<widget target-zone="admin_button_toolbar_before">
+    <button id="SaveConfigButton" type="submit" name="save" class="btn btn-primary" value="save" form="customer-identity-settings">
+        <icon name="check" />
+        <span>@T("Admin.Common.Save")</span>
+    </button>
+</widget>
+<form id="customer-identity-settings" asp-action="Configure" method="post" autocomplete="off">
+    <div asp-validation-summary="All"></div>
+    <div class="adminContent">
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="OtpLoginEnabled" />
+            </div>
+            <div class="adminData">
+                <setting-editor asp-for="OtpLoginEnabled" />
+                <span asp-validation-for="OtpLoginEnabled"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="SmsAsPrimaryLogin" />
+            </div>
+            <div class="adminData">
+                <setting-editor asp-for="SmsAsPrimaryLogin" />
+                <span asp-validation-for="SmsAsPrimaryLogin"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle">
+                <smart-label asp-for="OtpMessageTemplate" />
+            </div>
+            <div class="adminData">
+                <textarea asp-for="OtpMessageTemplate" class="form-control" rows="6" dir="auto"></textarea>
+                <span asp-validation-for="OtpMessageTemplate"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="OtpResendIntervalSeconds" /></div>
+            <div class="adminData">
+                <input asp-for="OtpResendIntervalSeconds" type="number" min="30" max="300" class="form-control" />
+                <span asp-validation-for="OtpResendIntervalSeconds"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="OtpExpirationSeconds" /></div>
+            <div class="adminData">
+                <input asp-for="OtpExpirationSeconds" type="number" min="60" max="600" class="form-control" />
+                <span asp-validation-for="OtpExpirationSeconds"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="OtpMaxDailyRequests" /></div>
+            <div class="adminData">
+                <input asp-for="OtpMaxDailyRequests" type="number" min="1" max="50" class="form-control" />
+                <span asp-validation-for="OtpMaxDailyRequests"></span>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="OtpMaxVerificationAttempts" /></div>
+            <div class="adminData">
+                <input asp-for="OtpMaxVerificationAttempts" type="number" min="1" max="5" class="form-control" />
+                <span asp-validation-for="OtpMaxVerificationAttempts"></span>
+            </div>
+        </div>
+    </div>
+</form>

@@ -4,7 +4,7 @@
   "Group": "Mobile",
   "SystemName": "BonakMarket.MultiSms",
   "FriendlyName": "Multi-provider SMS Gateway",
-  "Description": "Runtime-selectable SMS gateway and native BonakMarket Customer SMS login with enrollment.",
+  "Description": "Runtime-selectable SMS transport, encrypted provider credentials and delivery history.",
   "Version": "6.4.0",
   "MinAppVersion": "6.4.0",
   "Order": 2,

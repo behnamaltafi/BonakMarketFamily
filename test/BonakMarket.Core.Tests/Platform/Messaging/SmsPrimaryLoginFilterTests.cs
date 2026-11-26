@@ -8,8 +8,9 @@ using Microsoft.AspNetCore.Routing;
 using Moq;
 using NUnit.Framework;
 using BonakMarket.Core.Configuration;
-using BonakMarket.MultiSms.Configuration;
-using BonakMarket.MultiSms.Filters;
+using BonakMarket.Identity.Configuration;
+using BonakMarket.Core.Messaging;
+using BonakMarket.Identity.Filters;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 
@@ -19,11 +20,11 @@ public class SmsPrimaryLoginFilterTests
     [Test]
     public async Task Enabled_primary_sms_redirects_the_native_login_and_preserves_checkout_context()
     {
-        var settings = SettingsFactory(true, true, true);
+        var settings = SettingsFactory(true, true);
         var context = Context("GET", "", "/checkout", true);
         bool nextCalled = false;
 
-        await new SmsPrimaryLoginFilter(settings.Object).OnActionExecutionAsync(context, () =>
+        await new SmsPrimaryLoginFilter(settings.Object, Delivery(true).Object).OnActionExecutionAsync(context, () =>
         {
             nextCalled = true;
             return Task.FromResult(new ActionExecutedContext(context, context.Filters, context.Controller));
@@ -47,11 +48,11 @@ public class SmsPrimaryLoginFilterTests
     public async Task Disabling_any_required_setting_keeps_the_native_password_login(
         bool gatewayEnabled, bool otpEnabled, bool primarySms)
     {
-        var settings = SettingsFactory(gatewayEnabled, otpEnabled, primarySms);
+        var settings = SettingsFactory(otpEnabled, primarySms);
         var context = Context("GET");
         bool nextCalled = false;
 
-        await new SmsPrimaryLoginFilter(settings.Object).OnActionExecutionAsync(context, () =>
+        await new SmsPrimaryLoginFilter(settings.Object, Delivery(gatewayEnabled).Object).OnActionExecutionAsync(context, () =>
         {
             nextCalled = true;
             return Task.FromResult(new ActionExecutedContext(context, context.Filters, context.Controller));
@@ -70,7 +71,7 @@ public class SmsPrimaryLoginFilterTests
         var context = Context(method, query);
         bool nextCalled = false;
 
-        await new SmsPrimaryLoginFilter(settings.Object).OnActionExecutionAsync(context, () =>
+        await new SmsPrimaryLoginFilter(settings.Object, Delivery(true).Object).OnActionExecutionAsync(context, () =>
         {
             nextCalled = true;
             return Task.FromResult(new ActionExecutedContext(context, context.Filters, context.Controller));
@@ -78,7 +79,7 @@ public class SmsPrimaryLoginFilterTests
 
         Assert.That(nextCalled, Is.True);
         Assert.That(context.Result, Is.Null);
-        settings.Verify(x => x.LoadSettingsAsync<SmsGatewaySettings>(0), Times.Never);
+        settings.Verify(x => x.LoadSettingsAsync<CustomerIdentitySettings>(0), Times.Never);
     }
 
     [TestCase("https://example.org/steal")]
@@ -87,22 +88,28 @@ public class SmsPrimaryLoginFilterTests
     {
         var context = Context("GET", "", returnUrl);
 
-        await new SmsPrimaryLoginFilter(SettingsFactory(true, true, true).Object)
+        await new SmsPrimaryLoginFilter(SettingsFactory(true, true).Object, Delivery(true).Object)
             .OnActionExecutionAsync(context, () => throw new System.InvalidOperationException("Unexpected password action."));
 
         Assert.That(((RedirectToActionResult)context.Result).RouteValues["returnUrl"], Is.Null);
     }
 
-    private static Mock<ISettingFactory> SettingsFactory(bool enabled, bool otp, bool primary)
+    private static Mock<ISettingFactory> SettingsFactory(bool otp, bool primary)
     {
         var settings = new Mock<ISettingFactory>();
-        settings.Setup(x => x.LoadSettingsAsync<SmsGatewaySettings>(0)).ReturnsAsync(new SmsGatewaySettings
+        settings.Setup(x => x.LoadSettingsAsync<CustomerIdentitySettings>(0)).ReturnsAsync(new CustomerIdentitySettings
         {
-            Enabled = enabled,
             OtpLoginEnabled = otp,
             SmsAsPrimaryLogin = primary
         });
         return settings;
+    }
+
+    private static Mock<ISmsDeliveryAvailability> Delivery(bool enabled)
+    {
+        var delivery = new Mock<ISmsDeliveryAvailability>();
+        delivery.Setup(x => x.IsEnabledAsync()).ReturnsAsync(enabled);
+        return delivery;
     }
 
     private static ActionExecutingContext Context(string method, string query = "", string returnUrl = null, bool checkoutAsGuest = false)

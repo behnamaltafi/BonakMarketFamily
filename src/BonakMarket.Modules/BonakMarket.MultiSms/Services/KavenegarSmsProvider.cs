@@ -1,3 +1,4 @@
+using BonakMarket.Core.Messaging;
 using BonakMarket.MultiSms.Configuration;
 
 namespace BonakMarket.MultiSms.Services;
@@ -47,7 +48,8 @@ public sealed class KavenegarSmsProvider : ISmsProvider
         {
             bool safe = response.StatusCode is HttpStatusCode.Unauthorized or
                 HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests;
-            throw new SmsProviderException($"Kavenegar HTTP {(int)response.StatusCode}.", safe);
+            throw new SmsProviderException($"Kavenegar HTTP {(int)response.StatusCode}.", safe,
+                httpStatusCode: (int)response.StatusCode);
         }
 
         var raw = await response.Content.ReadAsStringAsync(cancelToken);
@@ -57,13 +59,15 @@ public sealed class KavenegarSmsProvider : ISmsProvider
             int status = json.RootElement.GetProperty("return").GetProperty("status").GetInt32();
             if (status != 200)
             {
-                throw new SmsProviderException($"Kavenegar rejected SMS (status {status}).", safeToFailover: true);
+                throw new SmsProviderException($"Kavenegar rejected SMS (status {status}).", safeToFailover: true,
+                    httpStatusCode: (int)response.StatusCode, providerStatus: status);
             }
 
             var entries = json.RootElement.GetProperty("entries");
             if (entries.ValueKind != JsonValueKind.Array || entries.GetArrayLength() == 0)
             {
-                throw new SmsProviderException("Kavenegar returned no message confirmation.");
+                throw new SmsProviderException("Kavenegar returned no message confirmation.",
+                    httpStatusCode: (int)response.StatusCode, reason: SmsFailureReason.MissingConfirmation);
             }
 
             var id = entries[0].GetProperty("messageid");
@@ -71,11 +75,13 @@ public sealed class KavenegarSmsProvider : ISmsProvider
         }
         catch (JsonException)
         {
-            throw new SmsProviderException("Kavenegar response could not be validated.");
+            throw new SmsProviderException("Kavenegar response could not be validated.",
+                    httpStatusCode: (int)response.StatusCode, reason: SmsFailureReason.InvalidResponse);
         }
         catch (KeyNotFoundException)
         {
-            throw new SmsProviderException("Kavenegar confirmation is incomplete.");
+            throw new SmsProviderException("Kavenegar confirmation is incomplete.",
+                    httpStatusCode: (int)response.StatusCode, reason: SmsFailureReason.IncompleteConfirmation);
         }
     }
 }

@@ -38,6 +38,7 @@
         <siteMapNode id="users" title="Customers" resKey="Admin.Customers" permissionNames="customer, system.rule, configuration.authentication, configuration.activitylog" icon="customers">
             <siteMapNode id="customers" icon="user" title="Customers" resKey="Admin.Customers.Customers" permissionNames="customer" controller="Customer" action="List" area="Admin" />
             <siteMapNode id="customer-roles" icon="user-group" title="Customer roles" resKey="Admin.Customers.CustomerRoles" permissionNames="customer.role" controller="CustomerRole" action="List" area="Admin" />
+            <siteMapNode id="customer-guilds" icon="store" title="صنوف" permissionNames="customer.guild" controller="Guild" action="List" area="Admin" />
             <siteMapNode id="customer-rules" icon="hi:filter-edit" title="Customer rules" resKey="Common.CustomerRules" permissionNames="system.rule" controller="Rule" action="CustomerRules" area="Admin" />
             <siteMapNode id="online-customers" icon="login" title="Online customers" resKey="Admin.Customers.OnlineCustomers" permissionNames="customer" controller="Customer" action="OnlineCustomers" area="Admin" />
             <siteMapNode id="customer-reports" icon="chart-bar" title="Customer reports" resKey="Admin.Customers.Reports" permissionNames="customer" controller="Customer" action="Reports" area="Admin" />

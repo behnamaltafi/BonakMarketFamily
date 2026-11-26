@@ -6,13 +6,6 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*Enabled")]
     public bool Enabled { get; set; }
 
-    [LocalizedDisplay("*OtpLoginEnabled")]
-    public bool OtpLoginEnabled { get; set; }
-
-    /// <summary>Gets or sets whether SMS is the primary storefront sign-in method.</summary>
-    [LocalizedDisplay("*SmsAsPrimaryLogin")]
-    public bool SmsAsPrimaryLogin { get; set; }
-
     [LocalizedDisplay("*MockEnabled")]
     public bool MockEnabled { get; set; }
 
@@ -21,6 +14,9 @@ public sealed class ConfigurationModel : ModelBase
 
     [LocalizedDisplay("*HistoryRetentionDays")]
     public int HistoryRetentionDays { get; set; } = 90;
+
+    [LocalizedDisplay("*ShowOtpCodeInHistory")]
+    public bool ShowOtpCodeInHistory { get; set; }
 
     [LocalizedDisplay("*StoreNonOtpMessageBody")]
     public bool StoreNonOtpMessageBody { get; set; }
@@ -66,6 +62,26 @@ public sealed class ConfigurationModel : ModelBase
     public bool ClearMelipayamakPassword { get; set; }
 
     public bool HasMelipayamakPassword { get; set; }
+
+    [LocalizedDisplay("*SmsIrEnabled")]
+    public bool SmsIrEnabled { get; set; }
+
+    [LocalizedDisplay("*SmsIrLineNumber")]
+    public long? SmsIrLineNumber { get; set; }
+
+    [LocalizedDisplay("*SmsIrTemplateId")]
+    public int? SmsIrTemplateId { get; set; }
+
+    [LocalizedDisplay("*SmsIrCodeParameter")]
+    public string SmsIrCodeParameter { get; set; } = "Code";
+
+    [LocalizedDisplay("*NewSmsIrApiKey")]
+    public string NewSmsIrApiKey { get; set; }
+
+    [LocalizedDisplay("*ClearSmsIrApiKey")]
+    public bool ClearSmsIrApiKey { get; set; }
+
+    public bool HasSmsIrApiKey { get; set; }
 
     [LocalizedDisplay("*TestPhone")]
     public string TestPhone { get; set; }

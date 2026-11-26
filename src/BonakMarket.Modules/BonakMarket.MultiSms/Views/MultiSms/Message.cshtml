@@ -23,6 +23,16 @@
         <dd class="col-md-9">@Model.Message.Provider</dd>
         <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryDate")</dt>
         <dd class="col-md-9">@Model.Message.CreatedOnUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</dd>
+        @if (!string.IsNullOrEmpty(Model.OtpCode))
+        {
+            <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryOtpCode")</dt>
+            <dd class="col-md-9" dir="ltr">@Model.OtpCode</dd>
+        }
+        else if (Model.ShowOtpCodeHint)
+        {
+            <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryOtpCode")</dt>
+            <dd class="col-md-9 text-muted">@T("Plugins.Sms.MultiSms.HistoryOtpCodeUnavailable")</dd>
+        }
         @if (!string.IsNullOrWhiteSpace(Model.Message.Body) && Model.Message.Kind == "General")
         {
             <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryBody")</dt>

@@ -17,6 +17,15 @@ public static partial class Permissions
         public const string EditRole = "customer.editcustomerrole";
         public const string SendPm = "customer.sendpm";
 
+        public static class Guild
+        {
+            public const string Self = "customer.guild";
+            public const string Read = "customer.guild.read";
+            public const string Create = "customer.guild.create";
+            public const string Update = "customer.guild.update";
+            public const string Delete = "customer.guild.delete";
+        }
+
         public static class Role
         {
             public const string Self = "customer.role";

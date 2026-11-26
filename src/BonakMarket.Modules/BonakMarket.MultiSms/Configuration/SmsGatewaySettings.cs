@@ -9,21 +9,25 @@ namespace BonakMarket.MultiSms.Configuration;
 public sealed class SmsGatewaySettings : ISettings
 {
     public bool Enabled { get; set; }
-    public bool OtpLoginEnabled { get; set; }
     /// <summary>Only effective when the process is running in Development.</summary>
     public bool MockEnabled { get; set; }
     public bool HistoryEnabled { get; set; } = true;
     public int HistoryRetentionDays { get; set; } = 90;
-    /// <summary>OTP and test bodies are never persisted regardless of this flag.</summary>
+    /// <summary>Opt-in temporary encrypted OTP code history; disabled by default.</summary>
+    public bool ShowOtpCodeInHistory { get; set; }
+    /// <summary>Only ordinary message bodies are persisted by this flag.</summary>
     public bool StoreNonOtpMessageBody { get; set; }
-    /// <summary>Uses SMS as the default storefront login when SMS and OTP are enabled.</summary>
-    public bool SmsAsPrimaryLogin { get; set; } = true;
     public string PrimaryProvider { get; set; } = "Kavenegar";
     public bool EnableFailover { get; set; }
     public string FallbackProvider { get; set; } = "Melipayamak";
     public bool KavenegarEnabled { get; set; } = true;
     public string KavenegarSender { get; set; }
     public string EncryptedKavenegarApiKey { get; set; }
+    public bool SmsIrEnabled { get; set; }
+    public long? SmsIrLineNumber { get; set; }
+    public int? SmsIrTemplateId { get; set; }
+    public string SmsIrCodeParameter { get; set; } = "Code";
+    public string EncryptedSmsIrApiKey { get; set; }
     public bool MelipayamakEnabled { get; set; }
     public string MelipayamakSender { get; set; }
     public string MelipayamakUsername { get; set; }

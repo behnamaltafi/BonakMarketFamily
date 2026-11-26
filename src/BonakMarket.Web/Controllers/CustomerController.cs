@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 ﻿using System.Linq.Expressions;
 using Humanizer;
 using Microsoft.AspNetCore.Http;
@@ -123,6 +124,11 @@ public class CustomerController : PublicController
             return ChallengeOrForbid();
         }
 
+        var profile = HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>();
+        if (profile != null && !CustomerGuildPolicy.IsExempt(customer) &&
+            (await profile.GetVerifiedPhoneAsync(customer.Id) != null || await profile.IsProfileIncompleteAsync(customer.Id)))
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
+
         var model = new CustomerInfoModel();
         await PrepareCustomerInfoModelAsync(model, customer, false);
 
@@ -138,6 +144,11 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        var profile = HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>();
+        if (profile != null && !CustomerGuildPolicy.IsExempt(customer) &&
+            (await profile.GetVerifiedPhoneAsync(customer.Id) != null || await profile.IsProfileIncompleteAsync(customer.Id)))
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         if (model.Email.IsEmpty())
         {
@@ -294,7 +305,12 @@ public class CustomerController : PublicController
                 if (_shoppingCartSettings.QuickCheckoutEnabled)
                 {
                     customer.GenericAttributes.PreferredShippingOption = new() { ShippingMethodId = model.PreferredShippingMethodId ?? 0 };
-                    customer.GenericAttributes.PreferredPaymentMethod = model.PreferredPaymentMethod.NullEmpty();
+                    // The view hides the payment selector when no active methods are available.
+                    // Do not clear an existing preference merely because the field was not rendered.
+                    if (_shoppingCartSettings.CustomersCanChangePreferredPayment && Request.Form.ContainsKey(nameof(model.PreferredPaymentMethod)))
+                    {
+                        customer.GenericAttributes.PreferredPaymentMethod = model.PreferredPaymentMethod.NullEmpty();
+                    }
                 }
 
                 var updateResult = await _userManager.UpdateAsync(customer);
@@ -369,6 +385,9 @@ public class CustomerController : PublicController
             return ChallengeOrForbid();
         }
 
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
+
         var models = await customer.Addresses.MapAsync(customer, _shoppingCartSettings.QuickCheckoutEnabled);
 
         return View(models);
@@ -386,6 +405,9 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         // Find address and ensure that it belongs to the current customer.
         var address = customer.Addresses.Where(a => a.Id == id).FirstOrDefault();
@@ -408,6 +430,9 @@ public class CustomerController : PublicController
             return ChallengeOrForbid();
         }
 
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
+
         var model = await new Address().MapAsync(customer, _shoppingCartSettings.QuickCheckoutEnabled);
 
         return View(model);
@@ -421,6 +446,9 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         var address = new Address();
 
@@ -451,6 +479,9 @@ public class CustomerController : PublicController
             return ChallengeOrForbid();
         }
 
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
+
         // Find address and ensure that it belongs to the current customer.
         var address = customer.Addresses.Where(a => a.Id == id).FirstOrDefault();
         if (address == null)
@@ -471,6 +502,9 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         // Find address and ensure that it belongs to the current customer.
         var address = customer.Addresses.FirstOrDefault(x => x.Id == id);
@@ -500,6 +534,9 @@ public class CustomerController : PublicController
         {
             return ChallengeOrForbid();
         }
+
+        if (!CustomerGuildPolicy.IsExempt(customer) && HttpContext.RequestServices.GetService<IStorefrontSmsProfileService>() != null)
+            return RedirectToAction("Profile", "SmsLogin", new { returnUrl = Url.Action("Profile", "SmsLogin") });
 
         var address = customer.Addresses.FirstOrDefault(x => x.Id == id);
         if (address != null)
@@ -1118,7 +1155,8 @@ public class CustomerController : PublicController
         if (_shoppingCartSettings.QuickCheckoutEnabled)
         {
             var shippingMethods = await _shippingService.GetAllShippingMethodsAsync(store.Id);
-            var paymentProviders = await _paymentService.LoadActivePaymentProvidersAsync(null, store.Id);
+            // Profile preferences are optional even when no payment method is active.
+            var paymentProviders = await _paymentService.LoadActivePaymentProvidersAsync(null, store.Id, provideFallbackMethod: false);
             var preferredShippingMethodId = customer.GenericAttributes.PreferredShippingOption?.ShippingMethodId ?? 0;
             var preferredPaymentMethod = customer.GenericAttributes.PreferredPaymentMethod;
 

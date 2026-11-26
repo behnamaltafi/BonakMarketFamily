@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using BonakMarket.Core.Messaging;
 using BonakMarket.Core.Security;
 using BonakMarket.MultiSms.Configuration;
@@ -22,6 +23,7 @@ public sealed class MultiSmsController : AdminController
     private readonly IHostEnvironment _environment;
     private readonly SmsHistoryStore _history;
     private readonly DevelopmentSmsInbox _inbox;
+    private readonly ILogger<MultiSmsController> _logger;
     private readonly string[] _providerNames;
 
     public MultiSmsController(
@@ -30,13 +32,15 @@ public sealed class MultiSmsController : AdminController
         IEnumerable<ISmsProvider> providers,
         IHostEnvironment environment,
         SmsHistoryStore history,
-        DevelopmentSmsInbox inbox)
+        DevelopmentSmsInbox inbox,
+        ILogger<MultiSmsController> logger = null)
     {
         _protection = protection;
         _sender = sender;
         _environment = environment;
         _history = history;
         _inbox = inbox;
+        _logger = logger;
         _providerNames = providers
             .Where(x => environment.IsDevelopment() || !string.Equals(x.Name, "Mock", StringComparison.OrdinalIgnoreCase))
             .Select(x => x.Name)
@@ -66,6 +70,30 @@ public sealed class MultiSmsController : AdminController
         else if (!string.IsNullOrWhiteSpace(model.NewMelipayamakPassword))
         {
             settings.EncryptedMelipayamakPassword = _protection.Protect(model.NewMelipayamakPassword);
+        }
+
+        if (model.ClearSmsIrApiKey)
+        {
+            settings.EncryptedSmsIrApiKey = null;
+        }
+        else if (!string.IsNullOrWhiteSpace(model.NewSmsIrApiKey))
+        {
+            settings.EncryptedSmsIrApiKey = _protection.Protect(model.NewSmsIrApiKey.Trim());
+        }
+
+        if (model.SmsIrLineNumber is <= 0)
+            ModelState.AddModelError(nameof(model.SmsIrLineNumber), "Enter a positive SMS.ir line number.");
+        if (model.SmsIrTemplateId is <= 0)
+            ModelState.AddModelError(nameof(model.SmsIrTemplateId), "Enter a positive SMS.ir template ID.");
+        if (model.SmsIrTemplateId is > 0 && !SmsIrSmsProvider.IsValidParameterName(model.SmsIrCodeParameter?.Trim()))
+            ModelState.AddModelError(nameof(model.SmsIrCodeParameter), "Enter the exact SMS.ir template parameter name (1-50 ASCII letters, digits or underscores).");
+
+        if (model.Enabled && (string.Equals(model.PrimaryProvider, "SmsIr", StringComparison.OrdinalIgnoreCase) ||
+            (model.EnableFailover && string.Equals(model.FallbackProvider, "SmsIr", StringComparison.OrdinalIgnoreCase))))
+        {
+            if (!model.SmsIrEnabled || string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) ||
+                (model.SmsIrLineNumber is not > 0 && model.SmsIrTemplateId is not > 0))
+                ModelState.AddModelError(nameof(model.SmsIrEnabled), "Enable SMS.ir and configure its API key and line number or OTP template ID.");
         }
 
         if (!IsValidProvider(model.PrimaryProvider))
@@ -130,6 +158,9 @@ public sealed class MultiSmsController : AdminController
 
         if (!ModelState.IsValid)
         {
+            model.NewSmsIrApiKey = null;
+            ModelState.Remove(nameof(model.NewSmsIrApiKey));
+            model.HasSmsIrApiKey = !string.IsNullOrEmpty(settings.EncryptedSmsIrApiKey);
             model.NewKavenegarApiKey = null;
             model.NewMelipayamakPassword = null;
             ModelState.Remove(nameof(model.NewKavenegarApiKey));
@@ -142,17 +173,20 @@ public sealed class MultiSmsController : AdminController
         }
 
         settings.Enabled = model.Enabled;
-        settings.OtpLoginEnabled = model.OtpLoginEnabled;
         settings.MockEnabled = _environment.IsDevelopment() && model.MockEnabled;
         settings.HistoryEnabled = model.HistoryEnabled;
         settings.HistoryRetentionDays = model.HistoryRetentionDays;
+        settings.ShowOtpCodeInHistory = model.ShowOtpCodeInHistory;
         settings.StoreNonOtpMessageBody = model.StoreNonOtpMessageBody;
-        settings.SmsAsPrimaryLogin = model.SmsAsPrimaryLogin;
         settings.PrimaryProvider = model.PrimaryProvider;
         settings.EnableFailover = model.EnableFailover;
         settings.FallbackProvider = model.FallbackProvider;
         settings.KavenegarEnabled = model.KavenegarEnabled;
         settings.KavenegarSender = model.KavenegarSender?.Trim();
+        settings.SmsIrEnabled = model.SmsIrEnabled;
+        settings.SmsIrLineNumber = model.SmsIrLineNumber;
+        settings.SmsIrTemplateId = model.SmsIrTemplateId;
+        settings.SmsIrCodeParameter = model.SmsIrCodeParameter?.Trim();
         settings.MelipayamakEnabled = model.MelipayamakEnabled;
         settings.MelipayamakSender = model.MelipayamakSender?.Trim();
         settings.MelipayamakUsername = model.MelipayamakUsername?.Trim();
@@ -183,7 +217,9 @@ public sealed class MultiSmsController : AdminController
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             model.TestSucceeded = false;
-            model.TestResult = T("Plugins.Sms.MultiSms.TestRejected");
+            var diagnostic = SmsHistoryFormatter.SafeDiagnostic(ex);
+            _logger?.LogWarning("Manual SMS test failed. Diagnostic={Diagnostic}", diagnostic);
+            model.TestResult = T("Plugins.Sms.MultiSms.TestRejected").Value + " (" + diagnostic + ")";
         }
 
         return View(nameof(Configure), model);
@@ -215,7 +251,8 @@ public sealed class MultiSmsController : AdminController
 
     [HttpGet]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public async Task<IActionResult> Message(int id, CancellationToken ct = default)
+    [LoadSetting(false)]
+    public async Task<IActionResult> Message(int id, SmsGatewaySettings settings, CancellationToken ct = default)
     {
         var message = await _history.FindAsync(id, ct);
         if (message is null) return NotFound();
@@ -223,6 +260,8 @@ public sealed class MultiSmsController : AdminController
         return View(new SmsHistoryDetailsModel
         {
             Message = message,
+            OtpCode = _history.GetOtpCode(message, settings, _environment.IsDevelopment()),
+            ShowOtpCodeHint = settings.HistoryEnabled && settings.ShowOtpCodeInHistory && message.Kind == "Otp",
             Attempts = await _history.AttemptsAsync(id, ct)
         });
     }
@@ -248,16 +287,20 @@ public sealed class MultiSmsController : AdminController
             MockEnabled = settings.MockEnabled,
             HistoryEnabled = settings.HistoryEnabled,
             HistoryRetentionDays = settings.HistoryRetentionDays,
+            ShowOtpCodeInHistory = settings.ShowOtpCodeInHistory,
             StoreNonOtpMessageBody = settings.StoreNonOtpMessageBody,
             Enabled = settings.Enabled,
-            OtpLoginEnabled = settings.OtpLoginEnabled,
-            SmsAsPrimaryLogin = settings.SmsAsPrimaryLogin,
             PrimaryProvider = settings.PrimaryProvider,
             EnableFailover = settings.EnableFailover,
             FallbackProvider = settings.FallbackProvider,
             KavenegarEnabled = settings.KavenegarEnabled,
             KavenegarSender = settings.KavenegarSender,
             HasKavenegarApiKey = !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey),
+            SmsIrEnabled = settings.SmsIrEnabled,
+            SmsIrLineNumber = settings.SmsIrLineNumber,
+            SmsIrTemplateId = settings.SmsIrTemplateId,
+            SmsIrCodeParameter = settings.SmsIrCodeParameter,
+            HasSmsIrApiKey = !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey),
             MelipayamakEnabled = settings.MelipayamakEnabled,
             MelipayamakSender = settings.MelipayamakSender,
             MelipayamakUsername = settings.MelipayamakUsername,

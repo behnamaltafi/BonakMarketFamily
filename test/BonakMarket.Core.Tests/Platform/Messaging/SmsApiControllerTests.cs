@@ -20,7 +20,11 @@ using BonakMarket.Core.Security;
 using BonakMarket.Events;
 using BonakMarket.MultiSms.Controllers;
 using BonakMarket.MultiSms.Models;
-using BonakMarket.MultiSms.Services;
+using BonakMarket.Identity.Services;
+using BonakMarket.Identity.Controllers;
+using BonakMarket.Identity.Models;
+using BonakMarket.Core;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 
@@ -41,6 +45,35 @@ public class SmsApiControllerTests
         otp.Verify(x => x.RequestLoginCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
+    [TestCase("otp_resend_too_soon", 37)]
+    [TestCase("otp_daily_limit", 7200)]
+    public async Task Login_request_returns_rate_limit_and_retry_after(string code, int retryAfter)
+    {
+        var otp = new Mock<ISmsOtpLoginService>();
+        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.RequestLoginCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OtpFlowException(code, retryAfter));
+        var controller = CreateLoginController(otp);
+        var result = (ObjectResult)await controller.RequestCode(new SmsCodeRequest { Phone = "09123456789" }, default);
+        Assert.That(result.StatusCode, Is.EqualTo(429));
+        Assert.That(((OtpErrorResponse)result.Value).RetryAfter, Is.EqualTo(retryAfter));
+        Assert.That(controller.Response.Headers["Retry-After"].ToString(), Is.EqualTo(retryAfter.ToString()));
+    }
+
+    [TestCase("otp_expired", 400)]
+    [TestCase("otp_attempt_limit", 429)]
+    public async Task Login_verification_returns_specific_otp_error(string code, int status)
+    {
+        var otp = new Mock<ISmsOtpLoginService>();
+        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.ConfirmLoginAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new OtpFlowException(code));
+        var result = (ObjectResult)await CreateLoginController(otp).VerifyCode(
+            new SmsCodeVerificationRequest { Phone = "09123456789", Code = "123456" }, default);
+        Assert.That(result.StatusCode, Is.EqualTo(status));
+        Assert.That(((OtpErrorResponse)result.Value).Code, Is.EqualTo(code));
+    }
+
     [Test]
     public async Task Disabled_login_does_not_issue_codes()
     {
@@ -56,10 +89,10 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
-        var controller = CreateLoginController(otp);
+        var controller = CreateSecurityController(otp);
 
-        Assert.That(await controller.RequestEnrollment(new SmsCodeRequest(), default), Is.TypeOf<UnauthorizedResult>());
-        Assert.That(await controller.ConfirmEnrollment(new SmsCodeVerificationRequest(), default), Is.TypeOf<UnauthorizedResult>());
+        Assert.That(await controller.RequestEnrollment(new PhoneChangeRequest(), default), Is.TypeOf<UnauthorizedResult>());
+        Assert.That(await controller.ConfirmEnrollment(new PhoneChangeVerificationRequest(), default), Is.TypeOf<UnauthorizedResult>());
         otp.Verify(x => x.RequestEnrollmentCodeAsync(It.IsAny<Customer>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         otp.Verify(x => x.ConfirmEnrollmentAsync(It.IsAny<Customer>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -74,12 +107,30 @@ public class SmsApiControllerTests
         users.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(customer);
         var signIn = CreateSignInManager(users);
         signIn.Setup(x => x.IsSignedIn(It.IsAny<ClaimsPrincipal>())).Returns(true);
-        var controller = CreateLoginController(otp, users, signIn);
+        var controller = CreateSecurityController(otp, users, signIn, currentCustomer: customer);
 
-        var result = await controller.RequestEnrollment(new SmsCodeRequest { Phone = "09123456789" }, default);
+        var result = await controller.RequestEnrollment(new PhoneChangeRequest { Phone = "09123456789" }, default);
 
         Assert.That(result, Is.TypeOf<OkObjectResult>());
         otp.Verify(x => x.RequestEnrollmentCodeAsync(customer, "09123456789", It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Test]
+    public async Task Bound_phone_change_without_reauth_cannot_use_initial_enrollment()
+    {
+        var otp = new Mock<ISmsOtpLoginService>();
+        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        var customer = RegisteredCustomer();
+        otp.Setup(x => x.GetVerifiedPhoneAsync(customer.Id, It.IsAny<CancellationToken>())).ReturnsAsync("+989123456789");
+        var users = CreateUserManager();
+        users.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(customer);
+        var signIn = CreateSignInManager(users);
+        signIn.Setup(x => x.IsSignedIn(It.IsAny<ClaimsPrincipal>())).Returns(true);
+        var controller = CreateSecurityController(otp, users, signIn, currentCustomer: customer);
+        Assert.That(await controller.RequestEnrollment(new PhoneChangeRequest { Phone = "09351234567" }, default), Is.TypeOf<BadRequestObjectResult>());
+        Assert.That(await controller.ConfirmEnrollment(new PhoneChangeVerificationRequest { Phone = "09351234567", Code = "123456" }, default), Is.TypeOf<BadRequestObjectResult>());
+        otp.Verify(x => x.RequestEnrollmentCodeAsync(It.IsAny<Customer>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        otp.Verify(x => x.ConfirmEnrollmentAsync(It.IsAny<Customer>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [TestCase("locked")]
@@ -145,7 +196,7 @@ public class SmsApiControllerTests
         antiforgery.Setup(x => x.GetAndStoreTokens(It.IsAny<HttpContext>()))
             .Returns(new AntiforgeryTokenSet("request-token", "cookie-token", "__RequestVerificationToken", "X-XSRF-Token"));
         var users = CreateUserManager();
-        var controller = new SmsLoginApiController(otp.Object, CreateSignInManager(users).Object, users.Object, null, antiforgery.Object, Mock.Of<IEventPublisher>())
+        var controller = new AuthApiController(otp.Object, CreateSignInManager(users).Object, users.Object, antiforgery.Object)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };
@@ -186,14 +237,82 @@ public class SmsApiControllerTests
     }
 
     private static SmsLoginApiController CreateLoginController(Mock<ISmsOtpLoginService> otp,
-        Mock<UserManager<Customer>> users = null, Mock<SignInManager<Customer>> signIn = null, SmartDbContext db = null)
+        Mock<UserManager<Customer>> users = null, Mock<SignInManager<Customer>> signIn = null, SmartDbContext db = null, Customer currentCustomer = null)
     {
         users ??= CreateUserManager();
         signIn ??= CreateSignInManager(users);
-        return new SmsLoginApiController(otp.Object, signIn.Object, users.Object, db, Mock.Of<IAntiforgery>(), Mock.Of<IEventPublisher>())
+        var work = new Mock<IWorkContext>();
+        work.SetupGet(x => x.CurrentCustomer).Returns(currentCustomer);
+        var services = new ServiceCollection().AddSingleton(work.Object).BuildServiceProvider();
+        var http = new DefaultHttpContext { RequestServices = services };
+        http.Request.Scheme = "https";
+        return new SmsLoginApiController(otp.Object, signIn.Object, users.Object, db, Mock.Of<IEventPublisher>())
         {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+            ControllerContext = new ControllerContext { HttpContext = http }
         };
+    }
+
+    private static AccountSecurityApiController CreateSecurityController(Mock<ISmsOtpLoginService> otp,
+        Mock<UserManager<Customer>> users = null, Mock<SignInManager<Customer>> signIn = null, Customer currentCustomer = null)
+    {
+        users ??= CreateUserManager();
+        signIn ??= CreateSignInManager(users);
+        var work = new Mock<IWorkContext>();
+        work.SetupGet(x => x.CurrentCustomer).Returns(currentCustomer);
+        var services = new ServiceCollection().AddSingleton(work.Object).BuildServiceProvider();
+        var http = new DefaultHttpContext { RequestServices = services };
+        http.Request.Scheme = "https";
+        http.Request.Method = HttpMethods.Post;
+        return new AccountSecurityApiController(otp.Object, signIn.Object, users.Object, Mock.Of<IAntiforgery>())
+        {
+            ControllerContext = new ControllerContext { HttpContext = http }
+        };
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Profile_rejects_anonymous_requests_and_unvalidated_bearer(bool bearer)
+    {
+        var users = CreateUserManager();
+        var signIn = CreateSignInManager(users);
+        if (bearer) signIn.Setup(x => x.IsSignedIn(It.IsAny<ClaimsPrincipal>())).Returns(true);
+        var http = new DefaultHttpContext();
+        http.Request.Scheme = "https";
+        http.Request.Method = HttpMethods.Get;
+        if (bearer) http.Request.Headers.Authorization = "Bearer invalid";
+        var controller = new ProfileApiController(null, signIn.Object, users.Object, null, Mock.Of<IAntiforgery>())
+        {
+            ControllerContext = new ControllerContext { HttpContext = http }
+        };
+        Assert.That(await controller.GetProfile(default), Is.TypeOf<UnauthorizedResult>());
+        var addresses = new CustomerAddressApiController(null, signIn.Object, users.Object, Mock.Of<IAntiforgery>())
+        {
+            ControllerContext = new ControllerContext { HttpContext = http }
+        };
+        Assert.That(await addresses.List(ct: default), Is.TypeOf<UnauthorizedResult>());
+        Assert.That(await addresses.Get(99, default), Is.TypeOf<UnauthorizedResult>());
+        users.Verify(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>()), Times.Never);
+    }
+
+    [Test]
+    public async Task Profile_rejects_a_mismatched_work_context_customer()
+    {
+        var customer = RegisteredCustomer();
+        var users = CreateUserManager();
+        var signIn = CreateSignInManager(users);
+        signIn.Setup(x => x.IsSignedIn(It.IsAny<ClaimsPrincipal>())).Returns(true);
+        users.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(customer);
+        var work = new Mock<IWorkContext>();
+        work.SetupGet(x => x.CurrentCustomer).Returns(new Customer { Id = 99 });
+        using var services = new ServiceCollection().AddSingleton(work.Object).BuildServiceProvider();
+        var http = new DefaultHttpContext { RequestServices = services };
+        http.Request.Scheme = "https";
+        http.Request.Method = HttpMethods.Get;
+        var controller = new ProfileApiController(null, signIn.Object, users.Object, null, Mock.Of<IAntiforgery>())
+        {
+            ControllerContext = new ControllerContext { HttpContext = http }
+        };
+        Assert.That(await controller.GetProfile(default), Is.TypeOf<UnauthorizedResult>());
     }
 
     private static Customer RegisteredCustomer()

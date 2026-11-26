@@ -47,7 +47,7 @@ internal class OrderMap : IEntityTypeConfiguration<Order>
 
 [Index(nameof(Deleted), Name = "IX_Deleted")]
 [Index(nameof(CustomerId), Name = "IX_Order_CustomerId")]
-[Index(nameof(OrderGuid))]
+[Index(nameof(OrderGuid), Name = "UX_Order_OrderGuid", IsUnique = true)]
 [Index(nameof(CreatedOnUtc), Name = "IX_Order_CreatedOnUtc")]
 // INFO: MySQL max key length is 3072 bytes, so we can index up to 768 characters for utf8mb4.
 [Index(nameof(PaymentMethodSystemName), nameof(AuthorizationTransactionId))]

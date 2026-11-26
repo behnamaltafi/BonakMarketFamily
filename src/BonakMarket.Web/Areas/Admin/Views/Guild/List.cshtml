@@ -1,0 +1,46 @@
+@model List<BonakMarket.Core.Identity.Guild>
+@{
+    ViewBag.Title = "مدیریت صنوف";
+    var counts = (Dictionary<int,int>)ViewBag.Counts;
+}
+<div class="section-header"><div class="title">مدیریت صنوف</div></div>
+<form method="get" asp-action="List" class="d-flex mb-3">
+    <input name="search" value="@ViewBag.Search" class="form-control" placeholder="کد یا عنوان صنف" />
+    <button type="submit" class="btn btn-secondary">جستجو</button>
+</form>
+@if ((bool)ViewBag.CanCreate)
+{
+    <form asp-action="Create" method="post" class="card p-3 mb-3">
+        <h5>صنف جدید</h5>
+        <div class="row g-2">
+            <div class="col"><input class="form-control" name="code" required maxlength="50" placeholder="کد صنف" /></div>
+            <div class="col"><input class="form-control" name="title" required maxlength="225" placeholder="عنوان صنف" /></div>
+            <div class="col"><input class="form-control" name="displayOrder" type="number" min="0" value="0" /></div>
+            <div class="col"><label><input name="active" type="checkbox" value="true" checked /> فعال</label></div>
+            <div class="col"><button class="btn btn-primary" type="submit">ایجاد</button></div>
+        </div>
+    </form>
+}
+@foreach (var guild in Model)
+{
+    <div class="card p-3 mb-2">
+        <form method="post" asp-action="Edit" class="row g-2">
+            <input type="hidden" name="id" value="@guild.Id" />
+            <div class="col"><label>کد</label><input class="form-control" name="code" value="@guild.Code" required maxlength="50" /></div>
+            <div class="col"><label>عنوان</label><input class="form-control" name="title" value="@guild.Title" required maxlength="225" /></div>
+            <div class="col"><label>ترتیب</label><input class="form-control" name="displayOrder" value="@guild.DisplayOrder" type="number" min="0" /></div>
+            <div class="col"><label><input type="checkbox" name="active" value="true" checked="@guild.IsActive" /> فعال</label></div>
+            <div class="col">
+                @if ((bool)ViewBag.CanUpdate) { <button class="btn btn-primary" type="submit">ذخیره</button> }
+                <a asp-action="Customers" asp-route-id="@guild.Id" class="btn btn-secondary">مشتریان (@counts.GetValueOrDefault(guild.Id))</a>
+            </div>
+        </form>
+        @if ((bool)ViewBag.CanDelete && counts.GetValueOrDefault(guild.Id) == 0)
+        {
+            <form asp-action="Delete" method="post" class="mt-2" onsubmit="return confirm('صنف حذف شود؟')">
+                <input name="id" type="hidden" value="@guild.Id" />
+                <button class="btn btn-danger btn-sm" type="submit">حذف</button>
+            </form>
+        }
+    </div>
+}

@@ -1,6 +1,6 @@
 <Language Name="Deutsch" IsDefault="false" IsRightToLeft="false">
     <LocaleResource Name="Plugins.FriendlyName.BonakMarket.MultiSms" AppendRootKey="false"><Value>Multi-provider SMS Gateway</Value></LocaleResource>
-    <LocaleResource Name="Plugins.Description.BonakMarket.MultiSms" AppendRootKey="false"><Value>Switchable SMS gateway with Kavenegar and Melipayamak</Value></LocaleResource>
+    <LocaleResource Name="Plugins.Description.BonakMarket.MultiSms" AppendRootKey="false"><Value>Switchable SMS gateway with Kavenegar, Melipayamak and SMS.ir</Value></LocaleResource>
     <LocaleResource Name="Intro"><Value>Configure two independent SMS providers. Changes take effect on the next message without restarting. Failover occurs only on explicit rejection; ambiguous timeouts are never retried automatically.</Value></LocaleResource>
     <LocaleResource Name="SecretHint"><Value>Leave blank to keep the stored secret; use Clear to remove it. Credentials are encrypted in settings.</Value></LocaleResource>
     <LocaleResource Name="SecretConfigured"><Value>A secret is configured.</Value></LocaleResource>
@@ -40,53 +40,13 @@
     <LocaleResource Name="Fields.TestMessage.Hint"><Value>Test message</Value></LocaleResource>
     <LocaleResource Name="TestAccepted"><Value>Anbieter {0} hat die SMS akzeptiert (Nachrichten-ID {1}). Die Zustellung ist noch nicht bestätigt.</Value></LocaleResource>
     <LocaleResource Name="TestRejected"><Value>Die SMS wurde nicht bestätigt. Prüfen Sie die Konfiguration und die Protokolle.</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpLoginEnabled"><Value>SMS-Anmeldung mit Einmalcode aktivieren</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>SMS-Anmeldung und -Registrierung per Mobilnummer aktivieren. Bestehende Kunden können ihre Nummer ausdrücklich mit ihrem Konto verknüpfen.</Value></LocaleResource>
-    <LocaleResource Name="Otp.LoginTitle"><Value>Mit Mobilnummer anmelden oder registrieren</Value></LocaleResource>
-    <LocaleResource Name="Otp.LoginHint"><Value>Geben Sie Ihre Mobilnummer ein. Bestehende Kunden melden sich per Code an; andernfalls wird nach der Bestätigung ein neues Konto erstellt.</Value></LocaleResource>
-    <LocaleResource Name="Otp.PhoneLabel"><Value>Mobilnummer</Value></LocaleResource>
-    <LocaleResource Name="Otp.SendCode"><Value>Bestätigungscode senden</Value></LocaleResource>
-    <LocaleResource Name="Otp.CodeLabel"><Value>Sechsstelliger Code</Value></LocaleResource>
-    <LocaleResource Name="Otp.SignIn"><Value>Anmelden</Value></LocaleResource>
-    <LocaleResource Name="Otp.PasswordLogin"><Value>Mit Passwort anmelden</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnrollLink"><Value>Mobilnummer im Profil hinzufügen oder ändern</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnrollTitle"><Value>Mobilnummer für SMS-Anmeldung bestätigen</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnrollHint"><Value>Melden Sie sich zunächst mit Ihrem bestehenden Konto an und bestätigen Sie anschließend die Mobilnummer.</Value></LocaleResource>
-    <LocaleResource Name="Otp.CurrentVerified"><Value>Aktuell bestätigte Nummer: {0}</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnableLogin"><Value>SMS-Anmeldung aktivieren</Value></LocaleResource>
-    <LocaleResource Name="Otp.BackToLogin"><Value>Zur SMS-Anmeldung</Value></LocaleResource>
-    <LocaleResource Name="Otp.CodeSentGeneric"><Value>Falls diese Nummer bestätigt ist, wird ein Code gesendet.</Value></LocaleResource>
-    <LocaleResource Name="Otp.EnrollmentSentGeneric"><Value>Falls die Nummer zulässig ist, wird ein Bestätigungscode gesendet.</Value></LocaleResource>
-    <LocaleResource Name="Otp.InvalidCode"><Value>Ungültiger oder abgelaufener Code.</Value></LocaleResource>
-    <LocaleResource Name="Otp.ChangePhone"><Value>Nummer ändern</Value></LocaleResource>
-    <LocaleResource Name="Otp.InvalidPhone"><Value>Geben Sie eine gültige iranische Mobilnummer ein.</Value></LocaleResource>
-    <LocaleResource Name="Fields.SmsAsPrimaryLogin"><Value>SMS als primäre Anmeldemethode verwenden</Value></LocaleResource>
-    <LocaleResource Name="Fields.SmsAsPrimaryLogin.Hint"><Value>Öffnet die SMS-Anmeldung auf der normalen Anmeldeseite, wenn SMS-Gateway und SMS-Anmeldung aktiviert sind. Die Passwort-Anmeldung bleibt verfügbar.</Value></LocaleResource>
-    <LocaleResource Name="Otp.ProfileTitle"><Value>Profil vervollständigen</Value></LocaleResource>
-    <LocaleResource Name="Otp.ProfileHint"><Value>Ihre Mobilnummer ist bestätigt. Der Benutzername ist zunächst Ihre Nummer und kann später geändert werden. E-Mail und weitere Angaben sind optional.</Value></LocaleResource>
-    <LocaleResource Name="Otp.UsernameLabel"><Value>Benutzername</Value></LocaleResource>
-    <LocaleResource Name="Otp.FirstNameLabel"><Value>Vorname</Value></LocaleResource>
-    <LocaleResource Name="Otp.LastNameLabel"><Value>Nachname</Value></LocaleResource>
-    <LocaleResource Name="Otp.EmailOptionalLabel"><Value>E-Mail (optional)</Value></LocaleResource>
-    <LocaleResource Name="Otp.SaveProfile"><Value>Speichern und fortfahren</Value></LocaleResource>
-    <LocaleResource Name="Otp.EditProfile"><Value>Profil und Benutzername bearbeiten</Value></LocaleResource>
-    <LocaleResource Name="Otp.PhoneManageTitle"><Value>Mobilnummer für die Anmeldung verwalten</Value></LocaleResource>
-    <LocaleResource Name="Otp.PhoneManageHint"><Value>Die Anmeldenummer wird erst nach SMS-Bestätigung hinzugefügt oder geändert. Andere Profildaten ändern die verifizierte Nummer nicht.</Value></LocaleResource>
-    <LocaleResource Name="Otp.VerifiedLoginPhone"><Value>Verifizierte Anmeldenummer</Value></LocaleResource>
-    <LocaleResource Name="Otp.UnverifiedLoginPhone"><Value>Noch keine Mobilnummer verifiziert</Value></LocaleResource>
-    <LocaleResource Name="Otp.NewPhoneLabel"><Value>Neue Mobilnummer</Value></LocaleResource>
-    <LocaleResource Name="Otp.RequestPhoneChange"><Value>Bestätigungscode senden</Value></LocaleResource>
-    <LocaleResource Name="Otp.VerifyPhoneChange"><Value>Mobilnummer bestätigen und speichern</Value></LocaleResource>
-    <LocaleResource Name="Otp.ChangePhoneRequested"><Value>Wenn die Anfrage zulässig ist, wird ein Bestätigungscode an die neue Nummer gesendet. Geben Sie ihn unten ein.</Value></LocaleResource>
-    <LocaleResource Name="Otp.ChangePhoneSucceeded"><Value>Die Anmeldenummer wurde bestätigt und aktualisiert.</Value></LocaleResource>
-    <LocaleResource Name="Otp.ChangePhoneFailed"><Value>Die Nummer konnte nicht bestätigt werden. Prüfen Sie Code, Versandlimits und Telefonnummer.</Value></LocaleResource>
     <LocaleResource Name="Fields.MockEnabled"><Value>Entwicklungs-Mock-SMS aktivieren</Value></LocaleResource>
     <LocaleResource Name="Fields.HistoryEnabled"><Value>SMS-Verlauf aktivieren</Value></LocaleResource>
     <LocaleResource Name="Fields.HistoryRetentionDays"><Value>Aufbewahrungsdauer (Tage)</Value></LocaleResource>
     <LocaleResource Name="Fields.StoreNonOtpMessageBody"><Value>Text normaler SMS speichern (niemals OTP oder Test)</Value></LocaleResource>
     <LocaleResource Name="MockWarning"><Value>Mock funktioniert nur in Development; es werden keine echten SMS versendet.</Value></LocaleResource>
     <LocaleResource Name="HistoryTitle"><Value>SMS-Verlauf</Value></LocaleResource>
-    <LocaleResource Name="HistoryHint"><Value>Accepted bedeutet Annahme durch den Anbieter, nicht Zustellung an das Gerät. OTP-Texte werden nie in SQL gespeichert.</Value></LocaleResource>
+    <LocaleResource Name="HistoryHint"><Value>Accepted bedeutet Anbieterannahme, nicht Zustellung. OTP-Texte werden nie gespeichert; optionale verschlüsselte Codes laufen nach 15 Minuten ab.</Value></LocaleResource>
     <LocaleResource Name="SettingsLink"><Value>SMS-Einstellungen</Value></LocaleResource>
     <LocaleResource Name="HistoryPhone"><Value>Empfänger</Value></LocaleResource>
     <LocaleResource Name="HistoryKind"><Value>Typ</Value></LocaleResource>
@@ -110,4 +70,20 @@
     <LocaleResource Name="DevInboxMessage"><Value>Testnachricht</Value></LocaleResource>
     <LocaleResource Name="DevInboxEmpty"><Value>Noch keine Mock-SMS. Fordern Sie einen OTP-Code mit Mock an.</Value></LocaleResource>
     <LocaleResource Name="RefreshInbox"><Value>Aktualisieren</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrEnabled"><Value>SMS.ir aktivieren</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrEnabled.Hint"><Value>SMS.ir-Transport aktivieren.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrLineNumber"><Value>SMS.ir Absendernummer</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrLineNumber.Hint"><Value>Für Freitext und Test-SMS erforderlich, für Verify optional.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrTemplateId"><Value>SMS.ir OTP-Vorlagen-ID</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrTemplateId.Hint"><Value>Optionale freigegebene Verify-Vorlage für Einmalcodes.</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrCodeParameter"><Value>SMS.ir Codeparameter</Value></LocaleResource>
+    <LocaleResource Name="Fields.SmsIrCodeParameter.Hint"><Value>Exakter Parametername der Vorlage, z. B. Code.</Value></LocaleResource>
+    <LocaleResource Name="Fields.NewSmsIrApiKey"><Value>Neuer SMS.ir API-Schlüssel</Value></LocaleResource>
+    <LocaleResource Name="Fields.NewSmsIrApiKey.Hint"><Value>API-Schlüssel aus dem Entwicklerbereich.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ClearSmsIrApiKey"><Value>SMS.ir API-Schlüssel löschen</Value></LocaleResource>
+    <LocaleResource Name="Fields.ClearSmsIrApiKey.Hint"><Value>Gespeicherten Schlüssel entfernen.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory"><Value>OTP-Code im Verlauf anzeigen (Diagnose)</Value></LocaleResource>
+    <LocaleResource Name="Fields.ShowOtpCodeInHistory.Hint"><Value>Standardmäßig deaktiviert. Verschlüsselter Code ist in allen Umgebungen sofort für 15 Minuten sichtbar. Aktive Codes ermöglichen Anmeldung; nur zur Diagnose aktivieren.</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCode"><Value>Einmalcode</Value></LocaleResource>
+    <LocaleResource Name="HistoryOtpCodeUnavailable"><Value>Nicht erfasst oder Aufbewahrungszeit abgelaufen.</Value></LocaleResource>
 </Language>

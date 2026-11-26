@@ -21,8 +21,19 @@ public sealed partial class MultiSmsController
 
     [HttpGet, LoadSetting(false)]
     public async Task<IActionResult> Templates(SmsGatewaySettings settings, CancellationToken ct)
-        => View((await _catalog.ListAsync(ct)).Select(t => new SmsTemplateListItem(t,
-            SmsReadinessService.Evaluate(settings, _providers, t))).ToArray());
+    {
+        var definitions = await _catalog.ListAsync(ct);
+        // Last recorded tests are evidence, not a readiness gate. History may be disabled or pruned.
+        var lastIds = _db.Set<SmsMessage>().AsNoTracking()
+            .Where(m => m.Kind == "Test" && m.DeliveryMode == "Template" && m.TemplateKey != null)
+            .GroupBy(m => m.TemplateKey).Select(g => g.Max(m => m.Id));
+        var lastTests = await _db.Set<SmsMessage>().AsNoTracking().Where(m => lastIds.Contains(m.Id))
+            .Select(m => new { m.TemplateKey, m.Status, m.Provider, m.CreatedOnUtc, m.Id }).ToListAsync(ct);
+        var lookup = lastTests.ToDictionary(m => m.TemplateKey,
+            m => new SmsLastTest(m.Status, m.Provider, m.CreatedOnUtc, m.Id), StringComparer.OrdinalIgnoreCase);
+        return View(definitions.Select(t => new SmsTemplateListItem(t,
+            SmsReadinessService.Evaluate(settings, _providers, t), lookup.GetValueOrDefault(t.Key))).ToArray());
+    }
 
     [HttpGet, LoadSetting(false)]
     public async Task<IActionResult> Template(int id, SmsGatewaySettings settings, CancellationToken ct)

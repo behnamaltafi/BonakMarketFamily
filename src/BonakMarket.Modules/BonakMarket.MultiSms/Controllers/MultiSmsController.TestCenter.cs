@@ -25,7 +25,7 @@ public sealed partial class MultiSmsController
         try
         {
             var phone = SmsPhoneNormalizer.Normalize(model.Phone);
-            if (phone == null || (model.Provider != null && !IsValidProvider(model.Provider)))
+            if (phone == null || (!string.IsNullOrWhiteSpace(model.Provider) && !IsValidProvider(model.Provider)))
                 throw new ArgumentException();
             SmsSendRequest request;
             if (model.Mode == "Template")
@@ -72,6 +72,12 @@ public sealed partial class MultiSmsController
         model.Providers = _providerNames;
         model.Templates = (await _catalog.ListAsync(ct)).Where(t => t.IsActive)
             .Select(t => new SmsTemplateListItem(t, SmsReadinessService.Evaluate(settings, _providers, t))).ToArray();
+        model.DirectTemplateIssues = model.Templates.ToDictionary(t => t.Template.Key,
+            t => _providers.Where(p => IsValidProvider(p.Name)).ToDictionary(p => p.Name,
+                p => !settings.DeliveryRoutingConfigured ? "RoutingNotConfigured" :
+                    SmsReadinessService.TemplateProviderIssue(p, settings, t.Template)));
+        model.FreeTextIssues = GetProviderIssues(settings, false);
+        model.FreeTextReadiness = SmsReadinessService.EvaluateFreeText(settings, _providers);
         if (string.IsNullOrWhiteSpace(model.TemplateKey))
             model.TemplateKey = model.Templates.FirstOrDefault(t => t.Template.Key == SmsTemplateRules.DefaultOtpKey)?.Template.Key
                 ?? model.Templates.FirstOrDefault()?.Template.Key;

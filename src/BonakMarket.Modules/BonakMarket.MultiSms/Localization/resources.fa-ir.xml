@@ -194,4 +194,11 @@
     <LocaleResource Name="Routing.TemplateIdMeli"><Value>Body ID ملی‌پیامک</Value></LocaleResource>
     <LocaleResource Name="Routing.TemplateIdKave"><Value>نام الگوی کاوه‌نگار</Value></LocaleResource>
     <LocaleResource Name="Routing.TemplateIdIr"><Value>شناسه قالب SMS.ir</Value></LocaleResource>
+    <LocaleResource Name="Routing.LastRecordedTest"><Value>آخرین تست ثبت‌شده</Value></LocaleResource>
+    <LocaleResource Name="Routing.NoRecordedTest"><Value>تست ثبت‌شده‌ای وجود ندارد</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestStatus.Accepted"><Value>پذیرش پروایدر</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestStatus.Rejected"><Value>رد شده</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestStatus.Pending"><Value>در انتظار نتیجه</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestStatus.Unknown"><Value>نتیجه نامشخص</Value></LocaleResource>
+    <LocaleResource Name="Readiness.FreeTextRouteMissing"><Value>مسیر پیامک بدون قالب انتخاب نشده یا نامعتبر است.</Value></LocaleResource>
 </Language>

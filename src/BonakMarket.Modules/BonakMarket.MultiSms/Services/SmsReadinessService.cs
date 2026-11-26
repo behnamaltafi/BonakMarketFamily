@@ -46,5 +46,23 @@ public static class SmsReadinessService
         return new(ready.Count > 0, ready.ToArray(), issues.ToArray());
     }
 
+    public static SmsReadinessResult EvaluateFreeText(SmsGatewaySettings settings, IEnumerable<ISmsProvider> providers)
+    {
+        if (!settings.Enabled) return Failure("GatewayDisabled");
+        if (!settings.DeliveryRoutingConfigured) return Failure("RoutingNotConfigured");
+        var route = SmsRouting.Providers(settings, false);
+        if (route.Length == 0) return Failure("FreeTextRouteMissing");
+        var issues = new List<SmsReadinessIssue>();
+        var ready = new List<string>();
+        foreach (var name in route)
+        {
+            var provider = providers.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+            var issue = ProviderIssue(provider, settings, false);
+            if (issue == null) ready.Add(name);
+            else issues.Add(new(issue, name));
+        }
+        return new(ready.Count > 0, ready.ToArray(), issues.ToArray());
+    }
+
     private static SmsReadinessResult Failure(string reason) => new(false, [], [new(reason)]);
 }

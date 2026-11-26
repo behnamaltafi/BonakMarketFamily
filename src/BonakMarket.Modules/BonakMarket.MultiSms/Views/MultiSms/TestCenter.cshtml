@@ -27,7 +27,7 @@
                 }
             </select>
         </div>
-        <div id="test-template-details"></div>
+        
         <div id="test-parameters"></div>
     </div>
     <div class="form-group" id="free-text-test-fields">
@@ -37,16 +37,55 @@
         <label asp-for="Provider">@T("Plugins.Sms.MultiSms.Routing.Provider")</label>
         <select asp-for="Provider" class="form-control"><option value="">@T("Plugins.Sms.MultiSms.Routing.ConfiguredRoute")</option>@foreach (var provider in Model.Providers) { <option value="@provider">@provider</option> }</select>
         <small class="text-muted">@T("Plugins.Sms.MultiSms.Routing.DirectTestHint")</small>
+        <div id="test-template-details" class="mt-2"></div>
     </div>
     <div class="form-group">
         <label asp-for="Phone">@T("Plugins.Sms.MultiSms.Routing.Recipient")</label><input asp-for="Phone" type="tel" class="form-control" dir="ltr" required/>
     </div>
     <button type="submit" class="btn btn-primary">@T("Plugins.Sms.MultiSms.Routing.SendTest")</button>
 </form>
+<div id="test-free-data" hidden>
+    <div class="test-diagnostics">
+        @if (Model.FreeTextReadiness.IsReady)
+        {
+            <p class="text-success">@T("Plugins.Sms.MultiSms.Routing.Ready"): @string.Join(", ", Model.FreeTextReadiness.ReadyProviders)</p>
+        }
+        @foreach (var issue in Model.FreeTextReadiness.Issues)
+        {
+            <p class="text-muted">@(issue.Provider == null ? "" : issue.Provider + ": ")@T("Plugins.Sms.MultiSms.Readiness." + issue.Code)</p>
+        }
+    </div>
+    @foreach (var direct in Model.FreeTextIssues)
+    {
+        <div data-direct-provider="@direct.Key">
+            @if (direct.Value == null)
+            {
+                <p class="text-success">@T("Plugins.Sms.MultiSms.Routing.Ready"): @direct.Key</p>
+            }
+            else
+            {
+                <p class="text-muted">@direct.Key: @T("Plugins.Sms.MultiSms.Readiness." + direct.Value)</p>
+            }
+        </div>
+    }
+</div>
 <div id="test-template-data" hidden>
 @foreach (var item in Model.Templates)
 {
     <div data-key="@item.Template.Key" data-otp="@item.Template.IsOtp.ToString().ToLowerInvariant()">
+        @foreach (var direct in Model.DirectTemplateIssues[item.Template.Key])
+        {
+            <div data-direct-provider="@direct.Key" class="test-direct-diagnostics">
+                @if (direct.Value == null)
+                {
+                    <p class="text-success">@T("Plugins.Sms.MultiSms.Routing.Ready"): @direct.Key</p>
+                }
+                else
+                {
+                    <p class="text-muted">@direct.Key: @T("Plugins.Sms.MultiSms.Readiness." + direct.Value)</p>
+                }
+            </div>
+        }
         <div class="test-diagnostics">
             @if (item.Readiness.IsReady)
             {
@@ -73,7 +112,7 @@
 </div>
 <script>
 (function () {
-    const mode = document.getElementById('Mode'), key = document.getElementById('TemplateKey');
+    const mode = document.getElementById('Mode'), key = document.getElementById('TemplateKey'), provider = document.getElementById('Provider');
     const data = Array.from(document.querySelectorAll('#test-template-data [data-key]'));
     const params = document.getElementById('test-parameters'), details = document.getElementById('test-template-details');
     function sync() {
@@ -83,10 +122,10 @@
         key.disabled = !templated;
         document.getElementById('Message').disabled = templated;
         params.replaceChildren(); details.replaceChildren();
+        renderDiagnostics();
         if (!templated) return;
         const selected = data.find(d => d.dataset.key === key.value);
         if (!selected) return;
-        details.appendChild(selected.querySelector('.test-diagnostics').cloneNode(true));
         const note = selected.querySelector('.otp-test-note');
         if (note) params.appendChild(note.cloneNode(true));
         else for (const param of selected.querySelectorAll('[data-parameter]')) {
@@ -96,6 +135,16 @@
             group.append(label, input); params.appendChild(group);
         }
     }
+    function renderDiagnostics() {
+        details.replaceChildren();
+        const selected = mode.value === 'Template' ? data.find(d => d.dataset.key === key.value) : document.getElementById('test-free-data');
+        if (!selected) return;
+        const source = provider.value
+            ? Array.from(selected.querySelectorAll('[data-direct-provider]')).find(d => d.dataset.directProvider === provider.value)
+            : selected.querySelector('.test-diagnostics');
+        if (source) details.appendChild(source.cloneNode(true));
+    }
+    provider.addEventListener('change', renderDiagnostics);
     mode.addEventListener('change', sync); key.addEventListener('change', sync); sync();
 })();
 </script>

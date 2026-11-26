@@ -194,4 +194,11 @@
     <LocaleResource Name="Routing.TemplateIdMeli"><Value>Melipayamak Body-ID</Value></LocaleResource>
     <LocaleResource Name="Routing.TemplateIdKave"><Value>Kavenegar Vorlagenname</Value></LocaleResource>
     <LocaleResource Name="Routing.TemplateIdIr"><Value>SMS.ir Vorlagen-ID</Value></LocaleResource>
+    <LocaleResource Name="Routing.LastRecordedTest"><Value>Letzter gespeicherter Test</Value></LocaleResource>
+    <LocaleResource Name="Routing.NoRecordedTest"><Value>Kein gespeicherter Test</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestStatus.Accepted"><Value>Anbieter akzeptiert</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestStatus.Rejected"><Value>Abgelehnt</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestStatus.Pending"><Value>Ausstehend</Value></LocaleResource>
+    <LocaleResource Name="Routing.TestStatus.Unknown"><Value>Unbekanntes Ergebnis</Value></LocaleResource>
+    <LocaleResource Name="Readiness.FreeTextRouteMissing"><Value>Gültige Freitext-Route auswählen.</Value></LocaleResource>
 </Language>

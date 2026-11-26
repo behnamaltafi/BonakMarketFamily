@@ -3,6 +3,8 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core.Messaging;
+using BonakMarket.MultiSms.Configuration;
+using BonakMarket.Web.Modelling.Settings;
 using BonakMarket.MultiSms.Domain;
 using BonakMarket.MultiSms.Models;
 using BonakMarket.MultiSms.Services;
@@ -17,17 +19,19 @@ public sealed partial class MultiSmsController
     private ISmsProvider[] TemplateProviders() => _providers
         .Where(p => p is ITemplateSmsProvider && p.Name != "Mock").OrderBy(p => p.Name).ToArray();
 
-    [HttpGet]
-    public async Task<IActionResult> Templates(CancellationToken ct)
-        => View(await _db.Set<SmsTemplate>().AsNoTracking().OrderBy(x => x.Key).ToListAsync(ct));
+    [HttpGet, LoadSetting(false)]
+    public async Task<IActionResult> Templates(SmsGatewaySettings settings, CancellationToken ct)
+        => View((await _catalog.ListAsync(ct)).Select(t => new SmsTemplateListItem(t,
+            SmsReadinessService.Evaluate(settings, _providers, t))).ToArray());
 
-    [HttpGet]
-    public async Task<IActionResult> Template(int id, CancellationToken ct)
+    [HttpGet, LoadSetting(false)]
+    public async Task<IActionResult> Template(int id, SmsGatewaySettings settings, CancellationToken ct)
     {
         if (id == 0)
             return View(new SmsTemplateEditorModel
             {
-                Mappings = TemplateProviders().Select(p => new SmsTemplateMappingEditor { Provider = p.Name }).ToList()
+                Mappings = TemplateProviders().Select(p => new SmsTemplateMappingEditor { Provider = p.Name,
+                    ConfigurationIssue = SmsReadinessService.ProviderIssue(p, settings, true) }).ToList()
             });
         var entity = await _db.Set<SmsTemplate>().AsNoTracking().SingleOrDefaultAsync(x => x.Id == id, ct);
         if (entity is null) return NotFound();
@@ -38,6 +42,8 @@ public sealed partial class MultiSmsController
             Id = id, Key = entity.Key, Title = entity.Title, IsActive = entity.IsActive,
             IsOtp = entity.IsOtp, Parameters = string.Join(", ", parameters)
         };
+        var definition = await _catalog.FindAsync(entity.Key, ct);
+        model.Readiness = SmsReadinessService.Evaluate(settings, _providers, definition);
         foreach (var provider in TemplateProviders())
         {
             var row = rows.SingleOrDefault(x => x.ProviderName == provider.Name);
@@ -45,18 +51,22 @@ public sealed partial class MultiSmsController
             model.Mappings.Add(new SmsTemplateMappingEditor
             {
                 Provider = provider.Name, ExternalTemplateId = row?.ExternalTemplateId,
-                Slots = map is null ? null : string.Join(", ", parameters.Select(n => map.GetValueOrDefault(n)))
+                Slots = map is null ? null : string.Join(", ", parameters.Select(n => map.GetValueOrDefault(n))),
+                ParameterSlots = map is null ? [] : parameters.Select(n => map.GetValueOrDefault(n)).ToArray(),
+                ConfigurationIssue = SmsReadinessService.TemplateProviderIssue(provider, settings, definition)
             });
         }
         return View(model);
     }
 
-    [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> Template(SmsTemplateEditorModel model, CancellationToken ct)
+    [HttpPost, ValidateAntiForgeryToken, LoadSetting(false)]
+    public async Task<IActionResult> Template(SmsTemplateEditorModel model, SmsGatewaySettings settings, CancellationToken ct)
     {
         model.Key = model.Key?.Trim().ToUpperInvariant();
         model.Title = model.Title?.Trim();
-        var names = ParseList(model.Parameters);
+        var names = model.IsOtp ? new[] { "Code" } : ParseList(model.Parameters);
+        model.Parameters = string.Join(", ", names);
+        ModelState.Remove(nameof(model.Parameters));
         var entity = model.Id == 0 ? null :
             await _db.Set<SmsTemplate>().SingleOrDefaultAsync(x => x.Id == model.Id, ct);
         if (model.Id != 0 && entity is null) return NotFound();
@@ -79,15 +89,21 @@ public sealed partial class MultiSmsController
         foreach (var item in submitted)
         {
             var externalId = item.ExternalTemplateId?.Trim();
-            if (string.IsNullOrWhiteSpace(externalId))
+            item.ConfigurationIssue = SmsReadinessService.ProviderIssue(providers.Single(p => p.Name == item.Provider), settings, true);
+            if (string.IsNullOrWhiteSpace(externalId)) continue;
+
+            var slots = item.ParameterSlots is { Length: > 0 }
+                ? item.ParameterSlots.Select(s => s?.Trim() ?? "").ToArray() : ParseList(item.Slots);
+            if (model.IsOtp)
             {
-                if (!string.IsNullOrWhiteSpace(item.Slots))
-                    ModelState.AddModelError("", $"Enter the external template ID for {item.Provider} or clear its mapping.");
-                continue;
+                if (item.Provider == "Kavenegar") slots = ["token"];
+                else if (item.Provider == "Melipayamak") slots = ["0"];
+                else if (item.Provider == "SmsIr" && (slots.Length == 0 || slots.All(string.IsNullOrWhiteSpace))) slots = ["Code"];
             }
-            var slots = ParseList(item.Slots);
+            item.ParameterSlots = slots;
+            item.Slots = string.Join(", ", slots);
             var provider = (ITemplateSmsProvider)providers.Single(p => p.Name == item.Provider);
-            if (externalId.Length > 100 || slots.Length != names.Length || slots.Any(x => x.Length > 50) ||
+            if (externalId.Length > 100 || slots.Length != names.Length || slots.Any(x => string.IsNullOrWhiteSpace(x) || x.Length > 50) ||
                 slots.Distinct(StringComparer.OrdinalIgnoreCase).Count() != slots.Length ||
                 !provider.IsValidMapping(externalId, slots) ||
                 !SmsTemplateRules.IsValidDefinition(names, model.IsOtp))
@@ -131,7 +147,7 @@ public sealed partial class MultiSmsController
             return View(model);
         }
         NotifySuccess(T("Admin.Common.DataSuccessfullySaved"));
-        return RedirectToAction(nameof(Templates));
+        return RedirectToAction(nameof(Template), new { id = entity.Id });
     }
 
     [HttpPost, ValidateAntiForgeryToken]

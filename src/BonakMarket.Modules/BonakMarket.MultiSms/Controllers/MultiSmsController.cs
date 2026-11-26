@@ -19,6 +19,7 @@ namespace BonakMarket.MultiSms.Controllers;
 public sealed partial class MultiSmsController : AdminController
 {
     private readonly SmsCredentialProtection _protection;
+    private readonly ISmsTemplateCatalog _catalog;
     private readonly BonakMarket.Core.Data.SmartDbContext _db;
     private readonly SmsGatewaySender _sender;
     private readonly ISmsProvider[] _providers;
@@ -36,10 +37,12 @@ public sealed partial class MultiSmsController : AdminController
         SmsHistoryStore history,
         DevelopmentSmsInbox inbox,
         BonakMarket.Core.Data.SmartDbContext db,
+        ISmsTemplateCatalog catalog,
         ILogger<MultiSmsController> logger = null)
     {
         _protection = protection;
         _db = db;
+        _catalog = catalog;
         _sender = sender;
         _environment = environment;
         _history = history;
@@ -126,6 +129,8 @@ public sealed partial class MultiSmsController : AdminController
             model.HasMelipayamakApiToken = settings.DeliveryRoutingConfigured && !string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakApiToken);
             model.DeliveryRoutingConfigured = settings.DeliveryRoutingConfigured;
             model.TemplateReadyProviders = GetReadyProviders(settings, true);
+            model.TemplateProviderIssues = GetProviderIssues(settings, true);
+            model.FreeTextProviderIssues = GetProviderIssues(settings, false);
             model.FreeTextReadyProviders = GetReadyProviders(settings, false);
             model.AvailableProviders = _providerNames;
             model.DevelopmentMode = _environment.IsDevelopment();
@@ -294,8 +299,10 @@ public sealed partial class MultiSmsController : AdminController
         foreach (var name in names)
         {
             var provider = _providers.FirstOrDefault(x => string.Equals(x.Name, name, StringComparison.OrdinalIgnoreCase));
-            if (!IsValidProvider(name) || provider is null || !SmsRouting.IsReady(provider, settings, templateMode))
-                ModelState.AddModelError(field, $"Provider {name} is not configured for this route.");
+            if (!IsValidProvider(name) || provider is null)
+                ModelState.AddModelError(field, $"Unknown provider: {name}.");
+            else if (settings.Enabled && SmsReadinessService.ProviderIssue(provider, settings, templateMode) is string issue)
+                ModelState.AddModelError(field, name + ": " + T("Plugins.Sms.MultiSms.Readiness." + issue).Value);
         }
     }
 
@@ -306,6 +313,8 @@ public sealed partial class MultiSmsController : AdminController
             DevelopmentMode = _environment.IsDevelopment(),
             DeliveryRoutingConfigured = settings.DeliveryRoutingConfigured,
             TemplateReadyProviders = GetReadyProviders(settings, true),
+            TemplateProviderIssues = GetProviderIssues(settings, true),
+            FreeTextProviderIssues = GetProviderIssues(settings, false),
             FreeTextReadyProviders = GetReadyProviders(settings, false),
             Enabled = settings.DeliveryRoutingConfigured && settings.Enabled,
             MockEnabled = settings.DeliveryRoutingConfigured ? settings.MockEnabled : default,
@@ -345,6 +354,11 @@ public sealed partial class MultiSmsController : AdminController
         => !settings.DeliveryRoutingConfigured ? [] : _providers
             .Where(p => IsValidProvider(p.Name) && SmsRouting.IsReady(p, settings, templateMode))
             .Select(p => p.Name).ToArray();
+
+    private Dictionary<string, string> GetProviderIssues(SmsGatewaySettings settings, bool templateMode)
+        => _providers.Where(p => IsValidProvider(p.Name)).ToDictionary(p => p.Name,
+            p => !settings.DeliveryRoutingConfigured ? "RoutingNotConfigured" :
+                SmsReadinessService.ProviderIssue(p, settings, templateMode));
 
     private bool IsValidProvider(string provider)
         => _providerNames.Contains(provider, StringComparer.OrdinalIgnoreCase);

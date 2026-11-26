@@ -6,7 +6,17 @@
 }
 <h3>@T("Plugins.Sms.MultiSms.Routing.Templates")</h3>
 <a asp-action="Templates" class="btn btn-secondary mb-3">@T("Plugins.Sms.MultiSms.Routing.Templates")</a>
-<form asp-action="Template" method="post">
+@if (Model.Readiness != null)
+{
+    <div class="alert @(Model.Readiness.IsReady ? "alert-success" : "alert-warning")">
+        @(Model.Readiness.IsReady ? T("Plugins.Sms.MultiSms.Routing.Ready").Value : T("Plugins.Sms.MultiSms.Routing.NotReady").Value)
+        @foreach (var issue in Model.Readiness.Issues)
+        {
+            <div>@(issue.Provider == null ? "" : issue.Provider + ": ")@T("Plugins.Sms.MultiSms.Readiness." + issue.Code)</div>
+        }
+    </div>
+}
+<form asp-action="Template" method="post" id="template-edit-form">
     <input asp-for="Id" type="hidden"/>
     <div asp-validation-summary="All" class="text-danger"></div>
     <div class="row">
@@ -34,13 +44,20 @@
             <div class="col-md-4 mb-3">
                 <div class="border rounded p-3 h-100">
                     <h5>@Model.Mappings[i].Provider</h5>
+                    @if (Model.Mappings[i].ConfigurationIssue is string issue) { <p class="text-muted small">@T("Plugins.Sms.MultiSms.Readiness." + issue)</p> }
                     <input asp-for="Mappings[i].Provider" type="hidden"/>
                     <div class="form-group"><label asp-for="Mappings[i].ExternalTemplateId">@T("Plugins.Sms.MultiSms.Routing.ExternalTemplateId")</label>
                         <input asp-for="Mappings[i].ExternalTemplateId" class="form-control" dir="ltr"/></div>
-                    <div class="form-group"><label asp-for="Mappings[i].Slots">@T("Plugins.Sms.MultiSms.Routing.Slots")</label>
-                        <input asp-for="Mappings[i].Slots" class="form-control" dir="ltr"
-                               placeholder="@(Model.Mappings[i].Provider == "Kavenegar" ? "token, token2" : Model.Mappings[i].Provider == "Melipayamak" ? "0, 1" : "ORDER, TRACKING")"/>
-                        <small class="text-muted">@T("Plugins.Sms.MultiSms.Routing.SlotHelp")</small></div>
+                    <div class="form-group">
+                        <label>@T("Plugins.Sms.MultiSms.Routing.Slots")</label>
+                        <div class="mapping-rows" data-index="@i" data-provider="@Model.Mappings[i].Provider">
+                            @foreach (var slot in Model.Mappings[i].ParameterSlots)
+                            {
+                                <span hidden data-existing-slot="@slot"></span>
+                            }
+                        </div>
+                        <small class="text-muted">@T("Plugins.Sms.MultiSms.Routing.SlotHelpRows")</small>
+                    </div>
                 </div>
             </div>
         }
@@ -49,26 +66,46 @@
 </form>
 @if (existing && Model.IsActive)
 {
-    <hr/>
-    <h5>@T("Plugins.Sms.MultiSms.Routing.TestTitle")</h5>
-    <p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.TestHint")</p>
-    <form asp-action="TestTemplate" method="post" autocomplete="off">
-        <input type="hidden" name="id" value="@Model.Id"/>
-        <div class="form-group"><label for="template-provider">@T("Plugins.Sms.MultiSms.Routing.Provider")</label>
-            <select id="template-provider" name="provider" class="form-control" required>
-                @foreach (var mapping in Model.Mappings.Where(m => !string.IsNullOrWhiteSpace(m.ExternalTemplateId)))
-                {
-                    <option value="@mapping.Provider">@mapping.Provider</option>
-                }
-            </select></div>
-        <div class="form-group"><label for="template-phone">@T("Plugins.Sms.MultiSms.Routing.Recipient")</label><input id="template-phone" name="phone" type="tel" class="form-control" required/></div>
-        @if (!Model.IsOtp)
-        {
-            foreach (var parameter in parameterNames)
-            {
-                <div class="form-group"><label>@parameter</label><input name="values" class="form-control" required/></div>
-            }
-        }
-        <button type="submit" class="btn btn-primary">@T("Plugins.Sms.MultiSms.Routing.TestTemplate")</button>
-    </form>
+    <a class="btn btn-outline-primary mt-3" asp-action="TestCenter" asp-route-templateKey="@Model.Key">@T("Plugins.Sms.MultiSms.Routing.TestTemplate")</a>
 }
+<script>
+(function () {
+    const otp = document.getElementById('IsOtp'), parameters = document.getElementById('Parameters');
+    const rows = Array.from(document.querySelectorAll('.mapping-rows'));
+    let previousNames = [];
+    function sync() {
+        const isOtp = otp.type === 'checkbox' ? otp.checked : otp.value.toLowerCase() === 'true';
+        if (isOtp) parameters.value = 'Code';
+        if (otp.type === 'checkbox') parameters.readOnly = isOtp;
+        const names = parameters.value.split(',').map(x => x.trim()).filter(Boolean).slice(0, 10);
+        for (const row of rows) {
+            const existing = Array.from(row.querySelectorAll('input')).map(x => x.value);
+            const initial = Array.from(row.querySelectorAll('[data-existing-slot]')).map(x => x.dataset.existingSlot);
+            row.replaceChildren();
+            names.forEach((name, j) => {
+                const group = document.createElement('div'), label = document.createElement('label'), input = document.createElement('input');
+                group.className = 'mb-2'; label.textContent = name;
+                input.name = 'Mappings[' + row.dataset.index + '].ParameterSlots[' + j + ']';
+                input.className = 'form-control'; input.maxLength = 50; input.dir = 'ltr';
+                const priorIndex = previousNames.indexOf(name);
+                const prior = priorIndex >= 0 ? existing[priorIndex] : initial[j];
+                if (row.dataset.provider === 'Melipayamak') {
+                    input.value = isOtp ? '0' : (prior ?? String(j)); input.readOnly = isOtp;
+                } else if (row.dataset.provider === 'Kavenegar') {
+                    input.value = isOtp ? 'token' : (prior ?? ['token','token2','token3','token10','token20'][j] ?? '');
+                    input.readOnly = isOtp;
+                } else input.value = prior ?? name;
+                group.append(label, input); row.appendChild(group);
+            });
+        }
+        previousNames = names;
+    }
+    otp.addEventListener('change', sync);
+    parameters.addEventListener('change', sync);
+    document.getElementById('template-edit-form').addEventListener('submit', () => {
+        const names = parameters.value.split(',').map(x => x.trim()).filter(Boolean).slice(0,10);
+        if (names.join(',') !== previousNames.join(',')) sync();
+    });
+    sync();
+})();
+</script>

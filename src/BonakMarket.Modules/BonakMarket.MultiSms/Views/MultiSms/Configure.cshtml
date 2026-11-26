@@ -12,6 +12,7 @@
     <div class="alert alert-warning">@T("Plugins.Sms.MultiSms.Routing.DeliveryReset")</div>
 }
 <div class="d-flex mb-3">
+    <a asp-action="TestCenter" class="btn btn-outline-primary mr-2">@T("Plugins.Sms.MultiSms.Routing.TestCenter")</a>
     <a asp-controller="MultiSms" asp-action="History" asp-area="Admin" class="btn btn-outline-secondary">@T("Plugins.Sms.MultiSms.HistoryTitle")</a>
     @if (Model.DevelopmentMode)
     {
@@ -40,7 +41,15 @@
     </ul>
     <p class="text-muted"><a asp-action="Templates">@T("Plugins.Sms.MultiSms.Routing.ManageTemplates")</a></p>
     <div class="tab-content border rounded p-3">
-<div id="sms-kave" class="tab-pane show active" role="tabpanel" aria-labelledby="sms-tab-kave"><div class="d-flex flex-wrap align-items-center mb-3"><small class="text-muted mr-2">@T("Plugins.Sms.MultiSms.Routing.SavedState")</small><span class="badge @(Model.FreeTextReadyProviders.Contains("Kavenegar") ? "badge-success" : "badge-secondary") mr-2">FreeText: @T(Model.FreeTextReadyProviders.Contains("Kavenegar") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><span class="badge @(Model.TemplateReadyProviders.Contains("Kavenegar") ? "badge-success" : "badge-secondary") mr-2">Template: @T(Model.TemplateReadyProviders.Contains("Kavenegar") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><button type="button" data-sms-test="Kavenegar" class="btn btn-sm btn-outline-secondary">@T("Plugins.Sms.MultiSms.Routing.TestProvider")</button></div>
+<div id="sms-kave" class="tab-pane show active" role="tabpanel" aria-labelledby="sms-tab-kave"><div class="d-flex flex-wrap align-items-center mb-3"><small class="text-muted mr-2">@T("Plugins.Sms.MultiSms.Routing.SavedState")</small><span class="badge @(Model.FreeTextReadyProviders.Contains("Kavenegar") ? "badge-success" : "badge-secondary") mr-2">@T("Plugins.Sms.MultiSms.Routing.FreeText"): @T(Model.FreeTextReadyProviders.Contains("Kavenegar") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><span class="badge @(Model.TemplateReadyProviders.Contains("Kavenegar") ? "badge-success" : "badge-secondary") mr-2">@T("Plugins.Sms.MultiSms.Routing.ProviderTemplateCapability"): @T(Model.TemplateReadyProviders.Contains("Kavenegar") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><a asp-action="TestCenter" asp-route-provider="Kavenegar" class="btn btn-sm btn-outline-secondary">@T("Plugins.Sms.MultiSms.Routing.TestProvider")</a></div>
+@if (Model.TemplateProviderIssues.GetValueOrDefault("Kavenegar") is string templateIssuekave)
+{
+    <p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.Template"): @T("Plugins.Sms.MultiSms.Readiness." + templateIssuekave)</p>
+}
+@if (Model.FreeTextProviderIssues.GetValueOrDefault("Kavenegar") is string freeIssuekave)
+{
+    <p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.FreeText"): @T("Plugins.Sms.MultiSms.Readiness." + freeIssuekave)</p>
+}
 <div class="form-check mb-2"><input asp-for="KavenegarEnabled" class="form-check-input"/><label asp-for="KavenegarEnabled" class="form-check-label">@T("Plugins.Sms.MultiSms.Routing.Kave")</label></div>
 <div class="form-group"><label asp-for="NewKavenegarApiKey">@T("Plugins.Sms.MultiSms.Routing.ApiKey")</label><input asp-for="NewKavenegarApiKey" type="password" class="form-control" autocomplete="new-password" value=""/><span asp-validation-for="NewKavenegarApiKey" class="text-danger"></span></div><small class="text-muted d-block mb-2">@(Model.HasKavenegarApiKey ? T("Plugins.Sms.MultiSms.SecretConfigured") : T("Plugins.Sms.MultiSms.SecretMissing"))</small>
 <div class="form-check mb-2"><input asp-for="ClearKavenegarApiKey" class="form-check-input"/><label asp-for="ClearKavenegarApiKey" class="form-check-label">@T("Plugins.Sms.MultiSms.Routing.Clear")</label></div>
@@ -50,7 +59,15 @@
 <hr/><h5>@T("Plugins.Sms.MultiSms.Routing.Template")</h5>
 <div class="form-check mb-2"><input asp-for="KavenegarTemplateEnabled" class="form-check-input"/><label asp-for="KavenegarTemplateEnabled" class="form-check-label">@T("Plugins.Sms.MultiSms.Routing.TemplateEnabled")</label></div>
 </div>
-<div id="sms-meli" class="tab-pane " role="tabpanel" aria-labelledby="sms-tab-meli"><div class="d-flex flex-wrap align-items-center mb-3"><small class="text-muted mr-2">@T("Plugins.Sms.MultiSms.Routing.SavedState")</small><span class="badge @(Model.FreeTextReadyProviders.Contains("Melipayamak") ? "badge-success" : "badge-secondary") mr-2">FreeText: @T(Model.FreeTextReadyProviders.Contains("Melipayamak") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><span class="badge @(Model.TemplateReadyProviders.Contains("Melipayamak") ? "badge-success" : "badge-secondary") mr-2">Template: @T(Model.TemplateReadyProviders.Contains("Melipayamak") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><button type="button" data-sms-test="Melipayamak" class="btn btn-sm btn-outline-secondary">@T("Plugins.Sms.MultiSms.Routing.TestProvider")</button></div>
+<div id="sms-meli" class="tab-pane " role="tabpanel" aria-labelledby="sms-tab-meli"><div class="d-flex flex-wrap align-items-center mb-3"><small class="text-muted mr-2">@T("Plugins.Sms.MultiSms.Routing.SavedState")</small><span class="badge @(Model.FreeTextReadyProviders.Contains("Melipayamak") ? "badge-success" : "badge-secondary") mr-2">@T("Plugins.Sms.MultiSms.Routing.FreeText"): @T(Model.FreeTextReadyProviders.Contains("Melipayamak") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><span class="badge @(Model.TemplateReadyProviders.Contains("Melipayamak") ? "badge-success" : "badge-secondary") mr-2">@T("Plugins.Sms.MultiSms.Routing.ProviderTemplateCapability"): @T(Model.TemplateReadyProviders.Contains("Melipayamak") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><a asp-action="TestCenter" asp-route-provider="Melipayamak" class="btn btn-sm btn-outline-secondary">@T("Plugins.Sms.MultiSms.Routing.TestProvider")</a></div>
+@if (Model.TemplateProviderIssues.GetValueOrDefault("Melipayamak") is string templateIssuemeli)
+{
+    <p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.Template"): @T("Plugins.Sms.MultiSms.Readiness." + templateIssuemeli)</p>
+}
+@if (Model.FreeTextProviderIssues.GetValueOrDefault("Melipayamak") is string freeIssuemeli)
+{
+    <p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.FreeText"): @T("Plugins.Sms.MultiSms.Readiness." + freeIssuemeli)</p>
+}
 <div class="form-check mb-2"><input asp-for="MelipayamakEnabled" class="form-check-input"/><label asp-for="MelipayamakEnabled" class="form-check-label">@T("Plugins.Sms.MultiSms.Routing.Meli")</label></div>
 <div class="form-group"><label asp-for="MelipayamakAuthMode">@T("Plugins.Sms.MultiSms.Routing.AuthMode")</label><select asp-for="MelipayamakAuthMode" class="form-control"><option value="Console">@T("Plugins.Sms.MultiSms.Routing.Console")</option><option value="Legacy">@T("Plugins.Sms.MultiSms.Routing.Legacy")</option></select></div><div id="sms-meli-console">
 <div class="form-group"><label asp-for="NewMelipayamakApiToken">@T("Plugins.Sms.MultiSms.Routing.Console")</label><input asp-for="NewMelipayamakApiToken" type="password" class="form-control" autocomplete="new-password" value=""/><span asp-validation-for="NewMelipayamakApiToken" class="text-danger"></span></div><small class="text-muted d-block mb-2">@(Model.HasMelipayamakApiToken ? T("Plugins.Sms.MultiSms.SecretConfigured") : T("Plugins.Sms.MultiSms.SecretMissing"))</small>
@@ -64,7 +81,15 @@
 <hr/><h5>@T("Plugins.Sms.MultiSms.Routing.Template")</h5>
 <div class="form-check mb-2"><input asp-for="MelipayamakTemplateEnabled" class="form-check-input"/><label asp-for="MelipayamakTemplateEnabled" class="form-check-label">@T("Plugins.Sms.MultiSms.Routing.TemplateEnabled")</label></div>
 </div>
-<div id="sms-ir" class="tab-pane " role="tabpanel" aria-labelledby="sms-tab-ir"><div class="d-flex flex-wrap align-items-center mb-3"><small class="text-muted mr-2">@T("Plugins.Sms.MultiSms.Routing.SavedState")</small><span class="badge @(Model.FreeTextReadyProviders.Contains("SmsIr") ? "badge-success" : "badge-secondary") mr-2">FreeText: @T(Model.FreeTextReadyProviders.Contains("SmsIr") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><span class="badge @(Model.TemplateReadyProviders.Contains("SmsIr") ? "badge-success" : "badge-secondary") mr-2">Template: @T(Model.TemplateReadyProviders.Contains("SmsIr") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><button type="button" data-sms-test="SmsIr" class="btn btn-sm btn-outline-secondary">@T("Plugins.Sms.MultiSms.Routing.TestProvider")</button></div>
+<div id="sms-ir" class="tab-pane " role="tabpanel" aria-labelledby="sms-tab-ir"><div class="d-flex flex-wrap align-items-center mb-3"><small class="text-muted mr-2">@T("Plugins.Sms.MultiSms.Routing.SavedState")</small><span class="badge @(Model.FreeTextReadyProviders.Contains("SmsIr") ? "badge-success" : "badge-secondary") mr-2">@T("Plugins.Sms.MultiSms.Routing.FreeText"): @T(Model.FreeTextReadyProviders.Contains("SmsIr") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><span class="badge @(Model.TemplateReadyProviders.Contains("SmsIr") ? "badge-success" : "badge-secondary") mr-2">@T("Plugins.Sms.MultiSms.Routing.ProviderTemplateCapability"): @T(Model.TemplateReadyProviders.Contains("SmsIr") ? "Plugins.Sms.MultiSms.Routing.Ready" : "Plugins.Sms.MultiSms.Routing.NotReady")</span><a asp-action="TestCenter" asp-route-provider="SmsIr" class="btn btn-sm btn-outline-secondary">@T("Plugins.Sms.MultiSms.Routing.TestProvider")</a></div>
+@if (Model.TemplateProviderIssues.GetValueOrDefault("SmsIr") is string templateIssueir)
+{
+    <p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.Template"): @T("Plugins.Sms.MultiSms.Readiness." + templateIssueir)</p>
+}
+@if (Model.FreeTextProviderIssues.GetValueOrDefault("SmsIr") is string freeIssueir)
+{
+    <p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.FreeText"): @T("Plugins.Sms.MultiSms.Readiness." + freeIssueir)</p>
+}
 <div class="form-check mb-2"><input asp-for="SmsIrEnabled" class="form-check-input"/><label asp-for="SmsIrEnabled" class="form-check-label">@T("Plugins.Sms.MultiSms.Routing.Ir")</label></div>
 <div class="form-group"><label asp-for="NewSmsIrApiKey">@T("Plugins.Sms.MultiSms.Routing.ApiKey")</label><input asp-for="NewSmsIrApiKey" type="password" class="form-control" autocomplete="new-password" value=""/><span asp-validation-for="NewSmsIrApiKey" class="text-danger"></span></div><small class="text-muted d-block mb-2">@(Model.HasSmsIrApiKey ? T("Plugins.Sms.MultiSms.SecretConfigured") : T("Plugins.Sms.MultiSms.SecretMissing"))</small>
 <div class="form-check mb-2"><input asp-for="ClearSmsIrApiKey" class="form-check-input"/><label asp-for="ClearSmsIrApiKey" class="form-check-label">@T("Plugins.Sms.MultiSms.Routing.Clear")</label></div>
@@ -82,29 +107,8 @@
 <div class="form-check mb-2"><input asp-for="StoreNonOtpMessageBody" class="form-check-input"/><label asp-for="StoreNonOtpMessageBody" class="form-check-label">@T("Plugins.Sms.MultiSms.Routing.StoreBody")</label></div></div>
     </div>
 </form>
-<hr/>
-<h5>@T("Plugins.Sms.MultiSms.Routing.TestTitle")</h5>
-<p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.TestHint")</p>
-<form id="sms-provider-test" asp-action="TestSms" method="post" autocomplete="off">
-    <div class="form-group"><label asp-for="TestProvider">@T("Plugins.Sms.MultiSms.Routing.Provider")</label><select asp-for="TestProvider" class="form-control"><option value="">—</option>@foreach (var provider in Model.AvailableProviders) { <option value="@provider">@provider</option> }</select></div>
-    <div class="form-group"><label asp-for="TestPhone">@T("Plugins.Sms.MultiSms.Routing.Recipient")</label><input asp-for="TestPhone" type="tel" class="form-control" /><span asp-validation-for="TestPhone" class="text-danger"></span></div>
-    <div class="form-group"><label asp-for="TestMessage">@T("Plugins.Sms.MultiSms.Routing.TestMessage")</label><textarea asp-for="TestMessage" class="form-control" rows="2"></textarea></div>
-    <button type="submit" name="TestOtp" value="false" class="btn btn-secondary">@T("Plugins.Sms.MultiSms.Routing.TestGeneral")</button>
-    <button type="submit" name="TestOtp" value="true" class="btn btn-primary">@T("Plugins.Sms.MultiSms.Routing.TestOtp")</button>
-    @if (Model.TestSucceeded.HasValue)
-    {
-        <div class="alert mt-3 @(Model.TestSucceeded.Value ? "alert-success" : "alert-danger")">@Model.TestResult</div>
-    }
-</form>
 <script>
 (function () {
-    for (const button of document.querySelectorAll('[data-sms-test]')) {
-        button.addEventListener('click', function () {
-            document.getElementById('TestProvider').value = button.dataset.smsTest;
-            document.getElementById('sms-provider-test').scrollIntoView({ block: 'center' });
-            document.getElementById('TestPhone').focus();
-        });
-    }
     const mode = document.getElementById('MelipayamakAuthMode');
     function syncMode() {
         document.getElementById('sms-meli-console').hidden = mode.value !== 'Console';

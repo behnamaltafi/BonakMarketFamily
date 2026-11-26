@@ -1,0 +1,101 @@
+@model SmsTestCenterModel
+@{
+    Layout = "_ConfigureModule";
+}
+<h3>@T("Plugins.Sms.MultiSms.Routing.TestCenter")</h3>
+<p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.TestCenterHint")</p>
+<div class="mb-3">
+    <a asp-action="Configure" class="btn btn-secondary">@T("Plugins.Sms.MultiSms.SettingsLink")</a>
+    <a asp-action="Templates" class="btn btn-outline-secondary">@T("Plugins.Sms.MultiSms.Routing.Templates")</a>
+</div>
+@if (Model.Succeeded.HasValue)
+{
+    <div class="alert @(Model.Succeeded.Value ? "alert-success" : "alert-danger")">@Model.Result</div>
+}
+<form asp-action="TestCenter" method="post" autocomplete="off">
+    <div class="form-group">
+        <label asp-for="Mode">@T("Plugins.Sms.MultiSms.Routing.DeliveryMode")</label>
+        <select asp-for="Mode" class="form-control"><option value="Template">@T("Plugins.Sms.MultiSms.Routing.Template")</option><option value="FreeText">@T("Plugins.Sms.MultiSms.Routing.FreeText")</option></select>
+    </div>
+    <div id="template-test-fields">
+        <div class="form-group">
+            <label asp-for="TemplateKey">@T("Plugins.Sms.MultiSms.Routing.TemplateKey")</label>
+            <select asp-for="TemplateKey" class="form-control">
+                @foreach (var item in Model.Templates)
+                {
+                    <option value="@item.Template.Key">@item.Template.Title (@item.Template.Key) — @(item.Readiness.IsReady ? T("Plugins.Sms.MultiSms.Routing.Ready").Value : T("Plugins.Sms.MultiSms.Routing.NotReady").Value)</option>
+                }
+            </select>
+        </div>
+        <div id="test-template-details"></div>
+        <div id="test-parameters"></div>
+    </div>
+    <div class="form-group" id="free-text-test-fields">
+        <label asp-for="Message">@T("Plugins.Sms.MultiSms.Routing.TestMessage")</label><textarea asp-for="Message" class="form-control" rows="3" maxlength="1500"></textarea>
+    </div>
+    <div class="form-group">
+        <label asp-for="Provider">@T("Plugins.Sms.MultiSms.Routing.Provider")</label>
+        <select asp-for="Provider" class="form-control"><option value="">@T("Plugins.Sms.MultiSms.Routing.ConfiguredRoute")</option>@foreach (var provider in Model.Providers) { <option value="@provider">@provider</option> }</select>
+        <small class="text-muted">@T("Plugins.Sms.MultiSms.Routing.DirectTestHint")</small>
+    </div>
+    <div class="form-group">
+        <label asp-for="Phone">@T("Plugins.Sms.MultiSms.Routing.Recipient")</label><input asp-for="Phone" type="tel" class="form-control" dir="ltr" required/>
+    </div>
+    <button type="submit" class="btn btn-primary">@T("Plugins.Sms.MultiSms.Routing.SendTest")</button>
+</form>
+<div id="test-template-data" hidden>
+@foreach (var item in Model.Templates)
+{
+    <div data-key="@item.Template.Key" data-otp="@item.Template.IsOtp.ToString().ToLowerInvariant()">
+        <div class="test-diagnostics">
+            @if (item.Readiness.IsReady)
+            {
+                <p class="text-success">@T("Plugins.Sms.MultiSms.Routing.Ready"): @string.Join(", ", item.Readiness.ReadyProviders)</p>
+            }
+            @foreach (var issue in item.Readiness.Issues)
+            {
+                <p class="text-muted">@(issue.Provider == null ? "" : issue.Provider + ": ")@T("Plugins.Sms.MultiSms.Readiness." + issue.Code)</p>
+            }
+        </div>
+        @if (item.Template.IsOtp)
+        {
+            <span class="otp-test-note text-muted">@T("Plugins.Sms.MultiSms.Routing.GeneratedOtp")</span>
+        }
+        else
+        {
+            foreach (var name in item.Template.Parameters)
+            {
+                <span data-parameter="@name"></span>
+            }
+        }
+    </div>
+}
+</div>
+<script>
+(function () {
+    const mode = document.getElementById('Mode'), key = document.getElementById('TemplateKey');
+    const data = Array.from(document.querySelectorAll('#test-template-data [data-key]'));
+    const params = document.getElementById('test-parameters'), details = document.getElementById('test-template-details');
+    function sync() {
+        const templated = mode.value === 'Template';
+        document.getElementById('template-test-fields').hidden = !templated;
+        document.getElementById('free-text-test-fields').hidden = templated;
+        key.disabled = !templated;
+        document.getElementById('Message').disabled = templated;
+        params.replaceChildren(); details.replaceChildren();
+        if (!templated) return;
+        const selected = data.find(d => d.dataset.key === key.value);
+        if (!selected) return;
+        details.appendChild(selected.querySelector('.test-diagnostics').cloneNode(true));
+        const note = selected.querySelector('.otp-test-note');
+        if (note) params.appendChild(note.cloneNode(true));
+        else for (const param of selected.querySelectorAll('[data-parameter]')) {
+            const group = document.createElement('div'), label = document.createElement('label'), input = document.createElement('input');
+            group.className = 'form-group'; label.textContent = param.dataset.parameter;
+            input.className = 'form-control'; input.name = 'Values'; input.required = true; input.maxLength = 500;
+            group.append(label, input); params.appendChild(group);
+        }
+    }
+    mode.addEventListener('change', sync); key.addEventListener('change', sync); sync();
+})();
+</script>

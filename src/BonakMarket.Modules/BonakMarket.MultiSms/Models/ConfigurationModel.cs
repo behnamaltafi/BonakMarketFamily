@@ -106,6 +106,9 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*TestMessage")]
     public string TestMessage { get; set; }
 
+    public Dictionary<string, string> TemplateProviderIssues { get; set; } = new();
+    public Dictionary<string, string> FreeTextProviderIssues { get; set; } = new();
+
     public string[] TemplateReadyProviders { get; set; } = [];
     public string[] FreeTextReadyProviders { get; set; } = [];
 

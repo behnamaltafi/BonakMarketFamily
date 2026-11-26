@@ -18,6 +18,8 @@ public sealed class IdentityConfigurationModel : ModelBase
     [LocalizedDisplay("*ReauthenticationOtpTemplateKey")]
     public string ReauthenticationOtpTemplateKey { get; set; } = CustomerIdentitySettings.DefaultOtpTemplateKey;
 
+    public bool UseSeparateOtpTemplates { get; set; }
+
     public IReadOnlyList<SmsOtpTemplateOption> OtpTemplates { get; set; } = Array.Empty<SmsOtpTemplateOption>();
 
     [LocalizedDisplay("*OtpResendIntervalSeconds")]

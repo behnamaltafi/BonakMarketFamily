@@ -55,6 +55,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     }
 
     public Task<bool> IsEnabledAsync() => IsEnabledForPurposeAsync("login");
+    public async Task<bool> IsVerificationEnabledAsync() => (await GetOtpSettingsAsync()).OtpLoginEnabled;
     public Task<bool> IsEnrollmentEnabledAsync() => IsEnabledForPurposeAsync("enroll:");
     public Task<bool> IsReauthenticationEnabledAsync() => IsEnabledForPurposeAsync("reauth:");
 
@@ -178,7 +179,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
 
     public async Task<string> ConfirmReauthAsync(Customer customer, string code, CancellationToken ct = default)
     {
-        if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered() || !await IsEnabledForPurposeAsync("reauth:" + customer.Id, ct)) return null;
+        if (customer == null || !customer.Active || customer.Deleted || !customer.IsRegistered() || !await IsVerificationEnabledAsync()) return null;
         var phone = await GetVerifiedPhoneAsync(customer.Id, ct);
         if (phone == null) return null;
         var challenge = await ValidateCodeAsync(phone, "reauth:" + customer.Id, code, ct);
@@ -224,7 +225,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
         if (canonical == null || customer == null || !customer.Active || customer.Deleted ||
-            !customer.IsRegistered() || !await IsEnabledForPurposeAsync("enroll:" + customer.Id, ct)) return false;
+            !customer.IsRegistered() || !await IsVerificationEnabledAsync()) return false;
         var binding = await _db.Set<SmsLoginPhone>().FirstOrDefaultAsync(x => x.CustomerId == customer.Id, ct);
         var old = binding?.Phone;
         var grant = old == null ? null : await GetReauthProofAsync(customer.Id, old, proof, ct);
@@ -289,7 +290,7 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     private async Task<Customer> ConfirmLoginCoreAsync(string phone, string code, long? sentTicks, CancellationToken ct)
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
-        if (canonical is null || !await IsEnabledForPurposeAsync("login", ct))
+        if (canonical is null || !await IsVerificationEnabledAsync())
         {
             return null;
         }

@@ -36,6 +36,7 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var controller = CreateLoginController(otp);
@@ -53,6 +54,7 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.RequestLoginCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -70,6 +72,7 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.ConfirmLoginAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -95,6 +98,7 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var controller = CreateSecurityController(otp);
@@ -110,6 +114,7 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var customer = RegisteredCustomer();
@@ -130,6 +135,7 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var customer = RegisteredCustomer();
@@ -158,6 +164,7 @@ public class SmsApiControllerTests
         customer.Deleted = reason == "deleted";
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.ConfirmLoginAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -183,6 +190,7 @@ public class SmsApiControllerTests
         var customer = RegisteredCustomer();
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.ConfirmLoginAsync("09123456789", "123456", It.IsAny<CancellationToken>())).ReturnsAsync(customer);
@@ -208,6 +216,7 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var antiforgery = new Mock<IAntiforgery>();

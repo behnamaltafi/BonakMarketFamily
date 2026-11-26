@@ -40,7 +40,7 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
     {
         var (customer, error) = await RequireAccountAsync();
         if (error != null) return error;
-        if (!await _otp.IsReauthenticationEnabledAsync()) return NotFound();
+        if (!await _otp.IsVerificationEnabledAsync()) return NotFound();
         var proof = await _otp.ConfirmReauthAsync(customer, request.Code, ct);
         return proof == null ? BadRequest(new IdentityCodeResponse("invalid_code")) : Ok(new PhoneReauthResponse(proof, 600));
     }
@@ -76,7 +76,7 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
     [ProducesResponseType(typeof(PhoneChangeResponse), 200)]
     public async Task<IActionResult> ConfirmEnrollment([FromBody] PhoneChangeVerificationRequest request, CancellationToken ct)
     {
-        if (!await _otp.IsEnrollmentEnabledAsync())
+        if (!await _otp.IsVerificationEnabledAsync())
         {
             return NotFound();
         }

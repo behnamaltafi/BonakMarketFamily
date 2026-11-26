@@ -12,6 +12,7 @@ public interface ISmsOtpLoginService
     /// <summary>Checks whether SMS and OTP login are enabled.</summary>
     Task<bool> IsEnabledAsync();
 
+    Task<bool> IsVerificationEnabledAsync() => IsEnabledAsync();
     Task<bool> IsEnrollmentEnabledAsync() => IsEnabledAsync();
     Task<bool> IsReauthenticationEnabledAsync() => IsEnabledAsync();
 

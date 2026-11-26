@@ -65,7 +65,7 @@ public sealed class SmsLoginApiController : ControllerBase
     [ProducesResponseType(typeof(OtpErrorResponse), 400)]
     public async Task<IActionResult> VerifyCode([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
     {
-        if (!await _otp.IsEnabledAsync())
+        if (!await _otp.IsVerificationEnabledAsync())
         {
             return NotFound();
         }

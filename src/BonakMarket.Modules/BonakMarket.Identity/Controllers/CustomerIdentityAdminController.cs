@@ -16,6 +16,8 @@ public sealed class CustomerIdentityAdminController(ISmsDeliveryAvailability del
         => View(new IdentityConfigurationModel
         {
             OtpLoginEnabled = settings.OtpLoginEnabled,
+            UseSeparateOtpTemplates = new[] { settings.LoginOtpTemplateKey, settings.PhoneEnrollmentOtpTemplateKey, settings.ReauthenticationOtpTemplateKey }
+                .Select(CustomerIdentitySettings.EffectiveTemplateKey).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1,
             LoginOtpTemplateKey = CustomerIdentitySettings.EffectiveTemplateKey(settings.LoginOtpTemplateKey),
             PhoneEnrollmentOtpTemplateKey = CustomerIdentitySettings.EffectiveTemplateKey(settings.PhoneEnrollmentOtpTemplateKey),
             ReauthenticationOtpTemplateKey = CustomerIdentitySettings.EffectiveTemplateKey(settings.ReauthenticationOtpTemplateKey),
@@ -31,6 +33,11 @@ public sealed class CustomerIdentityAdminController(ISmsDeliveryAvailability del
     public async Task<IActionResult> Configure(IdentityConfigurationModel model, CustomerIdentitySettings settings, CancellationToken ct)
     {
         model.OtpTemplates = await delivery.GetOtpTemplatesAsync(ct);
+        if (!model.UseSeparateOtpTemplates)
+        {
+            model.PhoneEnrollmentOtpTemplateKey = model.LoginOtpTemplateKey;
+            model.ReauthenticationOtpTemplateKey = model.LoginOtpTemplateKey;
+        }
         model.LoginOtpTemplateKey = ValidateTemplate(model.LoginOtpTemplateKey, settings.LoginOtpTemplateKey, nameof(model.LoginOtpTemplateKey));
         model.PhoneEnrollmentOtpTemplateKey = ValidateTemplate(model.PhoneEnrollmentOtpTemplateKey, settings.PhoneEnrollmentOtpTemplateKey, nameof(model.PhoneEnrollmentOtpTemplateKey));
         model.ReauthenticationOtpTemplateKey = ValidateTemplate(model.ReauthenticationOtpTemplateKey, settings.ReauthenticationOtpTemplateKey, nameof(model.ReauthenticationOtpTemplateKey));
@@ -53,10 +60,12 @@ public sealed class CustomerIdentityAdminController(ISmsDeliveryAvailability del
             var oldKey = CustomerIdentitySettings.EffectiveTemplateKey(current);
             var key = string.IsNullOrWhiteSpace(submitted) ? oldKey : CustomerIdentitySettings.EffectiveTemplateKey(submitted);
             var option = model.OtpTemplates.FirstOrDefault(x => string.Equals(x.Key, key, StringComparison.OrdinalIgnoreCase));
-            // Always permit turning OTP off even if a previously selected template has been removed.
-            // While enabled, every selected template must be active and routable.
-            if ((model.OtpLoginEnabled && (option is null || !option.IsReady)) ||
-                (!model.OtpLoginEnabled && option is null && key != oldKey))
+            // Reject invalid new selections, but let administrators repair unrelated settings
+            // during outages. Enabling login requires a routable login template, not every optional flow.
+            bool isLogin = field == nameof(model.LoginOtpTemplateKey);
+            bool changed = key != oldKey;
+            if ((changed && option is null) ||
+                (model.OtpLoginEnabled && isLogin && (!settings.OtpLoginEnabled || changed) && (option is null || !option.IsReady)))
                 ModelState.AddModelError(field, T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailable").Value);
             return key;
         }

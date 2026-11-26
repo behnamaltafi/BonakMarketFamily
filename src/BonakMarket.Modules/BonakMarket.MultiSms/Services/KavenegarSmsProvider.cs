@@ -26,6 +26,7 @@ public sealed class KavenegarSmsProvider : ISmsProvider, IOtpSmsProvider
     }
 
     public string Name => "Kavenegar";
+    public string GetMethod(bool otp, SmsGatewaySettings settings) => otp ? "VerifyLookup" : "Send";
 
     public bool IsAvailable(SmsGatewaySettings settings)
         => settings.KavenegarEnabled && settings.KavenegarGeneralEnabled &&

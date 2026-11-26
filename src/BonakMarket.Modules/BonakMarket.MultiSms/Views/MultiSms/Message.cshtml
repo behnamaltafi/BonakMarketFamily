@@ -46,6 +46,7 @@
 <thead><tr>
     <th>@T("Plugins.Sms.MultiSms.HistoryDate")</th>
     <th>@T("Plugins.Sms.MultiSms.HistoryProvider")</th>
+    <th>@T("Plugins.Sms.MultiSms.Routing.Method")</th>
     <th>@T("Plugins.Sms.MultiSms.HistoryStatus")</th>
     <th>@T("Plugins.Sms.MultiSms.HistoryDuration")</th>
     <th>@T("Plugins.Sms.MultiSms.HistoryMessageId")</th>
@@ -57,6 +58,7 @@
     <tr>
         <td>@attempt.StartedOnUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</td>
         <td>@attempt.Provider</td>
+        <td>@(attempt.Method ?? "—")</td>
         <td>@attempt.Status</td>
         <td>@attempt.DurationMs ms</td>
         <td>@attempt.ProviderMessageId</td>

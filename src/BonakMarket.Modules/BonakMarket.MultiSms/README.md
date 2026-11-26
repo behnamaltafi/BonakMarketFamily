@@ -52,7 +52,9 @@ OTP and General each have a primary and up to two ordered fallbacks. No automati
 - Melipayamak: choose Console (API token, simple/shared JSON) or Legacy (username + API key, SendSMS/BaseServiceNumber). OTP requires approved Body ID and exactly one positional variable. Console contract must be verified with a real account; ambiguous responses stop failover.
 - SMS.ir: Bulk for general, Verify with template ID and exact parameter name for OTP.
 
-Save before testing. Tests use exactly the selected provider, without failover. OTP tests create no login challenge and are recorded as Test without storing the code. Real sends are billed. Accepted is not delivered.
+Save before testing. Direct admin tests can be run while the gateway is disabled. Tests use exactly the selected provider, without failover. OTP tests create no login challenge and are recorded as Test without storing the code. Real sends are billed. Accepted is not delivered.
+
+The module-owned migration SmsAttemptMethod adds a nullable Method column to attempt history; old rows remain unchanged.
 
 ## Optional OTP code history
 

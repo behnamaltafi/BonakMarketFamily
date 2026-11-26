@@ -24,6 +24,7 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
     public SmsIrSmsProvider(SmsCredentialProtection credentials) => _credentials = credentials;
 
     public string Name => "SmsIr";
+    public string GetMethod(bool otp, SmsGatewaySettings settings) => otp ? "Verify" : "Bulk";
 
     public static bool IsValidParameterName(string name)
         => name is { Length: >= 1 and <= 50 } && name.All(ch => char.IsAsciiLetterOrDigit(ch) || ch == '_');

@@ -28,7 +28,7 @@ public class SmsHistoryTransportTests
                 It.IsAny<SmsGatewaySettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SmsMessage { Id = 12 });
         history.Setup(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("SQL audit unavailable"));
@@ -81,11 +81,11 @@ public class SmsHistoryTransportTests
             .ReturnsAsync(message);
 
         history.Setup(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<SmsMessage, string, string, string, string, DateTime, int, CancellationToken>(
-                (m, provider, status, id, error, started, ms, ct) =>
+            .Callback<SmsMessage, string, string, string, string, string, DateTime, int, CancellationToken>(
+                (m, provider, method, status, id, error, started, ms, ct) =>
                 {
                     Assert.That(m, Is.SameAs(message));
                     events.Add(provider + ":" + status);
@@ -116,7 +116,7 @@ public class SmsHistoryTransportTests
         var sender = CreateSender(Config(), history.Object, primary, fallback);
         Assert.ThrowsAsync<HttpRequestException>(async () => await sender.SendAsync(Otp));
 
-        history.Verify(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(), "Kavenegar",
+        history.Verify(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(), "Kavenegar", "OTP",
             "Unknown", null, "Transport", It.IsAny<DateTime>(),
             It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
 

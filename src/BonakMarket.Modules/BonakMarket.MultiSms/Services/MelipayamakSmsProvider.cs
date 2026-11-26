@@ -18,6 +18,7 @@ public sealed class MelipayamakSmsProvider : ISmsProvider, IOtpSmsProvider
     private readonly SmsCredentialProtection _credentials;
     public MelipayamakSmsProvider(SmsCredentialProtection credentials) => _credentials = credentials;
     public string Name => "Melipayamak";
+    public string GetMethod(bool otp, SmsGatewaySettings settings) => settings.MelipayamakAuthMode == "Console" ? (otp ? "ConsoleShared" : "ConsoleSimple") : (otp ? "BaseServiceNumber" : "SendSMS");
 
     private static bool HasCredentials(SmsGatewaySettings s) => s.MelipayamakAuthMode switch
     {

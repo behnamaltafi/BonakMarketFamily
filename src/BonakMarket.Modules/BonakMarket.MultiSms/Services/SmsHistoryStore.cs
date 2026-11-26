@@ -75,7 +75,7 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
     }
 
     public async Task RecordAttemptAsync(
-        SmsMessage message, string provider, string status, string messageId,
+        SmsMessage message, string provider, string method, string status, string messageId,
         string errorCategory, DateTime startedOnUtc, int durationMs, CancellationToken ct)
     {
         if (message is null) return;
@@ -84,6 +84,7 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
         {
             SmsMessageId = message.Id,
             Provider = provider,
+            Method = method,
             Status = status,
             ProviderMessageId = messageId,
             ErrorCategory = errorCategory,

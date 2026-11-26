@@ -16,6 +16,7 @@ public sealed class MockSmsProvider : ISmsProvider, IOtpSmsProvider
     }
 
     public string Name => "Mock";
+    public string GetMethod(bool otp, SmsGatewaySettings settings) => "Mock";
 
     public bool IsAvailable(SmsGatewaySettings settings)
         => _environment.IsDevelopment() && settings.MockEnabled;

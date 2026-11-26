@@ -52,7 +52,7 @@ public sealed class SmsGatewaySender : ISmsSender
         }
 
         var settings = await _settings.LoadSettingsAsync<SmsGatewaySettings>();
-        if (!settings.Enabled)
+        if (!settings.Enabled && testProvider is null)
         {
             throw new InvalidOperationException("SMS delivery is disabled.");
         }
@@ -111,6 +111,7 @@ public sealed class SmsGatewaySender : ISmsSender
         var startedOnUtc = DateTime.UtcNow;
         var timer = Stopwatch.StartNew();
         string messageId;
+        var method = provider.GetMethod(request.Kind == SmsMessageKind.Otp, settings);
 
         // Only provider-side failures may qualify for failover. The optional
         // database audit is always performed *outside* the provider try/catch.
@@ -138,19 +139,19 @@ public sealed class SmsGatewaySender : ISmsSender
                 _logger.LogWarning("SMS attempt failed. Provider={Provider}; Kind={Kind}; HistoryId={HistoryId}; Diagnostic={Diagnostic}",
                     provider.Name, request.Kind, message?.Id, diagnostic);
             }
-            await RecordSafelyAsync(message, provider.Name, SmsHistoryFormatter.FailedStatus(ex),
+            await RecordSafelyAsync(message, provider.Name, method, SmsHistoryFormatter.FailedStatus(ex),
                 null, diagnostic, startedOnUtc,
                 (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue));
             throw;
         }
 
         timer.Stop();
-        await RecordSafelyAsync(message, provider.Name, "Accepted", messageId,
+        await RecordSafelyAsync(message, provider.Name, method, "Accepted", messageId,
             null, startedOnUtc, (int)Math.Min(timer.ElapsedMilliseconds, int.MaxValue));
         return messageId;
     }
 
-    private async Task RecordSafelyAsync(SmsMessage message, string provider,
+    private async Task RecordSafelyAsync(SmsMessage message, string provider, string method,
         string status, string providerMessageId, string errorCategory,
         DateTime startedOnUtc, int durationMs)
     {
@@ -158,7 +159,7 @@ public sealed class SmsGatewaySender : ISmsSender
 
         try
         {
-            await _history.RecordAttemptAsync(message, provider, status, providerMessageId,
+            await _history.RecordAttemptAsync(message, provider, method, status, providerMessageId,
                 errorCategory, startedOnUtc, durationMs, CancellationToken.None);
         }
         catch (Exception)

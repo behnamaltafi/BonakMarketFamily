@@ -1,0 +1,40 @@
+@model CatalogModel
+@{ Layout = "_ConfigureModule"; }
+<h3>ERP catalog staging</h3>
+<p>Read-only previews and staged products do not modify live prices or inventory.</p>
+<form asp-action="Preview" method="post" target="_blank">
+    <input type="hidden" name="id" value="@Model.ConnectionId" />
+    <label>Operation</label>
+    <select name="operation"><option>Products</option><option>Prices</option><option>Inventory</option><option>Categories</option><option>Warehouses</option></select>
+    <label>Skip</label><input name="skip" type="number" min="0" value="0" />
+    <label>Take</label><input name="take" type="number" min="1" max="100" value="25" />
+    <button type="submit" class="btn btn-secondary">Preview / test connection</button>
+</form>
+<form asp-action="StageProducts" method="post" class="my-3">
+    <input type="hidden" name="id" value="@Model.ConnectionId" />
+    <label>Skip</label><input name="skip" type="number" min="0" value="0" />
+    <label>Take</label><input name="take" type="number" min="1" max="100" value="100" />
+    <button type="submit" class="btn btn-primary">Stage products</button>
+</form>
+<table class="table">
+    <thead><tr><th>External ID</th><th>SKU</th><th>Name</th><th>Active</th><th>Local product</th></tr></thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr><td>@row.ExternalId</td><td>@row.Sku</td><td>@row.Name</td><td>@row.ActiveForSale</td>
+        <td>
+        @if (row.ProductId.HasValue) { <span>@row.ProductId</span> }
+        else
+        {
+            <form asp-action="LinkProduct" method="post">
+                <input type="hidden" name="id" value="@row.Id" />
+                <input type="number" name="productId" min="1" required />
+                <button type="submit" class="btn btn-secondary">Link</button>
+            </form>
+        }
+        </td></tr>
+    }
+    </tbody>
+</table>
+@if (Model.Skip >= 100) { <a asp-action="Catalog" asp-route-id="@Model.ConnectionId" asp-route-skip="@(Model.Skip - 100)">Previous</a> }
+@if (Model.Rows.Count == 100) { <a asp-action="Catalog" asp-route-id="@Model.ConnectionId" asp-route-skip="@(Model.Skip + 100)">Next</a> }

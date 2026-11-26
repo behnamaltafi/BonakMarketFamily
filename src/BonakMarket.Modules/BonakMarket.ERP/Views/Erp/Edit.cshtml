@@ -1,0 +1,27 @@
+@model ConnectionModel
+@{ Layout = "_ConfigureModule"; }
+<h3>ERP connection</h3>
+<form asp-action="Edit" method="post" autocomplete="off">
+    <div asp-validation-summary="All"></div>
+    <input asp-for="Id" type="hidden" />
+    <div class="mb-3"><label asp-for="CompanyCode"></label><input asp-for="CompanyCode" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Code"></label><input asp-for="Code" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Name"></label><input asp-for="Name" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Provider"></label><select asp-for="Provider" class="form-control">
+    @foreach (var p in Model.Providers) { <option value="@p">@p</option> }
+    </select></div>
+    <div class="mb-3"><label asp-for="BaseUrl"></label><input asp-for="BaseUrl" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="ODataPrefix"></label><input asp-for="ODataPrefix" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="LoginPath"></label><input asp-for="LoginPath" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="AuthorizationScheme"></label><input asp-for="AuthorizationScheme" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="TimeoutSeconds"></label><input asp-for="TimeoutSeconds" class="form-control" /></div>
+    <div class="mb-3"><input asp-for="UseLogin" /><label asp-for="UseLogin"></label></div>
+    <div class="mb-3"><input asp-for="Enabled" /><label asp-for="Enabled"></label></div>
+    <div class="mb-3">
+        <label for="NewLoginBody">Login JSON (exact request body from ERP)</label>
+        <textarea name="NewLoginBody" id="NewLoginBody" class="form-control" autocomplete="off"></textarea>
+        <small>Encrypted at rest. Leave blank to preserve the stored secret. Configured: @Model.HasLoginBody</small>
+    </div>
+    <div class="mb-3"><input asp-for="ClearLoginBody" /><label asp-for="ClearLoginBody"></label></div>
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>

@@ -4,6 +4,7 @@
 <form asp-action="Edit" method="post" autocomplete="off">
     <div asp-validation-summary="All"></div>
     <input asp-for="Id" type="hidden" />
+    <input asp-for="ConfigurationVersion" type="hidden" />
     <div class="mb-3"><label asp-for="CompanyCode"></label><input asp-for="CompanyCode" class="form-control" /></div>
     <div class="mb-3"><label asp-for="SourceCode">Stable source code</label><input asp-for="SourceCode" class="form-control" /><small>Same code only for connections to the same external product identity namespace. Immutable after creation.</small></div>
     <div class="mb-3"><label asp-for="Code"></label><input asp-for="Code" class="form-control" /></div>

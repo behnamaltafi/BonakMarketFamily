@@ -6,6 +6,7 @@ namespace BonakMarket.ERP.Models;
 public sealed class ConnectionModel
 {
     public int Id { get; set; }
+    public Guid ConfigurationVersion { get; set; }
     [Required, MaxLength(80)] public string CompanyCode { get; set; }
     [Required, MaxLength(80)] public string SourceCode { get; set; }
     [Required, MaxLength(80)] public string Code { get; set; }

@@ -30,3 +30,5 @@ Provider-specific non-secret settings and authentication options use validated J
 
 ## Deployment configuration
 Set `BonakMarket__ERP__AllowedAuthorities__0=erp.example.com` (include a non-default port if necessary) in the application environment. The allowlist fails closed, so no ERP requests work before setup. Deploy with persistent shared Data Protection keys and restrict network egress. Login wire names and date/branch field types must be confirmed; the document names the four login inputs but does not specify their JSON keys. Configure the Products route for manual or scheduled staging. Register the native task for already-installed modules and enable its schedule. No automatic writes to ERP are available.
+
+Connection edits invalidate the token cache key and reset the route checkpoint; old cached tokens expire locally within at most one hour. Concurrent or stale edit forms are rejected. Changes to the external identity namespace require a new connection with a different SourceCode.

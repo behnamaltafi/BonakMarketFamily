@@ -11,7 +11,7 @@ public sealed class ErpOperationRunner(SmartDbContext db, ErpOperationRouter rou
     {
         var initial = await router.ResolveAsync(company, "Products", ct);
         if (initial.Connection.Id != expectedConnectionId) throw new ErpIntegrationException("operation_connection_mismatch");
-        await using var lease = await locks.AcquireAsync(ErpOperationLock.ProductsKey(company), ct);
+        await using var lease = await locks.AcquireAsync(ErpOperationLock.ProductsKey(initial.Route.CompanyCode), ct);
         var current = await router.ResolveAsync(company, "Products", ct);
         if (current.Connection.Id != expectedConnectionId) throw new ErpIntegrationException("operation_connection_mismatch");
         return await catalog.StageProductsAsync(current.Connection, skip, take, ct);

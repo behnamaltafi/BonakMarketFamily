@@ -24,7 +24,11 @@ public sealed class ErpTokenCache
                 return existing;
             var token = await load();
             if (token.ExpiresAt > DateTimeOffset.UtcNow.AddSeconds(15))
-                _cache.Set(key, token, token.ExpiresAt.AddSeconds(-15));
+            {
+                var expiry = token.ExpiresAt.AddSeconds(-15);
+                var cap = DateTimeOffset.UtcNow.AddHours(1);
+                _cache.Set(key, token, expiry < cap ? expiry : cap);
+            }
             return token;
         }
         finally { gate.Release(); }

@@ -101,7 +101,7 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
         }
         var c = await db.Set<ErpConnection>().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (c == null) return NotFound();
-        var existing = new ConnectionModel { Id = c.Id, CompanyCode = c.CompanyCode, SourceCode = c.SourceCode, Code = c.Code, Name = c.Name,
+        var existing = new ConnectionModel { Id = c.Id, ConfigurationVersion = c.ConfigurationVersion, CompanyCode = c.CompanyCode, SourceCode = c.SourceCode, Code = c.Code, Name = c.Name,
             Provider = c.Provider, BaseUrl = c.BaseUrl, Enabled = c.Enabled, TimeoutSeconds = c.TimeoutSeconds,
             ProviderSettingsJson = c.ProviderSettingsJson, AuthenticationType = c.AuthenticationType,
             AuthenticationSettingsJson = c.AuthenticationSettingsJson, HasCredentials = !string.IsNullOrEmpty(c.EncryptedAuthenticationSettings),
@@ -115,6 +115,8 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
     {
         var current = model.Id == 0 ? new ErpConnection() : await db.Set<ErpConnection>().FirstOrDefaultAsync(x => x.Id == model.Id, ct);
         if (current == null) return NotFound();
+        if (current.Id != 0 && current.ConfigurationVersion != model.ConfigurationVersion)
+            return Conflict("connection_changed_reload");
         PopulateOptions(model);
         model.HasCredentials = !string.IsNullOrEmpty(current.EncryptedAuthenticationSettings);
         model.LegacyLoginPayload = current.LegacyLoginPayload;
@@ -191,6 +193,7 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
         try
         {
             await using var lease = await operationLock.AcquireAsync(ErpOperationLock.ProductsKey(candidate.CompanyCode), ct);
+            using var tx = await db.Database.BeginTransactionAsync(ct);
             if (current.Id == 0) db.Set<ErpConnection>().Add(candidate);
             else
             {
@@ -200,6 +203,18 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
                 db.Entry(current).CurrentValues.SetValues(candidate);
             }
             await db.SaveChangesAsync(ct);
+            // A changed connection must not resume a cursor from its old configuration.
+            if (model.Id != 0)
+            {
+                var now = DateTime.UtcNow;
+                var revision = Guid.NewGuid();
+                await db.Set<ErpOperationConfiguration>().Where(x => x.ConnectionId == candidate.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(x => x.NextOffset, 0)
+                        .SetProperty(x => x.LastSucceededUtc, (DateTime?)null)
+                        .SetProperty(x => x.NextRunUtc, x => x.Enabled && x.ScheduleEnabled ? (DateTime?)now : null)
+                        .SetProperty(x => x.Revision, revision), ct);
+            }
+            await tx.CommitAsync(ct);
         }
         catch (ErpIntegrationException ex) { return Conflict(new { error = ex.Code }); }
         return RedirectToAction(nameof(Index));

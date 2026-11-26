@@ -1,7 +1,7 @@
 {
   "$schema": "../module.schema.json",
   "Author": "BonakMarket",
-  "Group": "Integration",
+  "Group": "Data",
   "SystemName": "BonakMarket.ERP",
   "FriendlyName": "ERP Integration",
   "Description": "ERP connections and catalog synchronization.",

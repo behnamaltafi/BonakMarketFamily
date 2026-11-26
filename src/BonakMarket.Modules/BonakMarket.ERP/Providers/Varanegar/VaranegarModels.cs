@@ -4,6 +4,7 @@ namespace BonakMarket.ERP.Providers.Varanegar;
 // values of the supplier document. Missing critical fields fail validation.
 internal sealed class ProductRow
 {
+    public ProductRow() { }
     public int? Id { get; set; }
     public string GoodsCode { get; set; }
     public string GoodsName { get; set; }
@@ -28,6 +29,7 @@ internal sealed class ProductRow
 }
 internal sealed class PriceRow
 {
+    public PriceRow() { }
     public int? Id { get; set; }
     public int? GoodsRef { get; set; }
     public int? Code { get; set; }
@@ -52,6 +54,7 @@ internal sealed class PriceRow
 }
 internal sealed class StockRow
 {
+    public StockRow() { }
     public int? Id { get; set; }
     public int? GoodsRef { get; set; }
     public int? StockDCRef { get; set; }
@@ -62,6 +65,7 @@ internal sealed class StockRow
 }
 internal sealed class CategoryRow
 {
+    public CategoryRow() { }
     public int? Id { get; set; }
     public int? ParentId { get; set; }
     public string GoodsGroupName { get; set; }
@@ -69,6 +73,7 @@ internal sealed class CategoryRow
 }
 internal sealed class WarehouseRow
 {
+    public WarehouseRow() { }
     public int? Id { get; set; }
     public string StockDCCode { get; set; }
     public string StockDCName { get; set; }

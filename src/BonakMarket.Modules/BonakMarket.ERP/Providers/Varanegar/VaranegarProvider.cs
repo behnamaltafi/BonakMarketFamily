@@ -64,7 +64,7 @@ public sealed class VaranegarProvider(IHttpClientFactory factory, ErpSecrets sec
     {
         if (string.IsNullOrWhiteSpace(path) || path.StartsWith("//", StringComparison.Ordinal) ||
             path.Contains('\\') || path.Contains('?') || path.Contains('#') || path.Contains("..", StringComparison.Ordinal) ||
-            Uri.TryCreate(path, UriKind.Absolute, out _))
+            path.Contains('%') || path.Any(char.IsControl) || Uri.TryCreate(path.TrimStart('/'), UriKind.Absolute, out _))
             throw new ErpIntegrationException("invalid_relative_path");
         return SameOrigin(root, new Uri(root, path.TrimStart('/')));
     }
@@ -91,7 +91,8 @@ public sealed class VaranegarProvider(IHttpClientFactory factory, ErpSecrets sec
         {
             // Login is performed per bounded operation, avoiding token mixups across companies/fiscal years.
             var authorization = c.UseLogin ? await Login(client, root, c, token) : null;
-            var endpoint = Relative(root, c.ODataPrefix.TrimEnd('/') + "/" + entity);
+            var prefix = c.ODataPrefix?.Trim('/');
+            var endpoint = Relative(root, string.IsNullOrEmpty(prefix) ? entity : prefix + "/" + entity);
             Uri next = new UriBuilder(endpoint) { Query = "$orderby=Id&$skip=" + skip.ToString(CultureInfo.InvariantCulture) + "&$top=" + take.ToString(CultureInfo.InvariantCulture) }.Uri;
             var seen = new HashSet<string>(StringComparer.Ordinal);
             var rows = new List<T>();
@@ -127,6 +128,8 @@ public sealed class VaranegarProvider(IHttpClientFactory factory, ErpSecrets sec
         catch (OperationCanceledException) when (!ct.IsCancellationRequested) { throw new ErpIntegrationException("timeout"); }
         catch (HttpRequestException) { throw new ErpIntegrationException("transport_error"); }
         catch (JsonException) { throw new ErpIntegrationException("invalid_json"); }
+        catch (UriFormatException) { throw new ErpIntegrationException("invalid_uri"); }
+        catch (FormatException) { throw new ErpIntegrationException("invalid_response_format"); }
         catch (System.Security.Cryptography.CryptographicException) { throw new ErpIntegrationException("credential_decryption_failed"); }
     }
 
@@ -167,6 +170,7 @@ public sealed class VaranegarProvider(IHttpClientFactory factory, ErpSecrets sec
 
     private sealed class LoginResponse
     {
+        public LoginResponse() { }
         public string Token { get; set; }
         public DateTimeOffset? ExpiresAt { get; set; }
     }

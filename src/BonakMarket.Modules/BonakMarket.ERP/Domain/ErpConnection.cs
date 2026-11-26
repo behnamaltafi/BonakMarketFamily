@@ -16,7 +16,7 @@ public sealed class ErpConnection : BaseEntity
     [Required, MaxLength(500)] public string BaseUrl { get; set; }
     public bool Enabled { get; set; }
     public int TimeoutSeconds { get; set; } = 30;
-    [Required, MaxLength(200)] public string ODataPrefix { get; set; } = "odata/";
+    [MaxLength(200)] public string ODataPrefix { get; set; } = "odata/";
     [Required, MaxLength(200)] public string LoginPath { get; set; } = "api/auth/login";
     [MaxLength(40)] public string AuthorizationScheme { get; set; } = "Bearer";
     public bool UseLogin { get; set; } = true;

@@ -13,7 +13,6 @@ using BonakMarket.Web.Controllers;
 namespace BonakMarket.ERP.Controllers;
 
 [Permission("configuration.setting")]
-[AutoValidateAntiforgeryToken]
 public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolver, ErpSecrets secrets, ErpCatalogService catalog) : AdminController
 {
     public async Task<IActionResult> Index(CancellationToken ct)
@@ -39,17 +38,27 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
         if (c == null) return NotFound();
         model.Providers = resolver.Names;
         var secret = c.EncryptedLoginBody;
+        model.CompanyCode = model.CompanyCode?.Trim();
+        model.Code = model.Code?.Trim();
+        model.Name = model.Name?.Trim();
+        var invalidSecret = ModelState.TryGetValue(nameof(model.NewLoginBody), out var secretState) && secretState.Errors.Count != 0;
+        if (invalidSecret) ModelState.AddModelError("", "invalid_login_body");
         try
         {
+            if (string.IsNullOrWhiteSpace(model.CompanyCode) || string.IsNullOrWhiteSpace(model.Code) || string.IsNullOrWhiteSpace(model.Name))
+                throw new ErpIntegrationException("invalid_connection_identity");
             var uri = VaranegarProvider.ValidateBase(model.BaseUrl);
-            VaranegarProvider.Relative(uri, model.ODataPrefix);
+            if (!string.IsNullOrWhiteSpace(model.ODataPrefix)) VaranegarProvider.Relative(uri, model.ODataPrefix);
+            if (c.Id != 0 && !string.IsNullOrEmpty(secret) && !string.Equals(VaranegarProvider.ValidateBase(c.BaseUrl).AbsoluteUri, uri.AbsoluteUri, StringComparison.Ordinal) &&
+                !model.ClearLoginBody && string.IsNullOrWhiteSpace(model.NewLoginBody))
+                throw new ErpIntegrationException("replace_credentials_when_changing_base_url");
             VaranegarProvider.Relative(uri, model.LoginPath);
             if (!string.IsNullOrEmpty(model.AuthorizationScheme) && !Regex.IsMatch(model.AuthorizationScheme, "^[A-Za-z][A-Za-z0-9_-]{0,39}$"))
                 throw new ErpIntegrationException("invalid_authorization_scheme");
             if (!resolver.Names.Contains(model.Provider, StringComparer.OrdinalIgnoreCase))
                 throw new ErpIntegrationException("unsupported_provider");
             if (model.ClearLoginBody) secret = null;
-            else if (!string.IsNullOrWhiteSpace(model.NewLoginBody))
+            else if (!invalidSecret && !string.IsNullOrWhiteSpace(model.NewLoginBody))
             {
                 using var doc = JsonDocument.Parse(model.NewLoginBody);
                 if (doc.RootElement.ValueKind != JsonValueKind.Object) throw new ErpIntegrationException("login_body_must_be_object");
@@ -77,7 +86,7 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
         c.BaseUrl = model.BaseUrl.Trim();
         c.Enabled = model.Enabled;
         c.TimeoutSeconds = model.TimeoutSeconds;
-        c.ODataPrefix = model.ODataPrefix.Trim();
+        c.ODataPrefix = model.ODataPrefix?.Trim() ?? "";
         c.LoginPath = model.LoginPath.Trim();
         c.AuthorizationScheme = model.AuthorizationScheme;
         c.UseLogin = model.UseLogin;
@@ -108,7 +117,7 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
 
     public async Task<IActionResult> Catalog(int id, int skip, CancellationToken ct)
     {
-        if (skip < 0) return BadRequest();
+        if (skip < 0 || !await db.Set<ErpConnection>().AnyAsync(x => x.Id == id, ct)) return BadRequest();
         var rows = await db.Set<ErpCatalogProduct>().AsNoTracking().Where(x => x.ConnectionId == id)
             .OrderBy(x => x.Id).Skip(skip).Take(100).ToListAsync(ct);
         return View(new CatalogModel(id, skip, rows));
@@ -117,6 +126,7 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
     [HttpPost]
     public async Task<IActionResult> LinkProduct(int id, int productId, CancellationToken ct)
     {
+        using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         var row = await db.Set<ErpCatalogProduct>().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (row == null) return NotFound();
         if (productId <= 0 || !await db.Products.AnyAsync(x => x.Id == productId && !x.Deleted, ct))
@@ -127,6 +137,7 @@ public sealed class ErpController(SmartDbContext db, ErpProviderResolver resolve
             return Conflict("product_already_mapped");
         row.ProductId = productId;
         await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
         return RedirectToAction(nameof(Catalog), new { id = row.ConnectionId });
     }
 }

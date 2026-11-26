@@ -34,6 +34,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\src\BonakMarket.Core\BonakMarket.Core.csproj" />
 		<ProjectReference Include="..\..\src\BonakMarket.Modules\BonakMarket.MultiSms\BonakMarket.MultiSms.csproj" />
+		<ProjectReference Include="..\..\src\BonakMarket.Modules\BonakMarket.ERP\BonakMarket.ERP.csproj" />
 		<ProjectReference Include="..\..\src\BonakMarket.Modules\BonakMarket.Identity\BonakMarket.Identity.csproj" />
 		<ProjectReference Include="..\..\src\BonakMarket.Modules\BonakMarket.StorefrontApi\BonakMarket.StorefrontApi.csproj" />
 		<ProjectReference Include="..\..\src\BonakMarket\BonakMarket.csproj" />

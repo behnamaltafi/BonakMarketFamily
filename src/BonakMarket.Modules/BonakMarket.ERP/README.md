@@ -22,3 +22,6 @@ Connections default disabled. Company code + connection code identify a connecti
 ## Not yet enabled
 Scheduled sync, per-operation routing, product creation and live price/stock application, customer/order/receipt writes, reconciliation and retry queue require subsequent phases. Varanegar CreateOrder supports ActionType 1 (request only) and 5 (request + special invoice), plus free-invoice actions in revision history. Stable ReferenceKey, multiple external order IDs, Persian date, smallest unit quantities and MessageType semantics must be implemented before writes. Do not use a live write as a test.
 No new dependencies. Build and validate the migration on a disposable SQL Server database before deployment. Real endpoint fixtures, authentication parameters and currency/unit/warehouse policies are required before production rollout.
+
+## Tests
+Provider contract tests are in BonakMarket.Core.Tests/ERP. Run `dotnet test test/BonakMarket.Core.Tests/BonakMarket.Core.Tests.csproj --filter FullyQualifiedName~VaranegarProviderTests` before use. Tests use a fake HTTP handler, not live credentials.

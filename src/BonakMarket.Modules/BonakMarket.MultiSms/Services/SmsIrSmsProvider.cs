@@ -36,6 +36,15 @@ public sealed class SmsIrSmsProvider : ISmsProvider, ITemplateSmsProvider
     public bool IsTemplateAvailable(SmsGatewaySettings settings)
         => settings.SmsIrEnabled && settings.SmsIrTemplateEnabled &&
             !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey);
+    public string GetConfigurationIssue(SmsGatewaySettings settings, bool templateMode)
+    {
+        if (!settings.SmsIrEnabled) return "ProviderDisabled";
+        if (templateMode ? !settings.SmsIrTemplateEnabled : !settings.SmsIrFreeTextEnabled) return "ModeDisabled";
+        if (!templateMode && settings.SmsIrLineNumber is not > 0) return "SenderMissing";
+        if (string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey)) return "CredentialsMissing";
+        return _credentials?.ConfigurationIssue(settings.EncryptedSmsIrApiKey);
+    }
+
     public bool IsValidMapping(string externalId, IEnumerable<string> slots)
         => SmsTemplateRules.IsPositiveId(externalId) && slots.All(IsValidParameterName);
 

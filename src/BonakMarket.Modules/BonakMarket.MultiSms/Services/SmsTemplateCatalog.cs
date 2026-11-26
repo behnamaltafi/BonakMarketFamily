@@ -7,12 +7,14 @@ namespace BonakMarket.MultiSms.Services;
 
 public sealed record SmsTemplateMapping(string ExternalTemplateId, IReadOnlyDictionary<string, string> Parameters);
 public sealed record SmsTemplateDefinition(string Key, bool IsOtp, bool IsActive, string[] Parameters,
-    IReadOnlyDictionary<string, SmsTemplateMapping> Providers, string Title = null);
+    IReadOnlyDictionary<string, SmsTemplateMapping> Providers, string Title = null, int Id = 0);
 public sealed record SmsTemplatePayload(string ExternalTemplateId, IReadOnlyDictionary<string, string> Parameters);
 
 public interface ISmsTemplateCatalog
 {
     Task<SmsTemplateDefinition> FindAsync(string key, CancellationToken ct);
+    Task<IReadOnlyList<SmsTemplateDefinition>> ListAsync(CancellationToken ct)
+        => Task.FromResult<IReadOnlyList<SmsTemplateDefinition>>(Array.Empty<SmsTemplateDefinition>());
     Task<IReadOnlyList<SmsTemplateDefinition>> ListActiveOtpAsync(CancellationToken ct)
         => Task.FromResult<IReadOnlyList<SmsTemplateDefinition>>(Array.Empty<SmsTemplateDefinition>());
 }
@@ -30,14 +32,17 @@ public sealed class SmsTemplateCatalog(SmartDbContext db) : ISmsTemplateCatalog
     }
 
     public async Task<IReadOnlyList<SmsTemplateDefinition>> ListActiveOtpAsync(CancellationToken ct)
+        => (await ListAsync(ct)).Where(x => x.IsOtp && x.IsActive).ToArray();
+
+    public async Task<IReadOnlyList<SmsTemplateDefinition>> ListAsync(CancellationToken ct)
     {
         var definitions = await db.Set<SmsTemplate>().AsNoTracking()
-            .Where(x => x.IsOtp && x.IsActive).OrderBy(x => x.Key).ToListAsync(ct);
+            .OrderBy(x => x.Key).ToListAsync(ct);
         if (definitions.Count == 0) return Array.Empty<SmsTemplateDefinition>();
 
         // A bounded number of database queries regardless of the number of templates.
         var rows = await db.Set<SmsTemplateProvider>().AsNoTracking()
-            .Where(x => x.Template.IsOtp && x.Template.IsActive).ToListAsync(ct);
+            .ToListAsync(ct);
         var byTemplate = rows.ToLookup(x => x.TemplateId);
         return definitions.Select(t => ToDefinition(t, byTemplate[t.Id])).ToArray();
     }
@@ -48,7 +53,7 @@ public sealed class SmsTemplateCatalog(SmartDbContext db) : ISmsTemplateCatalog
             JsonSerializer.Deserialize<string[]>(template.Parameters),
             rows.ToDictionary(x => x.ProviderName, x => new SmsTemplateMapping(x.ExternalTemplateId,
                 JsonSerializer.Deserialize<Dictionary<string, string>>(x.ParameterMapping)), StringComparer.OrdinalIgnoreCase),
-            template.Title);
+            template.Title, template.Id);
     }
 }
 

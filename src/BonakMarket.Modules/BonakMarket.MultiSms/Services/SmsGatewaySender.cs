@@ -34,16 +34,19 @@ public sealed class SmsGatewaySender : ISmsSender
     }
 
     public Task<SmsSendResult> SendAsync(SmsSendRequest request, CancellationToken cancelToken = default)
-        => SendCoreAsync(request, null, cancelToken);
+        => SendCoreAsync(request, null, false, cancelToken);
 
     // Administration-only caller; test exactly one provider using saved configuration.
     public Task<SmsSendResult> TestProviderAsync(SmsSendRequest request, string providerName, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(providerName)) throw new ArgumentException("Choose a provider.");
-        return SendCoreAsync(request, providerName, ct);
+        return SendCoreAsync(request, providerName, true, ct);
     }
 
-    private async Task<SmsSendResult> SendCoreAsync(SmsSendRequest request, string testProvider, CancellationToken cancelToken)
+    public Task<SmsSendResult> TestRouteAsync(SmsSendRequest request, CancellationToken ct = default)
+        => SendCoreAsync(request, null, true, ct);
+
+    private async Task<SmsSendResult> SendCoreAsync(SmsSendRequest request, string testProvider, bool isTest, CancellationToken cancelToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (!Enum.IsDefined(request.EffectiveDeliveryMode) || !Enum.IsDefined(request.Kind))
@@ -105,7 +108,7 @@ public sealed class SmsGatewaySender : ISmsSender
         {
             try
             {
-                var historyRequest = testProvider is not null
+                var historyRequest = isTest
                     ? request with { Kind = SmsMessageKind.Test, VerificationCode = null, DeliveryMode = request.EffectiveDeliveryMode } : request;
                 historyMessage = await _history.BeginAsync(historyRequest, settings, cancelToken);
             }
@@ -120,7 +123,10 @@ public sealed class SmsGatewaySender : ISmsSender
         {
             cancelToken.ThrowIfCancellationRequested();
             if (!_providers.TryGetValue(names[i], out var provider))
+            {
+                if (i + 1 < names.Length) continue;
                 throw new InvalidOperationException("Unrecognized SMS provider.");
+            }
             try
             {
                 var id = await AttemptAsync(provider, request, settings, historyMessage, template, values, cancelToken);
@@ -148,10 +154,13 @@ public sealed class SmsGatewaySender : ISmsSender
         // database audit is always performed *outside* the provider try/catch.
         try
         {
-            if (!SmsRouting.IsReady(provider, settings, template is not null))
+            var issue = template == null ? SmsReadinessService.ProviderIssue(provider, settings, false)
+                : SmsReadinessService.TemplateProviderIssue(provider, settings, template);
+            if (issue != null)
             {
-                throw new SmsProviderException("SMS provider is unavailable or not configured.", safeToFailover: true,
-                    reason: SmsFailureReason.ProviderUnavailable);
+                var reason = Enum.TryParse<SmsFailureReason>(issue, out var specific)
+                    ? specific : SmsFailureReason.ProviderUnavailable;
+                throw new SmsProviderException("SMS provider is unavailable or not configured.", true, reason: reason);
             }
 
             if (template is null)

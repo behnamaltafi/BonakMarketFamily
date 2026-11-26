@@ -40,6 +40,15 @@ public sealed class KavenegarSmsProvider : ISmsProvider, ITemplateSmsProvider
         => settings.KavenegarEnabled && settings.KavenegarTemplateEnabled &&
            !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey);
 
+    public string GetConfigurationIssue(SmsGatewaySettings settings, bool templateMode)
+    {
+        if (!settings.KavenegarEnabled) return "ProviderDisabled";
+        if (templateMode ? !settings.KavenegarTemplateEnabled : !settings.KavenegarFreeTextEnabled) return "ModeDisabled";
+        if (!templateMode && string.IsNullOrWhiteSpace(settings.KavenegarSender)) return "SenderMissing";
+        if (string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey)) return "CredentialsMissing";
+        return _credentials?.ConfigurationIssue(settings.EncryptedKavenegarApiKey);
+    }
+
     public bool IsValidMapping(string externalId, IEnumerable<string> slots)
         => !string.IsNullOrWhiteSpace(externalId) && externalId.Length <= 100 &&
            slots.Contains("token") && slots.All(x => x is "token" or "token2" or "token3" or "token10" or "token20");

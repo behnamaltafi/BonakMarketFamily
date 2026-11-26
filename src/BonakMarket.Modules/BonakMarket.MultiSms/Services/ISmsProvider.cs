@@ -7,6 +7,9 @@ public interface ISmsProvider
     string Name { get; }
     string GetMethod(bool templateMode, SmsGatewaySettings settings) => templateMode ? "Template" : "FreeText";
     bool IsAvailable(SmsGatewaySettings settings);
+    string GetConfigurationIssue(SmsGatewaySettings settings, bool templateMode)
+        => (templateMode ? this is ITemplateSmsProvider t && t.IsTemplateAvailable(settings) : IsAvailable(settings))
+            ? null : "ProviderUnavailable";
     Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken);
 }
 
@@ -53,5 +56,7 @@ public enum SmsFailureReason
     CredentialsDecryptionFailed,
     MissingConfirmation,
     InvalidResponse,
-    IncompleteConfirmation
+    IncompleteConfirmation,
+    MissingMapping,
+    InvalidMapping
 }

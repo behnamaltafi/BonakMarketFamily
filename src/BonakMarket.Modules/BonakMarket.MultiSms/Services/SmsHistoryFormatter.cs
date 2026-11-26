@@ -18,6 +18,7 @@ public static class SmsHistoryFormatter
         SmsProviderException ex when ex.SafeToFailover => "ProviderRejected",
         SmsProviderException => "ProviderUnconfirmed",
         InvalidOperationException => "Configuration",
+        ArgumentException => "InvalidInput",
         _ => "Unknown"
     };
 

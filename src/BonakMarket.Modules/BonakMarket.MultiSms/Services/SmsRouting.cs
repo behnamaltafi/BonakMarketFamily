@@ -22,6 +22,5 @@ public static class SmsRouting
     }
 
     public static bool IsReady(ISmsProvider provider, SmsGatewaySettings settings, bool templateMode)
-        => templateMode ? provider is ITemplateSmsProvider dedicated && dedicated.IsTemplateAvailable(settings)
-            : provider.IsAvailable(settings);
+        => SmsReadinessService.ProviderIssue(provider, settings, templateMode) == null;
 }

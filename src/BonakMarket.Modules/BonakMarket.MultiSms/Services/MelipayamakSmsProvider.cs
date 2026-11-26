@@ -35,6 +35,22 @@ public sealed class MelipayamakSmsProvider : ISmsProvider, ITemplateSmsProvider
         HasCredentials(s) && !string.IsNullOrWhiteSpace(s.MelipayamakSender);
     public bool IsTemplateAvailable(SmsGatewaySettings s) => s.MelipayamakEnabled && s.MelipayamakTemplateEnabled &&
         HasCredentials(s);
+    public string GetConfigurationIssue(SmsGatewaySettings settings, bool templateMode)
+    {
+        if (!settings.MelipayamakEnabled) return "ProviderDisabled";
+        if (templateMode ? !settings.MelipayamakTemplateEnabled : !settings.MelipayamakFreeTextEnabled) return "ModeDisabled";
+        if (!templateMode && string.IsNullOrWhiteSpace(settings.MelipayamakSender)) return "SenderMissing";
+        if (settings.MelipayamakAuthMode == "Console")
+        {
+            if (string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakApiToken)) return "ConsoleTokenMissing";
+            return _credentials?.ConfigurationIssue(settings.EncryptedMelipayamakApiToken);
+        }
+        if (settings.MelipayamakAuthMode != "Legacy") return "InvalidAuthMode";
+        if (string.IsNullOrWhiteSpace(settings.MelipayamakUsername)) return "UsernameMissing";
+        if (string.IsNullOrWhiteSpace(settings.EncryptedMelipayamakPassword)) return "LegacyKeyMissing";
+        return _credentials?.ConfigurationIssue(settings.EncryptedMelipayamakPassword);
+    }
+
     public bool IsValidMapping(string externalId, IEnumerable<string> slots)
         => SmsTemplateRules.IsPositiveId(externalId) && SmsTemplateRules.IsPositional(slots);
 

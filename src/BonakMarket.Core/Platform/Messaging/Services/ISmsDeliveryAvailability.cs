@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 namespace BonakMarket.Core.Messaging;
 
 /// <summary>A logical OTP template and its configured delivery readiness. No vendor credentials or mappings are exposed.</summary>
-public sealed record SmsOtpTemplateOption(string Key, string Title, bool IsReady);
+public sealed record SmsOtpTemplateIssue(string Code, string Provider);
+public sealed record SmsOtpTemplateOption(string Key, string Title, bool IsReady,
+    IReadOnlyList<SmsOtpTemplateIssue> Issues = null, IReadOnlyList<string> ReadyProviders = null);
 
 /// <summary>Reports transport availability independently of customer login policy.</summary>
 public interface ISmsDeliveryAvailability

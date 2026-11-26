@@ -5,6 +5,29 @@ public sealed class ConfigurationModel : ModelBase
 {
     [LocalizedDisplay("*Enabled")]
     public bool Enabled { get; set; }
+    public bool RoutingConfigured { get; set; }
+    public string GeneralPrimary { get; set; }
+    public string GeneralFallback1 { get; set; }
+    public string GeneralFallback2 { get; set; }
+    public bool GeneralFailover { get; set; }
+    public string OtpPrimary { get; set; }
+    public string OtpFallback1 { get; set; }
+    public string OtpFallback2 { get; set; }
+    public bool OtpFailover { get; set; }
+    public bool KavenegarGeneralEnabled { get; set; }
+    public bool KavenegarOtpEnabled { get; set; }
+    public string KavenegarOtpTemplate { get; set; }
+    public bool MelipayamakGeneralEnabled { get; set; }
+    public bool MelipayamakOtpEnabled { get; set; }
+    public int? MelipayamakBodyId { get; set; }
+    public string MelipayamakAuthMode { get; set; } = "Console";
+    public bool SmsIrGeneralEnabled { get; set; }
+    public bool SmsIrOtpEnabled { get; set; }
+    public string NewMelipayamakApiToken { get; set; }
+    public bool ClearMelipayamakApiToken { get; set; }
+    public bool HasMelipayamakApiToken { get; set; }
+    public string TestProvider { get; set; }
+    public bool TestOtp { get; set; }
 
     [LocalizedDisplay("*MockEnabled")]
     public bool MockEnabled { get; set; }

@@ -29,13 +29,17 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
         => name is { Length: >= 1 and <= 50 } && name.All(ch => char.IsAsciiLetterOrDigit(ch) || ch == '_');
 
     public bool IsAvailable(SmsGatewaySettings settings)
-        => settings.SmsIrEnabled && !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) &&
-            (settings.SmsIrLineNumber is > 0 ||
-             (settings.SmsIrTemplateId is > 0 && IsValidParameterName(settings.SmsIrCodeParameter)));
+        => settings.SmsIrEnabled && settings.SmsIrGeneralEnabled &&
+            !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) && settings.SmsIrLineNumber is > 0;
+
+    public bool IsOtpAvailable(SmsGatewaySettings settings)
+        => settings.SmsIrEnabled && settings.SmsIrOtpEnabled &&
+            !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) &&
+            settings.SmsIrTemplateId is > 0 && IsValidParameterName(settings.SmsIrCodeParameter);
 
     public Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken)
     {
-        if (settings.SmsIrLineNumber is not > 0)
+        if (!IsAvailable(settings))
             throw new SmsProviderException("SMS.ir free-text line is not configured.", true, reason: SmsFailureReason.ProviderUnavailable);
 
         return PostAsync("bulk", new
@@ -48,12 +52,10 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
 
     public Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken cancelToken)
     {
-        if (settings.SmsIrTemplateId is not > 0)
-            return SendAsync(phone, text, settings, cancelToken);
-
-        if (!IsValidParameterName(settings.SmsIrCodeParameter) ||
-            verificationCode is not { Length: 6 } || !verificationCode.All(char.IsAsciiDigit))
-            throw new SmsProviderException("SMS.ir Verify parameters are not configured.", true, reason: SmsFailureReason.ProviderUnavailable);
+        if (!IsOtpAvailable(settings))
+            throw new SmsProviderException("SMS.ir Verify template is not configured.", true, reason: SmsFailureReason.ProviderUnavailable);
+        if (verificationCode is not { Length: 6 } || !verificationCode.All(char.IsAsciiDigit))
+            throw new ArgumentException("Invalid verification code.");
 
         return PostAsync("verify", new
         {
@@ -67,7 +69,7 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
         if (canonical is null)
-            throw new SmsProviderException("SMS.ir requires an Iranian mobile number.", true);
+            throw new SmsProviderException("SMS.ir requires an Iranian mobile number.");
         return SmsPhoneNormalizer.ToProviderPhone(canonical);
     }
 

@@ -12,6 +12,7 @@ public interface ISmsProvider
 /// <summary>Optional template-based OTP transport, separate from free-text sending.</summary>
 public interface IOtpSmsProvider
 {
+    bool IsOtpAvailable(SmsGatewaySettings settings);
     Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken cancelToken);
 }
 

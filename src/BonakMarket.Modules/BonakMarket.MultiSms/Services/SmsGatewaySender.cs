@@ -31,7 +31,17 @@ public sealed class SmsGatewaySender : ISmsSender
         _history = history;
     }
 
-    public async Task<SmsSendResult> SendAsync(SmsSendRequest request, CancellationToken cancelToken = default)
+    public Task<SmsSendResult> SendAsync(SmsSendRequest request, CancellationToken cancelToken = default)
+        => SendCoreAsync(request, null, cancelToken);
+
+    // Administration-only caller; test exactly one provider using saved configuration.
+    public Task<SmsSendResult> TestProviderAsync(SmsSendRequest request, string providerName, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(providerName)) throw new ArgumentException("Choose a provider.");
+        return SendCoreAsync(request, providerName, ct);
+    }
+
+    private async Task<SmsSendResult> SendCoreAsync(SmsSendRequest request, string testProvider, CancellationToken cancelToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (string.IsNullOrWhiteSpace(request.PhoneNumber) || request.PhoneNumber.Length > 20 ||
@@ -47,18 +57,17 @@ public sealed class SmsGatewaySender : ISmsSender
             throw new InvalidOperationException("SMS delivery is disabled.");
         }
 
-        if (!_providers.TryGetValue(settings.PrimaryProvider ?? "", out var primary))
-        {
-            throw new InvalidOperationException("Primary SMS provider is not recognized.");
-        }
+        bool otp = request.Kind == SmsMessageKind.Otp;
+        if (otp && (request.VerificationCode is not { Length: 6 } || !request.VerificationCode.All(char.IsAsciiDigit)))
+            throw new ArgumentException("Invalid verification code.");
 
-        // A Development configuration copied to production is never allowed to
-        // silently fall back from Mock to a real payable SMS transport.
-        if (string.Equals(primary.Name, "Mock", StringComparison.OrdinalIgnoreCase) &&
-            !primary.IsAvailable(settings))
-        {
-            throw new InvalidOperationException("Mock SMS transport can only run in Development.");
-        }
+        var names = testProvider is null ? SmsRouting.Providers(settings, otp) : new[] { testProvider };
+        if (!settings.RoutingConfigured || names.Length == 0)
+            throw new InvalidOperationException("Configure the SMS route first.");
+
+        if (names.Any(x => string.Equals(x, "Mock", StringComparison.OrdinalIgnoreCase)) &&
+            (names.Length != 1 || !_providers.TryGetValue(names[0], out var mock) || !SmsRouting.IsReady(mock, settings, otp)))
+            throw new InvalidOperationException("Mock SMS transport must be enabled in Development and isolated.");
 
         SmsMessage historyMessage = null;
         if (_history is not null)
@@ -74,26 +83,23 @@ public sealed class SmsGatewaySender : ISmsSender
             }
         }
 
-        try
+        for (var i = 0; i < names.Length; i++)
         {
-            var messageId = await AttemptAsync(primary, request, settings, historyMessage, cancelToken);
-            return new SmsSendResult(primary.Name, messageId);
-        }
-        catch (SmsProviderException ex) when (ex.SafeToFailover && settings.EnableFailover && !cancelToken.IsCancellationRequested)
-        {
-            if (string.Equals(primary.Name, settings.FallbackProvider, StringComparison.OrdinalIgnoreCase) ||
-                !_providers.TryGetValue(settings.FallbackProvider ?? "", out var fallback) ||
-                !fallback.IsAvailable(settings))
+            cancelToken.ThrowIfCancellationRequested();
+            if (!_providers.TryGetValue(names[i], out var provider))
+                throw new InvalidOperationException("Unrecognized SMS provider.");
+            try
             {
-                throw;
+                var id = await AttemptAsync(provider, request, settings, historyMessage, cancelToken);
+                return new SmsSendResult(provider.Name, id);
             }
-
-            _logger.LogWarning(
-                "SMS provider {Provider} definitely rejected delivery; switching to {Fallback}.",
-                primary.Name, fallback.Name);
-            var fallbackId = await AttemptAsync(fallback, request, settings, historyMessage, cancelToken);
-            return new SmsSendResult(fallback.Name, fallbackId);
+            catch (SmsProviderException ex) when (ex.SafeToFailover && i + 1 < names.Length && !cancelToken.IsCancellationRequested)
+            {
+                _logger.LogWarning("SMS provider {Provider} rejected the request; trying {Next}.", provider.Name, names[i + 1]);
+            }
         }
+
+        throw new InvalidOperationException("No SMS provider accepted the request.");
     }
 
     private async Task<string> AttemptAsync(
@@ -108,14 +114,14 @@ public sealed class SmsGatewaySender : ISmsSender
         // database audit is always performed *outside* the provider try/catch.
         try
         {
-            if (!provider.IsAvailable(settings))
+            if (!SmsRouting.IsReady(provider, settings, request.Kind == SmsMessageKind.Otp))
             {
                 throw new SmsProviderException("SMS provider is unavailable or not configured.", safeToFailover: true,
                     reason: SmsFailureReason.ProviderUnavailable);
             }
 
-            messageId = request.Kind == SmsMessageKind.Otp && provider is IOtpSmsProvider otpProvider
-                ? await otpProvider.SendOtpAsync(request.PhoneNumber, request.Text, request.VerificationCode, settings, ct)
+            messageId = request.Kind == SmsMessageKind.Otp
+                ? await ((IOtpSmsProvider)provider).SendOtpAsync(request.PhoneNumber, request.Text, request.VerificationCode, settings, ct)
                 : await provider.SendAsync(request.PhoneNumber, request.Text, settings, ct);
         }
         catch (Exception ex)

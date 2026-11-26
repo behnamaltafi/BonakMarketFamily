@@ -17,7 +17,7 @@ namespace BonakMarket.Core.Tests.Platform.Messaging;
 [TestFixture]
 public class SmsHistoryTransportTests
 {
-    private static readonly SmsSendRequest Otp = new("09123456789", "Secret 123456", SmsMessageKind.Otp);
+    private static readonly SmsSendRequest Otp = new("09123456789", "Secret 123456", SmsMessageKind.Otp) { VerificationCode = "123456" };
 
     [Test]
     public async Task History_failure_does_not_turn_accepted_SMS_into_retry_or_failure()
@@ -136,11 +136,11 @@ public class SmsHistoryTransportTests
     private static SmsGatewaySettings Config() => new()
     {
         Enabled = true, HistoryEnabled = true,
-        PrimaryProvider = "Kavenegar", EnableFailover = true,
-        FallbackProvider = "Melipayamak"
+        RoutingConfigured = true, OtpPrimary = "Kavenegar", OtpFailover = true,
+        OtpFallback1 = "Melipayamak"
     };
 
-    private sealed class StubProvider : ISmsProvider
+    private sealed class StubProvider : ISmsProvider, IOtpSmsProvider
     {
         public StubProvider(string name) => Name = name;
         public string Name { get; }
@@ -148,6 +148,9 @@ public class SmsHistoryTransportTests
         public Exception Failure { get; set; }
 
         public bool IsAvailable(SmsGatewaySettings settings) => true;
+        public bool IsOtpAvailable(SmsGatewaySettings settings) => true;
+        public Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken ct)
+            => SendAsync(phone, text, settings, ct);
 
         public Task<string> SendAsync(string phone, string text,
             SmsGatewaySettings settings, CancellationToken cancelToken)

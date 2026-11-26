@@ -7,11 +7,12 @@ namespace BonakMarket.MultiSms.Services;
 /// Kavenegar REST API: POST /v1/{apiKey}/sms/send.json.
 /// Do not use HttpClientFactory logging for this API: its URL contains the API key.
 /// </summary>
-public sealed class KavenegarSmsProvider : ISmsProvider
+public sealed class KavenegarSmsProvider : ISmsProvider, IOtpSmsProvider
 {
     private static readonly HttpClient Client = new(new SocketsHttpHandler
     {
-        PooledConnectionLifetime = TimeSpan.FromMinutes(5)
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+        AllowAutoRedirect = false
     })
     {
         Timeout = TimeSpan.FromSeconds(12)
@@ -27,20 +28,45 @@ public sealed class KavenegarSmsProvider : ISmsProvider
     public string Name => "Kavenegar";
 
     public bool IsAvailable(SmsGatewaySettings settings)
-        => settings.KavenegarEnabled &&
+        => settings.KavenegarEnabled && settings.KavenegarGeneralEnabled &&
            !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey) &&
            !string.IsNullOrWhiteSpace(settings.KavenegarSender);
 
-    public async Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken)
+    public bool IsOtpAvailable(SmsGatewaySettings settings)
+        => settings.KavenegarEnabled && settings.KavenegarOtpEnabled &&
+           !string.IsNullOrWhiteSpace(settings.EncryptedKavenegarApiKey) &&
+           !string.IsNullOrWhiteSpace(settings.KavenegarOtpTemplate);
+
+    public Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken)
     {
-        var key = _credentials.Unprotect(settings.EncryptedKavenegarApiKey);
-        var url = $"https://api.kavenegar.com/v1/{Uri.EscapeDataString(key)}/sms/send.json";
-        using var body = new FormUrlEncodedContent(new Dictionary<string, string>
+        if (!IsAvailable(settings)) throw new SmsProviderException("Kavenegar general SMS is not configured.", true);
+        return SendCoreAsync("sms/send.json", new Dictionary<string, string>
         {
             ["sender"] = settings.KavenegarSender,
             ["receptor"] = SmsPhoneNormalizer.ToProviderPhone(phone),
             ["message"] = text
-        });
+        }, settings, cancelToken);
+    }
+
+    public Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken cancelToken)
+    {
+        if (!IsOtpAvailable(settings)) throw new SmsProviderException("Kavenegar OTP is not configured.", true);
+        if (verificationCode is not { Length: 6 } || !verificationCode.All(char.IsAsciiDigit))
+            throw new ArgumentException("Invalid verification code.");
+        return SendCoreAsync("verify/lookup.json", new Dictionary<string, string>
+        {
+            ["receptor"] = SmsPhoneNormalizer.ToProviderPhone(phone),
+            ["token"] = verificationCode,
+            ["template"] = settings.KavenegarOtpTemplate,
+            ["type"] = "sms"
+        }, settings, cancelToken);
+    }
+
+    private async Task<string> SendCoreAsync(string path, Dictionary<string, string> values, SmsGatewaySettings settings, CancellationToken cancelToken)
+    {
+        var key = _credentials.Unprotect(settings.EncryptedKavenegarApiKey);
+        var url = $"https://api.kavenegar.com/v1/{Uri.EscapeDataString(key)}/{path}";
+        using var body = new FormUrlEncodedContent(values);
 
         // Never log the outgoing URL or raw response: they can contain credentials or OTPs.
         using var response = await Client.PostAsync(url, body, cancelToken);
@@ -59,7 +85,7 @@ public sealed class KavenegarSmsProvider : ISmsProvider
             int status = json.RootElement.GetProperty("return").GetProperty("status").GetInt32();
             if (status != 200)
             {
-                throw new SmsProviderException($"Kavenegar rejected SMS (status {status}).", safeToFailover: true,
+                throw new SmsProviderException($"Kavenegar rejected SMS (status {status}).", safeToFailover: status is 401 or 403 or 411 or 412 or 418 or 424 or 429,
                     httpStatusCode: (int)response.StatusCode, providerStatus: status);
             }
 
@@ -71,7 +97,10 @@ public sealed class KavenegarSmsProvider : ISmsProvider
             }
 
             var id = entries[0].GetProperty("messageid");
-            return id.ValueKind == JsonValueKind.String ? id.GetString() : id.GetRawText();
+            var value = id.ValueKind == JsonValueKind.String ? id.GetString() : id.GetRawText();
+            if (!long.TryParse(value, out var number) || number <= 0)
+                throw new SmsProviderException("Kavenegar returned an invalid message ID.");
+            return value;
         }
         catch (JsonException)
         {

@@ -9,6 +9,25 @@ namespace BonakMarket.MultiSms.Configuration;
 public sealed class SmsGatewaySettings : ISettings
 {
     public bool Enabled { get; set; }
+    public bool RoutingConfigured { get; set; }
+    public string GeneralPrimary { get; set; }
+    public string GeneralFallback1 { get; set; }
+    public string GeneralFallback2 { get; set; }
+    public bool GeneralFailover { get; set; }
+    public string OtpPrimary { get; set; }
+    public string OtpFallback1 { get; set; }
+    public string OtpFallback2 { get; set; }
+    public bool OtpFailover { get; set; }
+    public bool KavenegarGeneralEnabled { get; set; }
+    public bool KavenegarOtpEnabled { get; set; }
+    public string KavenegarOtpTemplate { get; set; }
+    public bool MelipayamakGeneralEnabled { get; set; }
+    public bool MelipayamakOtpEnabled { get; set; }
+    public int? MelipayamakBodyId { get; set; }
+    public string MelipayamakAuthMode { get; set; } = "Console";
+    public bool SmsIrGeneralEnabled { get; set; }
+    public bool SmsIrOtpEnabled { get; set; }
+    public string EncryptedMelipayamakApiToken { get; set; }
     /// <summary>Only effective when the process is running in Development.</summary>
     public bool MockEnabled { get; set; }
     public bool HistoryEnabled { get; set; } = true;

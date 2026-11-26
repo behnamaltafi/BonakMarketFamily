@@ -28,29 +28,48 @@ public class MobileOtpContractTests
     }
 
     [Test]
-    public void Default_otp_message_preserves_persian_text_and_line_breaks()
+    public void All_otp_flows_default_to_the_seeded_template()
     {
         var settings = new CustomerIdentitySettings();
-        Assert.That(settings.FormatOtpMessage("012345"), Is.EqualTo(
-            "بنک مارکت\n«محرمانه»\nاز در اختیار قرار دادن محتوای این پیامک به دیگران، اکیدا خودداری کنید.\nکد احراز هویت جهت ورود:\n012345"));
+        Assert.Multiple(() =>
+        {
+            Assert.That(settings.GetOtpTemplateKey("login"), Is.EqualTo("LOGINOTP"));
+            Assert.That(settings.GetOtpTemplateKey("enroll:42"), Is.EqualTo("LOGINOTP"));
+            Assert.That(settings.GetOtpTemplateKey("reauth:42"), Is.EqualTo("LOGINOTP"));
+        });
     }
 
     [Test]
-    public void Custom_otp_message_replaces_placeholder()
+    public void Otp_flows_resolve_independent_logical_keys()
     {
-        var settings = new CustomerIdentitySettings { OtpMessageTemplate = "Custom\n{Code}" };
-        Assert.That(settings.FormatOtpMessage("012345"), Is.EqualTo("Custom\n012345"));
+        var settings = new CustomerIdentitySettings
+        {
+            LoginOtpTemplateKey = " SignIn ",
+            PhoneEnrollmentOtpTemplateKey = "PhoneOtp",
+            ReauthenticationOtpTemplateKey = "ReauthOtp"
+        };
+        Assert.Multiple(() =>
+        {
+            Assert.That(settings.GetOtpTemplateKey("login"), Is.EqualTo("SIGNIN"));
+            Assert.That(settings.GetOtpTemplateKey("enroll:42"), Is.EqualTo("PHONEOTP"));
+            Assert.That(settings.GetOtpTemplateKey("reauth:42"), Is.EqualTo("REAUTHOTP"));
+            Assert.That(settings.GetOtpTemplateKey("enroll:100"), Is.EqualTo("PHONEOTP"));
+        });
     }
 
     [TestCase(null)]
     [TestCase("")]
-    [TestCase("No placeholder")]
-    [TestCase("{code}")]
-    public void Invalid_otp_message_uses_default(string template)
+    [TestCase(" ")]
+    public void Missing_legacy_template_setting_uses_default(string key)
     {
-        Assert.That(CustomerIdentitySettings.IsValidOtpMessageTemplate(template), Is.False);
-        var settings = new CustomerIdentitySettings { OtpMessageTemplate = template };
-        Assert.That(settings.FormatOtpMessage("012345"), Is.EqualTo(new CustomerIdentitySettings().FormatOtpMessage("012345")));
+        var settings = new CustomerIdentitySettings { LoginOtpTemplateKey = key };
+        Assert.That(settings.GetOtpTemplateKey("login"), Is.EqualTo("LOGINOTP"));
+    }
+
+    [Test]
+    public void Unknown_otp_purpose_is_not_silently_mapped_to_login()
+    {
+        Assert.Throws<ArgumentException>(() => new CustomerIdentitySettings().GetOtpTemplateKey("reauth-proof:42"));
     }
 
     [TestCase("012345", true)]

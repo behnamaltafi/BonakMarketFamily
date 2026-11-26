@@ -55,6 +55,8 @@ public sealed class SmsOtpLoginService : ISmsOtpLoginService
     }
 
     public Task<bool> IsEnabledAsync() => IsEnabledForPurposeAsync("login");
+    public Task<bool> IsEnrollmentEnabledAsync() => IsEnabledForPurposeAsync("enroll:");
+    public Task<bool> IsReauthenticationEnabledAsync() => IsEnabledForPurposeAsync("reauth:");
 
     private async Task<bool> IsEnabledForPurposeAsync(string purpose, CancellationToken ct = default)
     {

@@ -2,9 +2,6 @@
     <LocaleResource Name="Plugins.FriendlyName.BonakMarket.Identity" AppendRootKey="false"><Value>Customer Identity</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled"><Value>Enable SMS one-time-code login</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>Enable SMS sign-in and sign-up with a verified mobile. Existing customers can explicitly link their number without creating a new account.</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpMessageTemplate"><Value>OTP message template</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpMessageTemplate.Hint"><Value>Enter the SMS text on multiple lines if needed. Include {Code}, which is replaced with the six-digit verification code.</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpMessageTemplate.Invalid"><Value>The OTP message template must contain {Code}.</Value></LocaleResource>
     <LocaleResource Name="Otp.LoginTitle"><Value>Sign in or register with mobile</Value></LocaleResource>
     <LocaleResource Name="Otp.LoginHint"><Value>Enter your mobile number. If you have an account, sign in with the code; otherwise a new account is created after verification.</Value></LocaleResource>
     <LocaleResource Name="Otp.PhoneLabel"><Value>Mobile number</Value></LocaleResource>
@@ -52,4 +49,15 @@
     <LocaleResource Name="Otp.otp_expired"><Value>The code has expired. Request another code.</Value></LocaleResource>
     <LocaleResource Name="Otp.otp_attempt_limit"><Value>Too many incorrect attempts. Request another code.</Value></LocaleResource>
     <LocaleResource Name="Otp.otp_request_conflict"><Value>Please try again in {0} seconds.</Value></LocaleResource>
+    <LocaleResource Name="Fields.LoginOtpTemplateKey"><Value>Login OTP template</Value></LocaleResource>
+    <LocaleResource Name="Fields.LoginOtpTemplateKey.Hint"><Value>Approved template for mobile sign-in and registration.</Value></LocaleResource>
+    <LocaleResource Name="Fields.PhoneEnrollmentOtpTemplateKey"><Value>Phone enrollment OTP template</Value></LocaleResource>
+    <LocaleResource Name="Fields.PhoneEnrollmentOtpTemplateKey.Hint"><Value>Approved template for linking or changing an account phone.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ReauthenticationOtpTemplateKey"><Value>Reauthentication OTP template</Value></LocaleResource>
+    <LocaleResource Name="Fields.ReauthenticationOtpTemplateKey.Hint"><Value>Approved template for reauthentication on the existing verified phone.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpTemplateUnavailable"><Value>Select an active OTP template with an available configured delivery route.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpTemplateUnavailableShort"><Value>Not ready</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpTemplateHelp"><Value>Message text is approved at the provider. Select logical OTP templates for each flow. All three must be ready before enabling SMS login.</Value></LocaleResource>
+    <LocaleResource Name="Fields.NoReadyOtpTemplates"><Value>No OTP template is ready. Configure SMS Gateway routing and template mappings first.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ManageOtpTemplates"><Value>Manage SMS templates</Value></LocaleResource>
 </Language>

@@ -2,9 +2,6 @@
     <LocaleResource Name="Plugins.FriendlyName.BonakMarket.Identity" AppendRootKey="false"><Value>هویت و احراز هویت مشتری</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled"><Value>فعال‌سازی ورود با کد پیامکی</Value></LocaleResource>
     <LocaleResource Name="Fields.OtpLoginEnabled.Hint"><Value>ورود و ثبت‌نام پیامکی با شماره همراه انجام می‌شود. مشتری‌های قدیمی برای اتصال شماره به حساب فعلی خود می‌توانند از بخش تأیید شماره استفاده کنند.</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpMessageTemplate"><Value>قالب پیامک کد احراز هویت</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpMessageTemplate.Hint"><Value>متن پیامک را می‌توانید در چند خط وارد کنید. عبارت {Code} با کد شش‌رقمی احراز هویت جایگزین می‌شود.</Value></LocaleResource>
-    <LocaleResource Name="Fields.OtpMessageTemplate.Invalid"><Value>قالب پیامک باید شامل عبارت {Code} باشد.</Value></LocaleResource>
     <LocaleResource Name="Otp.LoginTitle"><Value>ورود یا ثبت‌نام با شماره موبایل</Value></LocaleResource>
     <LocaleResource Name="Otp.LoginHint"><Value>شماره موبایل را وارد کنید. اگر قبلاً ثبت‌نام کرده باشید وارد می‌شوید؛ در غیر این صورت پس از تأیید کد حساب جدید ساخته می‌شود.</Value></LocaleResource>
     <LocaleResource Name="Otp.PhoneLabel"><Value>شماره موبایل</Value></LocaleResource>
@@ -52,4 +49,15 @@
     <LocaleResource Name="Otp.otp_expired"><Value>کد منقضی شده است. کد جدید درخواست کنید.</Value></LocaleResource>
     <LocaleResource Name="Otp.otp_attempt_limit"><Value>تعداد تلاش‌های ناموفق به سقف رسیده است. کد جدید درخواست کنید.</Value></LocaleResource>
     <LocaleResource Name="Otp.otp_request_conflict"><Value>لطفاً {0} ثانیه دیگر تلاش کنید.</Value></LocaleResource>
+    <LocaleResource Name="Fields.LoginOtpTemplateKey"><Value>قالب رمز ورود و ثبت‌نام</Value></LocaleResource>
+    <LocaleResource Name="Fields.LoginOtpTemplateKey.Hint"><Value>قالب خدماتی ورود و ثبت‌نام با شماره همراه.</Value></LocaleResource>
+    <LocaleResource Name="Fields.PhoneEnrollmentOtpTemplateKey"><Value>قالب تأیید و تغییر شماره همراه</Value></LocaleResource>
+    <LocaleResource Name="Fields.PhoneEnrollmentOtpTemplateKey.Hint"><Value>قالب ارسال کد برای اتصال یا تغییر شماره همراه حساب.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ReauthenticationOtpTemplateKey"><Value>قالب احراز هویت مجدد</Value></LocaleResource>
+    <LocaleResource Name="Fields.ReauthenticationOtpTemplateKey.Hint"><Value>قالب ارسال کد به شماره تأییدشده فعلی برای عملیات حساس.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpTemplateUnavailable"><Value>قالب باید فعال، از نوع OTP و دارای مسیر ارسال آماده باشد.</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpTemplateUnavailableShort"><Value>آماده ارسال نیست</Value></LocaleResource>
+    <LocaleResource Name="Fields.OtpTemplateHelp"><Value>متن پیامک در پنل پروایدر تأیید می‌شود. در اینجا فقط قالب منطقی را برای هر فرایند انتخاب کنید. برای فعال‌سازی ورود پیامکی هر سه قالب باید آماده ارسال باشند.</Value></LocaleResource>
+    <LocaleResource Name="Fields.NoReadyOtpTemplates"><Value>هیچ قالب OTP آماده ارسال نیست. ابتدا تنظیمات درگاه پیامک و نگاشت قالب را تکمیل کنید.</Value></LocaleResource>
+    <LocaleResource Name="Fields.ManageOtpTemplates"><Value>مدیریت قالب‌های پیامک</Value></LocaleResource>
 </Language>

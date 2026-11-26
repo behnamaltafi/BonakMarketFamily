@@ -5,14 +5,16 @@ on:
     branches: [feature/native-sms-otp-login, feature/sms-gateway-provider-routing]
     paths:
       - 'src/BonakMarket.Modules/BonakMarket.MultiSms/**'
-      - 'src/BonakMarket.Core/Platform/Messaging/Services/ISmsSender.cs'
+      - 'src/BonakMarket.Modules/BonakMarket.Identity/**'
+      - 'src/BonakMarket.Core/Platform/Messaging/Services/**'
       - 'test/BonakMarket.Core.Tests/**'
       - '.github/workflows/native-sms-otp-ci.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'src/BonakMarket.Modules/BonakMarket.MultiSms/**'
-      - 'src/BonakMarket.Core/Platform/Messaging/Services/ISmsSender.cs'
+      - 'src/BonakMarket.Modules/BonakMarket.Identity/**'
+      - 'src/BonakMarket.Core/Platform/Messaging/Services/**'
       - 'BonakMarket.sln'
       - 'test/BonakMarket.Core.Tests/**'
       - '.github/workflows/native-sms-otp-ci.yml'
@@ -38,4 +40,4 @@ jobs:
       - name: Build full BonakMarket solution and SMS module
         run: dotnet build BonakMarket.sln -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-self-contained
       - name: Test OTP, provider failover, mock isolation, history helpers and API
-        run: dotnet test test/BonakMarket.Core.Tests/BonakMarket.Core.Tests.csproj -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~SmsTemplateRoutingTests|FullyQualifiedName~SmsProviderRoutingTests|FullyQualifiedName~SmsIrProviderTests|FullyQualifiedName~SmsDiagnosticsTests|FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsMockAndHistoryTests|FullyQualifiedName~SmsHistoryTransportTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"
+        run: dotnet test test/BonakMarket.Core.Tests/BonakMarket.Core.Tests.csproj -c Release -p:BonakMarketBuildRuntime=linux-x64 --no-build --no-restore --filter "FullyQualifiedName~MobileOtpContractTests|FullyQualifiedName~OtpHistoryProtectionTests|FullyQualifiedName~SmsTemplateRoutingTests|FullyQualifiedName~SmsProviderRoutingTests|FullyQualifiedName~SmsIrProviderTests|FullyQualifiedName~SmsDiagnosticsTests|FullyQualifiedName~SmsGatewaySenderTests|FullyQualifiedName~SmsPhoneNormalizerTests|FullyQualifiedName~SmsMockAndHistoryTests|FullyQualifiedName~SmsHistoryTransportTests|FullyQualifiedName~SmsApiControllerTests|FullyQualifiedName~SmsLoginWidgetSourceTests|FullyQualifiedName~SmsPrimaryLoginFilterTests"

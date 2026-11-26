@@ -206,7 +206,7 @@ public sealed class SmsLoginController : PublicController
     [HttpGet("enroll")]
     public async Task<IActionResult> Enroll()
     {
-        if (!await _otp.IsEnabledAsync())
+        if (!await _otp.IsEnrollmentEnabledAsync())
         {
             return NotFound();
         }

@@ -96,13 +96,17 @@ public sealed class CatalogFacade(
         settings ??= new SearchSettings();
         var term = filter.Search?.Trim();
         var hasTerm = !string.IsNullOrEmpty(term);
-        var query = hasTerm
+        var normalized = CatalogText.UseNormalizedSearch(term);
+        var query = hasTerm && !normalized
             ? new CatalogSearchQuery(SearchFields(settings), term, settings.SearchMode)
-                .OriginatesFrom(CatalogSearchQuery.KnownOrigins.Search)
             : new CatalogSearchQuery();
+        if (hasTerm) query.OriginatesFrom(CatalogSearchQuery.KnownOrigins.Search);
         query.VisibleOnly(request.Customer).HasStoreId(request.StoreId)
             .WithLanguage(work.WorkingLanguage).WithCurrency(work.WorkingCurrency);
         IQueryable<Product> scoped = StorefrontScope.Products(db, request.Customer, request.StoreId, forSearch: hasTerm).AsNoTracking();
+        if (normalized)
+            scoped = CatalogText.ApplyNormalizedSearch(scoped, db.LocalizedProperties.AsNoTracking(), term,
+                SearchFields(settings), settings.SearchMode, work.WorkingLanguage.Id);
         if (filter.CategoryId.HasValue)
         {
             var visible = StorefrontScope.Categories(db, request.Customer, request.StoreId).AsNoTracking();
@@ -367,6 +371,7 @@ public sealed class CatalogFacade(
         }
         var imageUrls = await CatalogMedia.UrlsAsync(media, lookup.Values.Select(x => (int?)x), imageSize, ct);
         var sellable = new HashSet<int>();
+        var combinationCapacity = new Dictionary<int, (int MaxStock, bool Backorder)>();
         var variantInfo = new Dictionary<int, (bool HasVariants, bool UnsupportedRequired)>();
         var unitLookup = new Dictionary<int, QuantityUnitDto>();
         QuantityUnitDto defaultUnit = null;
@@ -375,6 +380,16 @@ public sealed class CatalogFacade(
         {
             sellable = (await ApplyStockFilter(db.Set<Product>().AsNoTracking().Where(x => ids.Contains(x.Id)), true)
                 .Select(x => x.Id).ToListAsync(ct)).ToHashSet();
+            var managedIds = products.Where(x => x.ManageInventoryMethod == ManageInventoryMethod.ManageStockByAttributes)
+                .Select(x => x.Id).ToArray();
+            if (managedIds.Length > 0)
+            {
+                var combinations = await db.Set<ProductVariantAttributeCombination>().AsNoTracking()
+                    .Where(x => managedIds.Contains(x.ProductId) && x.IsActive)
+                    .Select(x => new { x.ProductId, x.StockQuantity, x.AllowOutOfStockOrders }).ToListAsync(ct);
+                combinationCapacity = combinations.GroupBy(x => x.ProductId)
+                    .ToDictionary(g => g.Key, g => (g.Max(x => x.StockQuantity), g.Any(x => x.AllowOutOfStockOrders)));
+            }
             var variants = await db.Set<ProductVariantAttribute>().AsNoTracking().Where(x => ids.Contains(x.ProductId))
                 .Select(x => new { x.ProductId, x.IsRequired, x.AttributeControlTypeId }).ToListAsync(ct);
             variantInfo = variants.GroupBy(x => x.ProductId).ToDictionary(g => g.Key,
@@ -424,7 +439,15 @@ public sealed class CatalogFacade(
                 item.QuantityUnit = product.QuantityUnitId is int unitId && unitLookup.TryGetValue(unitId, out var unit)
                     ? unit : defaultUnit;
                 item.RequiresConfiguration = variant.HasVariants || !supported;
-                item.CanAddToCart = canCart && supported && sellable.Contains(product.Id);
+                var capacity = combinationCapacity.GetValueOrDefault(product.Id);
+                var minimumAvailable = product.ManageInventoryMethod switch
+                {
+                    ManageInventoryMethod.ManageStock => product.BackorderMode != BackorderMode.NoBackorders ||
+                        product.StockQuantity >= quantities.Min,
+                    ManageInventoryMethod.ManageStockByAttributes => capacity.Backorder || capacity.MaxStock >= quantities.Min,
+                    _ => true
+                };
+                item.CanAddToCart = canCart && supported && sellable.Contains(product.Id) && minimumAvailable;
                 item.HasDiscount = priceAllowed ? product.HasDiscountsApplied : null;
                 item.IsPreOrder = product.AvailableForPreOrder;
             }

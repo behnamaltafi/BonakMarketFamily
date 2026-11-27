@@ -42,6 +42,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
 {
     private readonly CheckoutDraftStore _drafts = new(db, request, locks);
     private readonly CheckoutAddressChecks _addressChecks = new(db, request, addresses);
+    private readonly OfflineCheckoutEligibility _offlineEligibility = new(request, cartSettings, checkoutFactory, checkoutAttributes, payments);
     private const int RevisionConflict = 409;
     private const string AttemptKey = "BonakMarket.Storefront.OrderAttempt.v1";
     private bool OfflineEnabled => configuration.GetValue<bool>("StorefrontApi:EnableOfflineCheckout") && db.DataProvider.ProviderType == DbSystemType.SqlServer;
@@ -208,7 +209,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         var native = loaded.Native!;
         if (!ShippingComplete(draft, native) || draft.Payment == null)
             return Error(422, "checkout_selection_required");
-        if (!await SupportsOfflineCheckout(native, draft)) return Error(409, "checkout_requires_browser");
+        if (!await _offlineEligibility.SupportsAsync(native, draft)) return Error(409, "checkout_requires_browser");
         var previous = await ReadAttempt(ct);
         if (previous != null && previous.Status == "started" && !await OrderExists(previous.SessionId, ct))
             return Error(409, "checkout_attempt_requires_reconciliation");
@@ -397,28 +398,6 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
                 option.Rate == draft.Shipping.Rate);
     }
 
-    private async Task<bool> SupportsOfflineCheckout(ShoppingCart native, CheckoutDraft draft)
-    {
-        var ga = request.Customer.GenericAttributes;
-        if (!native.HasItems || native.ContainsRecurringItem() || native.Requirements != CheckoutRequirements.All ||
-            cartSettings.CheckoutProcess != CheckoutProcess.Standard || cartSettings.ShowConfirmOrderLegalHint ||
-            cartSettings.ThirdPartyEmailHandOver != CheckoutThirdPartyEmailHandOver.None ||
-            ga.UseCreditBalanceDuringCheckout != 0 || ga.UseRewardPointsDuringCheckout || ga.GiftCardCouponCodes.Any() ||
-            native.Items.Any(x => x.Item.Product == null || x.Item.Product.IsEsd || x.Item.Product.IsGiftCard))
-            return false;
-        var handlers = new[] { typeof(BillingAddressHandler), typeof(ShippingAddressHandler), typeof(ShippingMethodHandler),
-            typeof(PaymentMethodHandler), typeof(ConfirmHandler) };
-        if (!checkoutFactory.GetCheckoutSteps().Select(x => x.Handler.Metadata.HandlerType).SequenceEqual(handlers))
-            return false;
-        if ((await checkoutAttributes.GetCheckoutAttributesAsync(native, request.StoreId)).Count > 0) return false;
-        if (draft.Payment == null) return false;
-        var provider = await payments.LoadPaymentProviderBySystemNameAsync(draft.Payment.SystemName, true, request.StoreId);
-        return provider != null && !provider.Value.RequiresInteraction && !provider.Value.RequiresConfirmation &&
-            OfflineCheckoutPolicy.IsSupported(provider.Metadata.SystemName, provider.Value.GetType().FullName,
-                provider.Metadata.ModuleDescriptor?.SystemName) &&
-            await payments.IsPaymentProviderActiveAsync(provider.Metadata.SystemName, native, request.StoreId);
-    }
-
     private sealed record ReviewResult(CheckoutDraft? Draft = null, CheckoutReviewDto? Review = null, ObjectResult? Error = null);
 
     private async Task<ReviewResult> GetReview(Guid id, int? revision, CancellationToken ct)
@@ -431,7 +410,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
             draft.PreparedCartFingerprint != await RawCartFingerprint(ct) || !await _addressChecks.AddressesCurrent(draft, ct))
             return new(Error: Error(409, "checkout_review_stale"));
         var native = await NativeCart();
-        if (!await SupportsOfflineCheckout(native, draft)) return new(Error: Error(409, "checkout_requires_browser"));
+        if (!await _offlineEligibility.SupportsAsync(native, draft)) return new(Error: Error(409, "checkout_requires_browser"));
         if (native.IsShippingRequired)
         {
             var offered = await QuoteShipping(native, draft.ShippingAddressId!.Value, ct);

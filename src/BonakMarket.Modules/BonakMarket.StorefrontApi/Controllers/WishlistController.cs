@@ -36,14 +36,14 @@ public sealed class WishlistController(CartFacade cart) : StorefrontController
     public async Task<ActionResult<CartTransferDto>> ToCart(int id, CancellationToken ct)
     {
         var result = await cart.TransferAsync(id, ShoppingCartType.Wishlist, ct);
-        if (result.Status != 200) return await CartFailureAsync(result, cart);
+        if (result.Status != 200) return await CartProblemResponse.FailureAsync(result, cart);
         return Ok(new CartTransferDto(await cart.StateAsync(ct), await cart.WishlistStateAsync(ct)));
     }
 
     private async Task<ActionResult<WishlistStateDto>> Result(CartChange result, CancellationToken ct)
     {
         if (result.Status == 200) return Ok(await cart.WishlistStateAsync(ct, result.Warnings));
-        return await CartFailureAsync(result, cart);
+        return await CartProblemResponse.FailureAsync(result, cart);
     }
 
 }

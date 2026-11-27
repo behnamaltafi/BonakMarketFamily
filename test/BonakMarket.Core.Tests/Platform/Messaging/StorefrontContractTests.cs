@@ -66,6 +66,26 @@ public class StorefrontContractTests
     }
 
     [Test]
+    public async Task NativeMappedPagingPreservesMetadataAndOnlyMapsPageRows()
+    {
+        const int page = 2;
+        const int size = 3;
+        var expected = new[] { "4", "5", "6" };
+        var source = Enumerable.Range(1, 10).AsQueryable().OrderBy(x => x);
+        var mappedCount = -1;
+        var result = await source.PageAsync(new PageRequest { Page = page, PageSize = size }, items =>
+        {
+            mappedCount = items.Count;
+            return Task.FromResult(items.Select(x => x.ToString()).ToList());
+        }, CancellationToken.None);
+        Assert.That(mappedCount, Is.EqualTo(expected.Length));
+        Assert.That(result.Items, Is.EqualTo(expected));
+        Assert.That(result.TotalCount, Is.EqualTo(10));
+        Assert.That(result.TotalPages, Is.EqualTo(4));
+        Assert.That(result.Page, Is.EqualTo(page));
+    }
+
+    [Test]
     public void GuestRoleGetsCatalogAndScopedCartButNoPrivateCapabilities()
     {
         var defaults = new StorefrontPermissionProvider().GetDefaultPermissions().ToList();

@@ -14,6 +14,8 @@ namespace BonakMarket.StorefrontApi.Security;
 
 internal static class StorefrontScope
 {
+    // Native ACL/store helpers may skip restrictions for empty roles, store zero, or IgnoreAcl/IgnoreMultiStore.
+    // Customer-facing API queries must always enforce their explicit customer/store scope.
     private static IQueryable<T> Visible<T>(IQueryable<T> query, SmartDbContext db, Customer customer, int store)
         where T : BaseEntity, IAclRestricted, IStoreRestricted, new()
     {
@@ -29,7 +31,7 @@ internal static class StorefrontScope
     {
         var now = DateTime.UtcNow;
         return Visible(db.Set<Product>(), db, customer, store).ApplyStandardFilter()
-            .Where(x => !x.Deleted && !x.IsSystemProduct && (x.Visibility == ProductVisibility.Full || ((forSearch || forDetail) && x.Visibility == ProductVisibility.SearchResults) || (forDetail && x.Visibility == ProductVisibility.ProductPage)) &&
+            .Where(x => !x.Deleted && (x.Visibility == ProductVisibility.Full || ((forSearch || forDetail) && x.Visibility == ProductVisibility.SearchResults) || (forDetail && x.Visibility == ProductVisibility.ProductPage)) &&
                 (x.AvailableStartDateTimeUtc == null || x.AvailableStartDateTimeUtc <= now) &&
                 (x.AvailableEndDateTimeUtc == null || x.AvailableEndDateTimeUtc >= now));
     }

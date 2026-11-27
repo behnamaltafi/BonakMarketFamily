@@ -29,8 +29,8 @@ public sealed record ProductCapabilitiesDto(bool CanQuote, bool CanAddToCart, bo
 
 public sealed class ProductQuoteRequest
 {
-    [Range(1, 1000)] public int Quantity { get; set; } = 1;
-    [MaxLength(30)] public List<VariantChoice>? Variants { get; set; } = [];
+    [Range(1, StorefrontLimits.MaxQuantity)] public int Quantity { get; set; } = 1;
+    [MaxLength(StorefrontLimits.MaxVariantChoices)] public List<VariantChoice>? Variants { get; set; } = [];
 }
 public sealed record ProductQuotePricingDto(string CurrencyCode, decimal UnitPrice, decimal? RegularUnitPrice,
     decimal LineTotal, decimal DiscountAmount, bool TaxInclusive);

@@ -62,8 +62,8 @@ public sealed class CatalogFacade(
     internal static (bool Enabled, int MinimumTermLength, int Limit) InstantSearchPolicy(
         InstantSearchRequest filter, SearchSettings settings)
     {
-        var limit = Math.Min(filter.Limit ?? 16, Math.Clamp(settings.InstantSearchNumberOfProducts, 0, 16));
-        return (settings.InstantSearchEnabled && limit > 0, Math.Clamp(settings.InstantSearchTermMinLength, 1, 200), limit);
+        var limit = Math.Min(filter.Limit ?? StorefrontLimits.MaxSuggestions, Math.Clamp(settings.InstantSearchNumberOfProducts, 0, StorefrontLimits.MaxSuggestions));
+        return (settings.InstantSearchEnabled && limit > 0, Math.Clamp(settings.InstantSearchTermMinLength, 1, StorefrontLimits.MaxSearchLength), limit);
     }
 
     public async Task<InstantSearchDto> InstantSearchAsync(InstantSearchRequest filter, SearchSettings settings, CancellationToken ct)

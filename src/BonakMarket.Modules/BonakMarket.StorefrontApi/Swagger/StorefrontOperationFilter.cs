@@ -41,6 +41,17 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
             "me" => "Customer Services",
             _ => "Commerce"
         }) } };
+        DescribeOperation(operation, route);
+        // Use the route template and verb (not overloaded CLR method names).
+        operation.OperationId = "Storefront_" + method + "_" +
+            route.Replace('/', '_').Replace("{", "").Replace("}", "").Replace(":", "_");
+        ApplySecurity(operation, context);
+        ApplyResponseMetadata(operation, route, section, method, tag);
+        DescribeProblemResponses(operation);
+    }
+
+    private static void DescribeOperation(OpenApiOperation operation, string route)
+    {
         switch (route)
         {
             case "products":
@@ -84,9 +95,10 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
                 operation.Description = "Same item contract as the brand list. Returns 404 for missing or inaccessible brands.";
                 break;
         }
-        // Use the route template and verb (not overloaded CLR method names).
-        operation.OperationId = "Storefront_" + method + "_" +
-            route.Replace('/', '_').Replace("{", "").Replace("}", "").Replace(":", "_");
+    }
+
+    private static void ApplySecurity(OpenApiOperation operation, OperationFilterContext context)
+    {
         operation.Security = new List<OpenApiSecurityRequirement>
         {
             Requirement("Bearer")
@@ -113,7 +125,10 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
             operation.Summary = "Merge the guest cart after login";
             operation.Description = "Send both tokens. Atomic transfer; retry safely with the same two tokens. A conflict preserves both carts.";
         }
+    }
 
+    private static void ApplyResponseMetadata(OpenApiOperation operation, string route, string section, string method, string tag)
+    {
         AddResponse(operation, "400", "Invalid request or HTTPS requirement (ProblemDetails).");
         AddResponse(operation, "401", "Missing or invalid required customer identity / token (ProblemDetails).");
         AddResponse(operation, "403", "Native permission or account/store context denied (ProblemDetails).");
@@ -148,6 +163,10 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
         if (route.StartsWith("checkout/sessions") && route != "checkout/sessions")
             AddResponse(operation, "409", "Checkout expired, cart/address/rate changed, or stale draft revision.");
         if (tag == "Sharing") AddResponse(operation, "429", "Sharing rate limit exceeded.");
+    }
+
+    private static void DescribeProblemResponses(OpenApiOperation operation)
+    {
         foreach (var entry in operation.Responses)
         {
             if (!int.TryParse(entry.Key, out var status) || status < 400 || status >= 600) continue;

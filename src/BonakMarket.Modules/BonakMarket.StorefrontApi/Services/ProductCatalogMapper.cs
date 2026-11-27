@@ -29,6 +29,8 @@ internal sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationS
     IMediaService media, IPermissionService permissions, IWorkContext work, IStoreContext stores,
     IComponentContext components, StorefrontRequestContext request, IConfiguration configuration, ISettingFactory settingFactory)
 {
+    private readonly ProductCatalogData _data = new(db, request, permissions, configuration);
+
     internal Task<WholesaleCardSettings> LoadWholesaleSettingsAsync() => settingFactory == null
         ? Task.FromResult(new WholesaleCardSettings())
         : settingFactory.LoadSettingsAsync<WholesaleCardSettings>(0);
@@ -47,82 +49,15 @@ internal sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationS
                 includeHidden: false, loadMainMediaOnly: true)) : null;
         var ids = products.Select(x => x.Id).ToArray();
         wholesaleSettings ??= includePurchaseInfo || allowed ? await LoadWholesaleSettingsAsync() : new WholesaleCardSettings();
-        var packageAttributeId = wholesaleSettings.UnitsPerPackageSpecificationId;
-        var metadata = new Dictionary<int, decimal>();
-        if (includePurchaseInfo && packageAttributeId > 0)
-        {
-            var rows = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
-                .Where(x => ids.Contains(x.ProductId) && x.SpecificationAttributeOption.SpecificationAttributeId == packageAttributeId)
-                .Select(x => new { x.ProductId, Value = x.SpecificationAttributeOption.NumberValue }).ToListAsync(ct);
-            metadata = rows.GroupBy(x => x.ProductId).Where(g => g.Count() == 1)
-                .ToDictionary(g => g.Key, g => g.Single().Value);
-        }
+        var metadata = await _data.LoadPackageMetadataAsync(ids, wholesaleSettings.UnitsPerPackageSpecificationId, includePurchaseInfo, ct);
         var languageId = work.WorkingLanguage.Id;
-        var translations = await db.LocalizedProperties.AsNoTracking()
-            .Where(x => ids.Contains(x.EntityId) && x.LanguageId == languageId &&
-                x.LocaleKeyGroup == nameof(Product) &&
-                (x.LocaleKey == nameof(Product.Name) || x.LocaleKey == nameof(Product.ShortDescription)))
-            .OrderBy(x => x.Id).Select(x => new { x.EntityId, x.LocaleKey, x.LocaleValue }).ToListAsync(ct);
-        var translated = translations.GroupBy(x => (x.EntityId, x.LocaleKey))
-            .ToDictionary(x => x.Key, x => x.Select(y => y.LocaleValue).FirstOrDefault(y => !string.IsNullOrWhiteSpace(y)));
-        string Localized(int id, string key, string fallback) =>
-            translated.TryGetValue((id, key), out var value) && !string.IsNullOrWhiteSpace(value) ? value : fallback;
-        var lookup = new Dictionary<int, int>();
-        if (includeImages && ids.Length > 0)
-        {
-            var pictures = await db.Set<ProductMediaFile>().AsNoTracking()
-                .Where(x => ids.Contains(x.ProductId) && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
-                .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id)
-                .Select(x => new { x.ProductId, x.MediaFileId }).ToListAsync(ct);
-            lookup = pictures.GroupBy(x => x.ProductId).ToDictionary(x => x.Key, x => x.First().MediaFileId);
-        }
+        var translated = await CatalogLocalization.LoadAsync(db, ids, languageId, nameof(Product),
+            [nameof(Product.Name), nameof(Product.ShortDescription)], ct);
+        string Localized(int id, string key, string fallback) => CatalogLocalization.ValueOrFallback(translated, id, key, fallback);
+        var lookup = includeImages && ids.Length > 0
+            ? await CatalogMedia.MainPictureIdsAsync(db, ids, ct) : new Dictionary<int, int>();
         var imageUrls = await CatalogMedia.UrlsAsync(media, lookup.Values.Select(x => (int?)x), imageSize, ct);
-        var sellable = new HashSet<int>();
-        var combinationCapacity = new Dictionary<int, (int MaxStock, bool Backorder)>();
-        var variantInfo = new Dictionary<int, (bool HasVariants, bool UnsupportedRequired)>();
-        var unitLookup = new Dictionary<int, QuantityUnitDto>();
-        QuantityUnitDto defaultUnit = null;
-        var canCart = false;
-        if (includePurchaseInfo)
-        {
-            sellable = (await ProductCatalogQueries.ApplyStockFilter(db.Set<Product>().AsNoTracking().Where(x => ids.Contains(x.Id)), true)
-                .Select(x => x.Id).ToListAsync(ct)).ToHashSet();
-            var managedIds = products.Where(x => x.ManageInventoryMethod == ManageInventoryMethod.ManageStockByAttributes)
-                .Select(x => x.Id).ToArray();
-            if (managedIds.Length > 0)
-            {
-                var combinations = await db.Set<ProductVariantAttributeCombination>().AsNoTracking()
-                    .Where(x => managedIds.Contains(x.ProductId) && x.IsActive)
-                    .Select(x => new { x.ProductId, x.StockQuantity, x.AllowOutOfStockOrders }).ToListAsync(ct);
-                combinationCapacity = combinations.GroupBy(x => x.ProductId)
-                    .ToDictionary(g => g.Key, g => (g.Max(x => x.StockQuantity), g.Any(x => x.AllowOutOfStockOrders)));
-            }
-            var variants = await db.Set<ProductVariantAttribute>().AsNoTracking().Where(x => ids.Contains(x.ProductId))
-                .Select(x => new { x.ProductId, x.IsRequired, x.AttributeControlTypeId }).ToListAsync(ct);
-            variantInfo = variants.GroupBy(x => x.ProductId).ToDictionary(g => g.Key,
-                g => (true, g.Any(x => x.IsRequired && !ProductSelection.SupportsControl((AttributeControlType)x.AttributeControlTypeId))));
-            var unitIds = products.Select(x => x.QuantityUnitId).Where(x => x > 0).Select(x => x.Value).Distinct().ToArray();
-            var units = await db.Set<QuantityUnit>().AsNoTracking().Where(x => unitIds.Contains(x.Id) || x.IsDefault)
-                .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).ToListAsync(ct);
-            var allUnitIds = units.Select(x => x.Id).ToArray();
-            var unitTranslations = await db.LocalizedProperties.AsNoTracking().Where(x => x.LanguageId == languageId &&
-                x.LocaleKeyGroup == nameof(QuantityUnit) && allUnitIds.Contains(x.EntityId) &&
-                (x.LocaleKey == nameof(QuantityUnit.Name) || x.LocaleKey == nameof(QuantityUnit.NamePlural)))
-                .OrderBy(x => x.Id).Select(x => new { x.EntityId, x.LocaleKey, x.LocaleValue }).ToListAsync(ct);
-            var labels = unitTranslations.GroupBy(x => (x.EntityId, x.LocaleKey))
-                .ToDictionary(x => x.Key, x => x.Select(y => y.LocaleValue).FirstOrDefault(y => !string.IsNullOrWhiteSpace(y)));
-            string UnitLabel(int id, string key, string fallback) =>
-                labels.TryGetValue((id, key), out var name) && !string.IsNullOrWhiteSpace(name) ? name : fallback;
-            unitLookup = units.ToDictionary(x => x.Id, x => new QuantityUnitDto(x.Id,
-                UnitLabel(x.Id, nameof(QuantityUnit.Name), x.Name), UnitLabel(x.Id, nameof(QuantityUnit.NamePlural), x.NamePlural)));
-            var defaultEntity = units.FirstOrDefault(x => x.IsDefault);
-            if (defaultEntity != null) defaultUnit = unitLookup[defaultEntity.Id];
-            canCart = (request.Customer.IsRegistered()
-                ? await permissions.AuthorizeAsync(StorefrontPermissions.Cart, request.Customer)
-                : GuestCartPolicy.Enabled(configuration) && GuestCartPolicy.IsGuest(request.Customer) &&
-                    await permissions.AuthorizeAsync(StorefrontPermissions.GuestCart, request.Customer)) &&
-                await permissions.AuthorizeAsync(Permissions.Cart.AccessShoppingCart, request.Customer);
-        }
+        var purchase = includePurchaseInfo ? await _data.LoadPurchaseDataAsync(products, ids, languageId, ct) : null;
         var items = new List<ProductDto>(products.Count);
         foreach (var product in products)
         {
@@ -137,19 +72,19 @@ internal sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationS
             if (includePurchaseInfo)
             {
                 var quantities = QuantityRules(product);
-                var variant = variantInfo.GetValueOrDefault(product.Id);
+                var variant = purchase.VariantInfo.GetValueOrDefault(product.Id);
                 var supported = ProductSelection.SupportsProduct(product) && !variant.UnsupportedRequired &&
                     quantities.Max >= quantities.Min;
-                item.Availability = sellable.Contains(product.Id) ? "available" : "out_of_stock";
+                item.Availability = purchase.Sellable.Contains(product.Id) ? "available" : "out_of_stock";
                 item.MinimumQuantity = quantities.Min;
                 item.MaximumQuantity = quantities.Max;
                 item.QuantityStep = Math.Max(1, product.QuantityStep);
                 item.AllowedQuantities = quantities.Allowed;
-                item.QuantityUnit = product.QuantityUnitId is int unitId && unitLookup.TryGetValue(unitId, out var unit)
-                    ? unit : defaultUnit;
+                item.QuantityUnit = product.QuantityUnitId is int unitId && purchase.Units.TryGetValue(unitId, out var unit)
+                    ? unit : purchase.DefaultUnit;
                 item.UnitsPerPackage = WholesaleCardMetadata.PackageSize(metadata.GetValueOrDefault(product.Id));
                 item.RequiresConfiguration = variant.HasVariants || !supported;
-                var capacity = combinationCapacity.GetValueOrDefault(product.Id);
+                var capacity = purchase.CombinationCapacity.GetValueOrDefault(product.Id);
                 var minimumAvailable = product.ManageInventoryMethod switch
                 {
                     ManageInventoryMethod.ManageStock => product.BackorderMode != BackorderMode.NoBackorders ||
@@ -157,7 +92,7 @@ internal sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationS
                     ManageInventoryMethod.ManageStockByAttributes => capacity.Backorder || capacity.MaxStock >= quantities.Min,
                     _ => true
                 };
-                item.CanAddToCart = canCart && supported && sellable.Contains(product.Id) && minimumAvailable;
+                item.CanAddToCart = purchase.CanCart && supported && purchase.Sellable.Contains(product.Id) && minimumAvailable;
                 item.HasDiscount = priceAllowed ? product.HasDiscountsApplied : null;
                 item.IsPreOrder = product.AvailableForPreOrder;
             }
@@ -182,7 +117,7 @@ internal sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationS
     {
         var raw = product.ParseAllowedQuantities();
         var min = Math.Max(1, raw.Length > 0 ? raw[0] : product.OrderMinimumQuantity);
-        var max = Math.Min(1000, Math.Max(min, raw.Length > 0 ? raw[^1] : product.OrderMaximumQuantity));
+        var max = Math.Min(StorefrontLimits.MaxQuantity, Math.Max(min, raw.Length > 0 ? raw[^1] : product.OrderMaximumQuantity));
         var allowed = raw.Where(q => q >= min && q <= max).Distinct().ToArray();
         // If there are explicit values, the first valid value is the actual minimum purchase.
         if (raw.Length > 0)

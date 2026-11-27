@@ -115,10 +115,7 @@ internal sealed class CartStateReader(SmartDbContext db, IShoppingCartService ca
         var productIds = nodes.Select(x => x.Item.ProductId).Distinct().ToArray();
         var products = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
             .AsNoTracking().Where(x => productIds.Contains(x.Id)).ToDictionaryAsync(x => x.Id, ct);
-        var pictures = await db.Set<ProductMediaFile>().AsNoTracking()
-            .Where(x => productIds.Contains(x.ProductId) && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
-            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).Select(x => new { x.ProductId, x.MediaFileId }).ToListAsync(ct);
-        var pictureIds = pictures.GroupBy(x => x.ProductId).ToDictionary(x => x.Key, x => x.First().MediaFileId);
+        var pictureIds = await CatalogMedia.MainPictureIdsAsync(db, productIds, ct);
         var urls = new Dictionary<int, string>();
         var canPrice = await CanDisplayPriceAsync();
         var target = type == ShoppingCartType.Wishlist ? ShoppingCartType.ShoppingCart : ShoppingCartType.Wishlist;
@@ -156,10 +153,10 @@ internal sealed class CartStateReader(SmartDbContext db, IShoppingCartService ca
             var valid = await validator.ValidateAddToCartItemAsync(ctx, item, native.Items);
             var availability = product.CallForPrice ? "price_on_request" : valid ? "available" : "validation_failed";
             lines.Add(new(item.Id, item.ProductId, item.Quantity, node.Active, item.ParentItemId,
-                product.Name, product.Sku, urls[product.Id], min, Math.Min(1000, max),
-                quantities.Where(q => q > 0 && q <= 1000).Distinct().ToArray(), Math.Max(1, product.QuantityStep),
+                product.Name, product.Sku, urls[product.Id], min, Math.Min(StorefrontLimits.MaxQuantity, max),
+                quantities.Where(q => q > 0 && q <= StorefrontLimits.MaxQuantity).Distinct().ToArray(), Math.Max(1, product.QuantityStep),
                 availability, selected.OrderBy(x => x.VariantAttributeId).ThenBy(x => x.ValueId).ToArray(), null,
-                new(root && min <= 1000, root, root && valid && canTransfer),
+                new(root && min <= StorefrontLimits.MaxQuantity, root, root && valid && canTransfer),
                 valid ? Array.Empty<string>() : canPrice ? ctx.Warnings.Distinct().ToArray() : new[] { "cart_validation_failed" }));
         }
         var rootActivity = lines.Where(x => x.ParentItemId == null).ToDictionary(x => x.Id, x => x.Active);

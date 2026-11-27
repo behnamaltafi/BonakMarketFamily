@@ -24,7 +24,6 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
         operation.Tags = new List<OpenApiTag> { new() { Name = tag ?? (section switch
         {
             "products" => "Products",
-            "search" => "Search",
             "categories" => "Categories",
             "brands" => "Brands",
             "cart" => "Cart",
@@ -42,11 +41,20 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
             "me" => "Customer Services",
             _ => "Commerce"
         }) } };
-        if (section == "search" || route == "products" || route == "products/facets")
+        switch (route)
         {
-            operation.Description = route == "search/instant"
-                ? "Optional search text (max 200 characters), optional limit (1–16, capped by admin settings). Disabled, empty, or too-short searches return 200 with empty items. No price or total count; hasMore indicates additional matches. Images may be null or relative to the API origin."
-                : "Optional search text, 1-based page (1–10000), pageSize (1–100). For nonblank searches, omitted inStock follows admin availability settings; true selects sellable products, false selects unavailable products. Price filters and sorting use catalog base-currency prices before customer-specific pricing/tax; returned final prices can differ. Facets are conjunctive and ignore pagination. Price/discount filtering and sorting require price-display permission.";
+            case "products":
+                operation.Summary = "List and search products";
+                operation.Description = "Optional search text (max 200 characters), 1-based page (1–10000), pageSize (1–100). Filters: categoryId, brandId, minPrice, maxPrice, inStock and hasDiscount. For nonblank searches, omitted inStock follows admin availability settings; true selects sellable products, false selects unavailable products. Price filters and sorting use catalog base-currency prices before customer-specific pricing/tax. Price/discount filtering and price sorting require price-display permission.";
+                break;
+            case "products/suggestions":
+                operation.Summary = "Instant search suggestions";
+                operation.Description = "Optional search text (max 200 characters), optional limit (1–16, capped by admin settings). Disabled, empty, or too-short searches return 200 with empty items. No price or total count; hasMore indicates additional matches. Images may be null or relative to the API origin.";
+                break;
+            case "products/facets":
+                operation.Summary = "Available product filters";
+                operation.Description = "Returns total matching products and category/brand counts for the same filters as the product list. Counts are conjunctive and use direct category mappings; lists may be truncated. Send search, categoryId, brandId, minPrice, maxPrice, inStock and hasDiscount as needed. No paging, sorting or price projection. Price/discount filters require price-display permission. Price bounds are supplied by the client in the returned base currency.";
+                break;
         }
         // Use the route template and verb (not overloaded CLR method names).
         operation.OperationId = "Storefront_" + method + "_" +
@@ -62,7 +70,7 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
         AddResponse(operation, "401", "Missing or invalid required customer identity / token (ProblemDetails).");
         AddResponse(operation, "403", "Native permission or account/store context denied (ProblemDetails).");
         AddResponse(operation, "503", "Store unavailable (ProblemDetails).");
-        if (section == "products" && route != "products" ||
+        if (section == "products" && route.StartsWith("products/{") ||
             section == "orders" && route != "orders" ||
             section == "cart" && route.StartsWith("cart/items/"))
             AddResponse(operation, "404", "Requested resource not found.");

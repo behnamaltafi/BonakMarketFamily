@@ -181,8 +181,7 @@ public class SwaggerContractTests
         Assert.That(profile.Parameters.Any(p => p.Name == "X-Test-CSRF"), Is.False);
         Assert.That(profile.Responses.ContainsKey("422"), Is.True);
         Assert.That(profile.Responses["422"].Content["application/problem+json"].Schema.Properties.ContainsKey("code"), Is.True);
-        foreach (var path in new[] { "/bootstrap", "/pages", "/pages/{id}", "/products/facets",
-            "/search", "/search/instant", "/search/facets" })
+        foreach (var path in new[] { "/bootstrap", "/pages", "/pages/{id}", "/products/facets", "/products/suggestions" })
             Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.True);
         foreach (var path in new[] { "/me/summary", "/me/reviews" })
             Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.False);
@@ -195,6 +194,17 @@ public class SwaggerContractTests
         }
         var products = storefront.Paths["/api/storefront/v1/products"].Operations[OperationType.Get];
         Assert.That(products.Security.Any(s => s.Count == 0), Is.True);
+        foreach (var removed in new[] { "/search", "/search/instant", "/search/facets" })
+            Assert.That(storefront.Paths.ContainsKey("/api/storefront/v1" + removed), Is.False);
+        var suggestions = storefront.Paths["/api/storefront/v1/products/suggestions"].Operations[OperationType.Get];
+        var facets = storefront.Paths["/api/storefront/v1/products/facets"].Operations[OperationType.Get];
+        foreach (var operation in new[] { products, suggestions, facets })
+            Assert.That(operation.Tags.Select(x => x.Name), Is.EqualTo(new[] { "Products" }));
+        Assert.That(suggestions.Parameters.Select(x => x.Name), Is.EquivalentTo(new[] { "search", "limit" }).IgnoreCase);
+        Assert.That(facets.Parameters.Select(x => x.Name), Is.EquivalentTo(
+            new[] { "search", "categoryId", "brandId", "minPrice", "maxPrice", "inStock", "hasDiscount" }).IgnoreCase);
+        Assert.That(facets.Responses.ContainsKey("404"), Is.False);
+        Assert.That(suggestions.Responses.ContainsKey("404"), Is.False);
         var quote = storefront.Paths["/api/storefront/v1/products/{id}/quote"].Operations[OperationType.Post];
         Assert.That(quote.Security.Any(x => x.Count == 0), Is.True);
         Assert.That(quote.Responses["200"].Content, Is.Not.Empty);

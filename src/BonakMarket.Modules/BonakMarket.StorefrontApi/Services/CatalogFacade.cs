@@ -160,10 +160,10 @@ public sealed class CatalogFacade(
 
     // Conjunctive facets: same visible result set and filters as the list, independent of page.
     // Counts are direct product mappings, not a recursive sum of descendants.
-    public async Task<CatalogFacetsDto> FacetsAsync(ProductSearchRequest filter, CancellationToken ct, SearchSettings settings = null)
+    public async Task<CatalogFacetsDto> FacetsAsync(ProductFacetsRequest filter, CancellationToken ct, SearchSettings settings = null)
     {
         const int limit = 50;
-        var products = (await SearchSourceAsync(filter, ct, settings)).Select(x => x.Id).Distinct();
+        var products = (await SearchSourceAsync(filter.ToSearchRequest(), ct, settings)).Select(x => x.Id).Distinct();
         var visibleCategories = StorefrontScope.Categories(db, request.Customer, request.StoreId);
         var visibleBrands = StorefrontScope.Brands(db, request.Customer, request.StoreId);
         var categoryCounts = db.Set<ProductCategory>().AsNoTracking()

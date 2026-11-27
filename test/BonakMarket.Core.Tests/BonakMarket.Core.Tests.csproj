@@ -39,6 +39,7 @@
 		<ProjectReference Include="..\..\src\BonakMarket.Modules\BonakMarket.StorefrontApi\BonakMarket.StorefrontApi.csproj" />
 		<ProjectReference Include="..\..\src\BonakMarket\BonakMarket.csproj" />
 		<ProjectReference Include="..\..\src\BonakMarket.Data\BonakMarket.Data.Sqlite\BonakMarket.Data.Sqlite.csproj" />
+		<ProjectReference Include="..\..\src\BonakMarket.Data\BonakMarket.Data.SqlServer\BonakMarket.Data.SqlServer.csproj" />
 		<ProjectReference Include="..\BonakMarket.Test.Common\BonakMarket.Test.Common.csproj" />
 	</ItemGroup>
 

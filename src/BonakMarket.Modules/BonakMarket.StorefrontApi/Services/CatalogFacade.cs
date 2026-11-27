@@ -503,7 +503,9 @@ public sealed class CatalogFacade(
             if (allowed && !product.CallForPrice && !product.CustomerEntersPrice &&
                 item.MinimumQuantity > 0 && item.MinimumQuantity <= item.MaximumQuantity)
                 item.Price = await Price(product, item.MinimumQuantity, options);
-            if (item.Price?.RetailPrice is decimal retailPrice &&
+            // A grouped or configurable product may be priced using another child/variant unit.
+            // Do not infer the per-item price until that sale unit is unambiguous.
+            if (!item.RequiresConfiguration && product.ProductType == ProductType.SimpleProduct && item.Price?.RetailPrice is decimal retailPrice &&
                 WholesaleCardMetadata.ConsumerPricePerItem(retailPrice, item.UnitsPerPackage, item.QuantityUnit?.Id,
                     wholesaleSettings.PackageQuantityUnitId) is decimal consumerPrice)
             {

@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using NUnit.Framework;
 using BonakMarket.Core.Catalog.Search;
+using BonakMarket.Core.Catalog.Products;
 using BonakMarket.StorefrontApi.Controllers;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
@@ -79,6 +80,41 @@ public class StorefrontSearchContractTests
         Assert.That(result.HasMore, Is.False);
         Assert.That(result.Enabled, Is.EqualTo(enabled));
         Assert.That(result.Search, Is.EqualTo(term?.Trim() ?? string.Empty));
+    }
+
+    [Test]
+    public void UsesOnlyNativeConfiguredSearchFields()
+    {
+        var settings = new SearchSettings { SearchFields = new List<string> { "sku", "category", "name", "sku" } };
+        Assert.That(CatalogFacade.SearchFields(settings), Is.EquivalentTo(new[] { "name", "sku" }));
+    }
+
+    [TestCase("rice", false, null, true)]
+    [TestCase("rice", true, null, null)]
+    [TestCase("", false, null, null)]
+    [TestCase("rice", false, false, false)]
+    [TestCase("rice", true, true, true)]
+    public void AvailabilityDefaultsAndOverridesAreConsistent(string term, bool includeUnavailable,
+        bool? requested, bool? expected)
+    {
+        Assert.That(CatalogFacade.EffectiveStockFilter(new ProductSearchRequest { Search = term, InStock = requested },
+            new SearchSettings { IncludeNotAvailable = includeUnavailable }), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void FalseStockFilterSelectsOnlyUnavailableProducts()
+    {
+        var products = new[]
+        {
+            new Product { Id = 1, ManageInventoryMethodId = (int)ManageInventoryMethod.ManageStock,
+                StockQuantity = 0, BackorderModeId = (int)BackorderMode.NoBackorders },
+            new Product { Id = 2, ManageInventoryMethodId = (int)ManageInventoryMethod.ManageStock,
+                StockQuantity = 2, BackorderModeId = (int)BackorderMode.NoBackorders },
+            new Product { Id = 3, ManageInventoryMethodId = (int)ManageInventoryMethod.DontManageStock }
+        }.AsQueryable();
+        Assert.That(CatalogFacade.ApplyStockFilter(products, false).Select(x => x.Id), Is.EqualTo(new[] { 1 }));
+        Assert.That(CatalogFacade.ApplyStockFilter(products, true).Select(x => x.Id), Is.EqualTo(new[] { 2, 3 }));
+        Assert.That(CatalogFacade.ApplyStockFilter(products, null).Count(), Is.EqualTo(3));
     }
 
     [Test]

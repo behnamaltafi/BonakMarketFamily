@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BonakMarket.Core.Catalog.Search;
+using BonakMarket.Core.Common.Services;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
 using BonakMarket.StorefrontApi.Services;
@@ -12,12 +13,12 @@ public sealed class CatalogController(CatalogFacade catalog) : StorefrontControl
 {
     /// <summary>Search the visible catalog with filters and pagination. Both routes share the same contract.</summary>
     [HttpGet, HttpGet("~/api/storefront/v1/search"), PublicCatalog]
-    public async Task<ActionResult<PageDto<ProductDto>>> Search([FromQuery] ProductSearchRequest filter, CancellationToken ct)
+    public async Task<ActionResult<PageDto<ProductDto>>> Search([FromQuery] ProductSearchRequest filter, [FromServices] SearchSettings settings, CancellationToken ct)
     {
         if ((filter.MinPrice.HasValue || filter.MaxPrice.HasValue || filter.HasDiscount.HasValue ||
             filter.Sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc) && !await catalog.CanDisplayPriceAsync())
             return Error(403, "price_access_denied");
-        return Ok(await catalog.SearchAsync(filter, ct));
+        return Ok(await catalog.SearchAsync(filter, ct, settings));
     }
 
     /// <summary>Lightweight suggestions for the current search term. No price calculation or full result count.</summary>
@@ -27,12 +28,15 @@ public sealed class CatalogController(CatalogFacade catalog) : StorefrontControl
         => Ok(await catalog.InstantSearchAsync(filter, settings, ct));
 
     [HttpGet("facets"), HttpGet("~/api/storefront/v1/search/facets"), PublicCatalog]
-    public async Task<ActionResult<CatalogFacetsDto>> Facets([FromQuery] ProductSearchRequest filter, CancellationToken ct)
+    public async Task<ActionResult<CatalogFacetsDto>> Facets([FromQuery] ProductSearchRequest filter, [FromServices] SearchSettings settings,
+        [FromServices] ICurrencyService currencies, CancellationToken ct)
     {
+        var canFilterPrice = await catalog.CanDisplayPriceAsync();
         if ((filter.MinPrice.HasValue || filter.MaxPrice.HasValue || filter.HasDiscount.HasValue ||
-            filter.Sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc) && !await catalog.CanDisplayPriceAsync())
+            filter.Sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc) && !canFilterPrice)
             return Error(403, "price_access_denied");
-        return Ok(await catalog.FacetsAsync(filter, ct));
+        var result = await catalog.FacetsAsync(filter, ct, settings);
+        return Ok(result with { CanFilterPrice = canFilterPrice, PriceFilterCurrencyCode = currencies.PrimaryCurrency.CurrencyCode });
     }
 
     [HttpGet("{id:int}"), PublicCatalog]

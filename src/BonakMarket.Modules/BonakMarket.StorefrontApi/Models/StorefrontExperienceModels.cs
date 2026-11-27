@@ -19,4 +19,8 @@ public sealed record MyReviewDto(int Id, int ProductId, string? CurrentProductNa
 
 public sealed record CatalogFacetValueDto(int Id, string Name, int ProductCount);
 public sealed record CatalogFacetsDto(int MatchingProducts, IReadOnlyList<CatalogFacetValueDto> Categories,
-    IReadOnlyList<CatalogFacetValueDto> Brands, bool CategoriesTruncated, bool BrandsTruncated);
+    IReadOnlyList<CatalogFacetValueDto> Brands, bool CategoriesTruncated, bool BrandsTruncated)
+{
+    public bool CanFilterPrice { get; init; }
+    public string? PriceFilterCurrencyCode { get; init; }
+}

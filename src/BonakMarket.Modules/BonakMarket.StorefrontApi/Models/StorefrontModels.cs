@@ -13,17 +13,19 @@ public class ProductDto
     public string ImageUrl { get; set; }
     public PriceDto Price { get; set; }
 }
+#nullable enable
 /// <summary>Search-as-you-type inputs. Empty or too-short terms return no suggestions.</summary>
 public sealed class InstantSearchRequest
 {
-    [StringLength(200)] public string Search { get; set; }
+    [StringLength(200)] public string? Search { get; set; }
     [Range(1, 16)] public int? Limit { get; set; }
 }
 
-public sealed record InstantSearchProductDto(int Id, string Name, string Sku, int? MediaFileId, string ImageUrl);
+public sealed record InstantSearchProductDto(int Id, string Name, string? Sku, int? MediaFileId, string? ImageUrl);
 
 public sealed record InstantSearchDto(string Search, bool Enabled, int MinimumTermLength, int Limit,
     bool HasMore, IReadOnlyList<InstantSearchProductDto> Items);
+#nullable restore
 
 public sealed class CategoryDto
 {

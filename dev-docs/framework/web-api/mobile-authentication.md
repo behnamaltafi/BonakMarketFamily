@@ -1,32 +1,21 @@
-# Native mobile authentication
+# Unified customer authentication (web and mobile)
 
-New additive endpoints (existing web SMS routes, aliases and cookie flows are unchanged):
+One public login contract, no native authentication cookie or Session API:
 
-1. POST /api/identity/v1/auth/mobile/sms/request with JSON {"phone":"09121234567"}.
-2. Response: {"challengeId":"opaque","expiresIn":300,"resendAfter":120,"maskedPhone":"0912***4567"}.
-3. POST /api/identity/v1/auth/mobile/sms/verify with JSON {"challengeId":"opaque","code":"012345"}.
+1. POST /api/identity/v1/auth/sms/request with JSON {"phone":"09121234567"}.
+2. Response: {"challengeId":"opaque","expiresIn":300,"resendAfter":120,"maskedPhone":"0912***4567"} (durations are configuration dependent).
+3. POST /api/identity/v1/auth/sms/verify with JSON {"challengeId":"opaque","code":"012345"}.
 4. Response: accessToken, refreshToken, tokenType, expiresIn, profileRequired, missingRequiredFields.
-5. Authorization: Bearer <accessToken> for protected APIs. Rotate using POST /api/identity/v1/auth/refresh;
-   do not send an expired access token, refresh concurrently or retry a consumed refresh credential.
-6. POST /api/identity/v1/auth/logout revokes the current mobile session.
+5. GET /api/identity/v1/me/profile to read current profile and onboarding state with Authorization: Bearer <accessToken>. Use the same Bearer on protected Storefront routes; omit Authorization entirely for anonymous catalog.
+6. POST /api/identity/v1/auth/refresh with JSON {"refreshToken":"..."} and no Authorization header. Replace both credentials atomically; use single-flight rotation, no parallel refresh or retry of a consumed token.
+7. POST /api/identity/v1/auth/logout with valid Bearer and no body, OR omit Authorization and submit {"refreshToken":"..."} to revoke even after access expiry. Never send both. Expect 204; clear local credentials and authenticated caches. Logout does not remove a native MVC cookie or delete the customer cart/checkout draft.
 
-HTTPS is required by default; application/json is mandatory. For isolated development/testing only, set `Identity:RequireHttps` to `false` (`Identity__RequireHttps=false` as an environment variable). The Development configuration opts out; all other environments inherit the secure default unless explicitly overridden. This setting applies to mobile SMS request/verify, optional legacy token issuance, refresh, customer bearer authentication, account operations and Storefront API authorization. Never disable HTTPS for real customer traffic; OTPs and credentials would travel unencrypted. Behind a trusted TLS-terminating reverse proxy, configure forwarded HTTPS headers instead. No cookie, CSRF preflight session request or issueTokens flag is needed.
-Token-only sign-in never explicitly creates a native login cookie and does not invoke the browser guest-cart
-sign-in flow. GET auth/session with bearer on the canonical route omits CSRF token values.
-The old auth/sms/request and verify still require the native antiforgery flow.
+Access lifetime 600 seconds; refresh session absolute lifetime 30 days. SQL validates/revokes the session; token signatures and issuance configuration are unchanged. The API never accepts ambient MVC login cookies for authentication. Visitor/session cookies used by the native host are not customer authentication credentials. Use HTTPS; development may explicitly disable Identity:RequireHttps only in isolated testing. For separate web origins configure Identity__AllowedOrigins__0=https://app.example.com; send fetch credentials:"omit", explicit Authorization and application/json; never put integration secrets in clients. Configure TLS forwarded headers on trusted proxies.
 
-The challenge ID is an opaque, time-limited protected ticket referencing the current OTP send generation.
-Verification binds the ticket to that generation and consumes the existing SQL challenge atomically.
-No new challenge table, no separate quota, and no change to the OTP provider contract.
-Resending uses the existing shared per-phone cooldown (120 seconds), daily quota and five-attempt cap.
-expiresIn and resendAfter are policy durations for UI guidance, not a guarantee that a new SMS was sent or
-that an earlier challenge has that much time remaining. Suppressed/failed delivery and ineligible accounts
-receive the same public response shape. Re-request after expiry; verification failures return invalid_code.
-Use a persisted shared Data Protection key ring for multi-instance deployment. Never log OTP, challenge or tokens.
-Verify upstream abuse controls for the public SMS endpoint (existing per-phone quota does not cap total distinct numbers).
+OTP challengeId is a protected ticket bound to the current send generation. Existing per-phone quotas and SQL challenge consumption are shared with native MVC login. Keep the Data Protection key ring and signing key across deployments. Honor Retry-After/retryAfter on rate-limited requests. A request success does not disclose whether a number exists or whether delivery occurred. Use the returned challengeId even on resend. Do not log credentials or OTP. The token-only login does not migrate the native guest cart or sign a browser in. The front must handle onboarding through profile and guild endpoints.
 
-MobileApi settings, token rotation, native registration rules, guild onboarding and profile endpoints are unchanged.
-Session listing and logout-all are optional later enhancements. Test on SQL Server with OTP providers:
-web/mobile shared quotas, resend invalidation, concurrent verification, replay, disabled accounts, invalid phone,
-disabled SMS/token issuance, no browser login cookie, token refresh/logout, HTTPS and legacy cookie CSRF.
-Test source only; no runtime execution claimed.
+## Migration and release
+
+Removed routes on this branch: /api/identity/v1/auth/mobile/sms/request, /verify, /auth/session, and /api/sms-login/* (legacy aliases). The canonical SMS verify accepts challengeId + code, no issueTokens flag. No change to native MVC /sms-login; the address editor and phone widget now use /sms-login/account/* with cookie/CSRF and shared services. No change to OData/ERP. Checkout browser links, invoices and payment retry still require a separately signed-in MVC browser; no automatic browser handoff is implemented.
+
+Before merging, confirm all external consumers migrated. Build and test against SQL Server with OTP providers: new/existing customers, quotas, invalid/replayed OTP, cross-customer cookie/JWT isolation, refresh races, logout via both credentials, phone-change revocation, MVC address/phone CSRF, CORS preflight and OData regression.

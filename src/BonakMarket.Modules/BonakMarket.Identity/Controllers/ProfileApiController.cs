@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Identity;
@@ -14,23 +12,21 @@ namespace BonakMarket.Identity.Controllers;
 [ApiController]
 [ApiExplorerSettings(GroupName = "identity")]
 [Route("api/identity/v1/me")]
-[AutoValidateAntiforgeryToken]
+[IgnoreAntiforgeryToken]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class ProfileApiController : CustomerAccountApiController
 {
     private readonly CustomerProfileService _profile;
     private readonly SmartDbContext _db;
 
-    public ProfileApiController(CustomerProfileService profile, SignInManager<Customer> signInManager,
-        UserManager<Customer> userManager, SmartDbContext db, IAntiforgery antiforgery)
-        : base(signInManager, userManager, antiforgery)
+    public ProfileApiController(CustomerProfileService profile, SmartDbContext db)
     {
         _profile = profile;
         _db = db;
     }
 
     /// <summary>Returns the current customer's profile without accepting a customer identifier.</summary>
-    [HttpGet("profile"), HttpGet("~/api/sms-login/profile"), AllowAnonymous]
+    [HttpGet("profile"), AllowAnonymous]
     [ProducesResponseType(typeof(CustomerProfileDto), 200)]
     public async Task<IActionResult> GetProfile(CancellationToken ct)
     {
@@ -39,8 +35,8 @@ public sealed class ProfileApiController : CustomerAccountApiController
         return Ok(await ReadProfileAsync(customer, ct));
     }
 
-    /// <summary>Updates the same native profile as POST profile and returns the current representation.</summary>
-    [HttpPut("profile"), HttpPut("~/api/sms-login/profile"), AllowAnonymous, IgnoreAntiforgeryToken]
+    /// <summary>Updates the native profile and returns the current representation.</summary>
+    [HttpPut("profile"), AllowAnonymous, IgnoreAntiforgeryToken]
     [ProducesResponseType(typeof(CustomerProfileDto), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 422)]
     public async Task<IActionResult> UpdateProfile([FromBody] ProfileUpdateRequest request, CancellationToken ct)
@@ -56,24 +52,6 @@ public sealed class ProfileApiController : CustomerAccountApiController
             return new ObjectResult(problem) { StatusCode = 422, ContentTypes = { "application/problem+json" } };
         }
         return Ok(await ReadProfileAsync(customer, ct));
-    }
-
-    /// <summary>Updates the phone-linked Customer's optional profile.</summary>
-    [HttpPost("~/api/sms-login/profile"), AllowAnonymous, IgnoreAntiforgeryToken]
-    [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
-    public async Task<IActionResult> CompleteProfile([FromBody] ProfileUpdateRequest request, CancellationToken ct)
-    {
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
-
-        var result = await _profile.CompleteProfileAsync(
-            customer, request.FirstName, request.LastName, request.Email, request.NationalCode, request.GuildId, ct);
-        if (!result.Succeeded)
-        {
-            return BadRequest(new { code = "invalid_profile", errors = result.Errors.Select(x => x.Description) });
-        }
-
-        return Ok(new IdentityCodeResponse("profile_saved"));
     }
 
     private async Task<CustomerProfileDto> ReadProfileAsync(Customer customer, CancellationToken ct)

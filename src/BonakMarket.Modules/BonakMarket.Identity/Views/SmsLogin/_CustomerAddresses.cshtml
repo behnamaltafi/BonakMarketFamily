@@ -1,6 +1,8 @@
 @model SmsProfileModel
-<div id="customer-address-editor" data-base="@Url.Content("~/api/identity/v1/me/addresses")"
-     data-session="@Url.Content("~/api/identity/v1/auth/session")" data-phone="@Model.Phone">
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery AddressAntiforgery
+@{ var csrf = AddressAntiforgery.GetAndStoreTokens(Context); }
+<div id="customer-address-editor" data-base="@Url.Content("~/sms-login/account/addresses")"
+     data-csrf-header="@csrf.HeaderName" data-csrf-token="@csrf.RequestToken" data-phone="@Model.Phone">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h4>آدرس‌های من (اختیاری)</h4>
         <button type="button" class="btn btn-outline-primary" data-add>افزودن آدرس</button>
@@ -31,11 +33,7 @@
     async function call(path,method="GET",body){
         const headers={};
         if(method!=="GET"){
-            const res=await fetch(root.dataset.session,{credentials:"same-origin",cache:"no-store"});
-            if(!res.ok)throw Error("session_failed");
-            const session=await res.json();
-            if(!session.isAuthenticated||!session.headerName||!session.requestToken)throw Error("session_failed");
-            headers[session.headerName]=session.requestToken;
+            headers[root.dataset.csrfHeader]=root.dataset.csrfToken;
             headers["Content-Type"]="application/json";
         }
         const response=await fetch(root.dataset.base+path,{method,headers,credentials:"same-origin",cache:"no-store",body:body===undefined?undefined:JSON.stringify(body)});

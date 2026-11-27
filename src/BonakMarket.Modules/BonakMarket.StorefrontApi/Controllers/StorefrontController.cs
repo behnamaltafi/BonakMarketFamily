@@ -4,8 +4,8 @@ using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Controllers;
 
-// The module filter authenticates JWT/cookie, validates cookie CSRF and checks native permissions
-// before any action executes. AllowAnonymous avoids the host MVC cookie redirect.
+// The module filter accepts verified Bearer identity (or guest for public routes)
+// and checks native permissions. AllowAnonymous avoids host MVC cookie redirects.
 [ApiController, AllowAnonymous, IgnoreAntiforgeryToken]
 [TypeFilter(typeof(StorefrontAuthorizationFilter))]
 [ApiExplorerSettings(GroupName = "storefront")]

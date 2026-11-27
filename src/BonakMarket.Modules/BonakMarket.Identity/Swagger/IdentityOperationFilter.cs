@@ -1,12 +1,10 @@
-using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace BonakMarket.Identity.Swagger;
 
 /// <summary>Documents the actual customer authentication boundary, not MVC AllowAnonymous metadata.</summary>
-internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antiforgery) : IOperationFilter
+internal sealed class IdentityOperationFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
@@ -17,45 +15,36 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
         var route = path.Substring("api/identity/v1/".Length).TrimEnd('/').ToLowerInvariant();
         var method = context.ApiDescription.HttpMethod;
         var sms = route.StartsWith("auth/sms/");
-        var mobileSms = route.StartsWith("auth/mobile/sms/");
-        var session = route == "auth/session";
+        var logout = route == "auth/logout";
         var refresh = route == "auth/refresh";
-        var privateAccount = route.StartsWith("me/") || route == "auth/logout";
+        var privateAccount = route.StartsWith("me/");
 
         operation.Tags = new List<OpenApiTag> { new() { Name =
-            mobileSms ? "Authentication - Mobile SMS" :
-            sms ? "Authentication - SMS" :
+            sms ? "Authentication" :
             route.StartsWith("me/security/") ? "Account Security" :
             route.StartsWith("me/addresses") ? "Addresses" :
             route == "guilds" ? "Guilds" :
-            route.StartsWith("me/") ? "Profile" : "Authentication - Session" } };
+            route.StartsWith("me/") ? "Profile" : "Authentication" } };
         operation.OperationId = "Identity_" + method + "_" + route.Replace('/', '_');
         operation.Security = new List<OpenApiSecurityRequirement>();
-        if (privateAccount || session)
+        if (privateAccount || logout)
         {
             operation.Security.Add(Requirement("Bearer"));
-            operation.Security.Add(Requirement("CustomerCookie"));
-            if (session) operation.Security.Add(new OpenApiSecurityRequirement());
-            AddResponse(operation, "401", "Missing or invalid customer identity / token.");
+            if (logout) operation.Security.Add(new OpenApiSecurityRequirement());
+            AddResponse(operation, "401", "Missing, invalid, expired or revoked credential.");
         }
 
-        if (mobileSms)
+        if (sms)
         {
-            operation.Description = (operation.Description ?? "") + " Token-only JSON. HTTPS is required by default; HTTP is permitted only when Identity:RequireHttps is explicitly false. No cookie or CSRF token required.";
+            operation.Description = (operation.Description ?? "") + " Token-only JSON for web and mobile. HTTPS required by default. No cookie or CSRF token required.";
             AddResponse(operation, "400", "Invalid phone, challenge, OTP or HTTPS requirement.");
             AddResponse(operation, "404", "SMS login is disabled.");
-            AddResponse(operation, "503", "Mobile token issuance unavailable.");
+            AddResponse(operation, "429", "OTP quota or verification limit; honor Retry-After and retryAfter when supplied.");
+            AddResponse(operation, "503", "Customer token issuance unavailable.");
         }
-        else if (sms)
+        else if (logout)
         {
-            AddCsrf(operation, true);
-            AddResponse(operation, "400", "Invalid request, OTP or antiforgery token.");
-            AddResponse(operation, "404", "SMS login is disabled.");
-            if (route.EndsWith("/verify"))
-            {
-                AddResponse(operation, "401", "Customer token issuance rejected.");
-                AddResponse(operation, "503", "Mobile token issuance unavailable.");
-            }
+            operation.Description = "Send a valid Bearer access token with no body, OR omit Authorization and send the current refreshToken in the JSON body. Never send both. Revokes only the current API session; MVC cookies are unaffected.";
         }
         else if (refresh)
         {
@@ -65,8 +54,7 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
         }
         else if (privateAccount)
         {
-            if (method != "GET" && method != "HEAD") AddCsrf(operation, false);
-            AddResponse(operation, "400", "Invalid request, HTTPS requirement or invalid cookie antiforgery token.");
+            AddResponse(operation, "400", "Invalid request or HTTPS requirement.");
             if (route.StartsWith("me/security/"))
                 AddResponse(operation, "404", "Phone profile or SMS login capability disabled.");
             if (route.StartsWith("me/addresses"))
@@ -97,6 +85,7 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
                         ["title"] = new() { Type = "string" },
                         ["detail"] = new() { Type = "string", Nullable = true },
                         ["traceId"] = new() { Type = "string" },
+                        ["retryAfter"] = new() { Type = "integer", Format = "int32", Description = "Optional seconds until retry." },
                         ["errors"] = new() { Type = "object", AdditionalProperties = new OpenApiSchema
                             { Type = "array", Items = new OpenApiSchema { Type = "string" } } },
                         ["warnings"] = new() { Type = "array", Items = new OpenApiSchema { Type = "string" } }
@@ -120,20 +109,4 @@ internal sealed class IdentityOperationFilter(IOptions<AntiforgeryOptions> antif
             operation.Responses.Add(code, new OpenApiResponse { Description = description });
     }
 
-    private void AddCsrf(OpenApiOperation operation, bool required)
-    {
-        var header = antiforgery.Value.HeaderName;
-        if (string.IsNullOrWhiteSpace(header)) return;
-        operation.Parameters ??= new List<OpenApiParameter>();
-        if (operation.Parameters.Any(p => p.In == ParameterLocation.Header &&
-            p.Name.Equals(header, StringComparison.OrdinalIgnoreCase))) return;
-        operation.Parameters.Add(new OpenApiParameter
-        {
-            Name = header, In = ParameterLocation.Header, Required = required,
-            Schema = new OpenApiSchema { Type = "string" },
-            Description = required
-                ? "Request token from GET /api/identity/v1/auth/session. Keep the accompanying antiforgery cookie."
-                : "Required for cookie-authenticated mutations; omit for Bearer requests. Fetch a fresh token from GET /api/identity/v1/auth/session after signing in."
-        });
-    }
 }

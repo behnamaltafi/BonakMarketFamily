@@ -33,7 +33,9 @@ public sealed class CustomerApiProblemFilter : IAlwaysRunResultFilter, IOrderedF
 
         var problem = value as ProblemDetails ?? new ProblemDetails();
         problem.Status = status;
-        var explicitCode = (value as IdentityCodeResponse)?.Code;
+        var explicitCode = (value as IdentityCodeResponse)?.Code ?? (value as OtpErrorResponse)?.Code;
+        if (value is OtpErrorResponse { RetryAfter: int retryAfter })
+            problem.Extensions["retryAfter"] = retryAfter;
         // Native storefront already uses stable snake_case titles. Preserve them.
         if (string.IsNullOrWhiteSpace(explicitCode) && problem.Title != null &&
             Regex.IsMatch(problem.Title, "^[a-z][a-z0-9]*(?:_[a-z0-9]+)+$"))

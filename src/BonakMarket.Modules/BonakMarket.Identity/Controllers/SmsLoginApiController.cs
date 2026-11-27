@@ -1,114 +1,76 @@
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Identity;
-using BonakMarket.Events;
+using BonakMarket.Core.Messaging;
 using BonakMarket.Identity.Models;
-using BonakMarket.Identity.Services;
 using BonakMarket.Identity.Security;
+using BonakMarket.Identity.Services;
 
 namespace BonakMarket.Identity.Controllers;
 
-/// <summary>Passwordless SMS login and registration only.</summary>
-[ApiController]
+/// <summary>Token-only customer OTP login. Never creates a browser authentication cookie.</summary>
+[ApiController, AllowAnonymous, IgnoreAntiforgeryToken]
 [ApiExplorerSettings(GroupName = "identity")]
 [Route("api/identity/v1/auth/sms")]
-[AutoValidateAntiforgeryToken]
+[Consumes("application/json")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class SmsLoginApiController : ControllerBase
+public sealed class SmsLoginApiController(ISmsOtpLoginService otp, IMobileApiTokenService tokens, SmartDbContext db) : ControllerBase
 {
-    private readonly ISmsOtpLoginService _otp;
-    private readonly SignInManager<Customer> _signInManager;
-    private readonly UserManager<Customer> _userManager;
-    private readonly SmartDbContext _db;
-    private readonly IEventPublisher _events;
-
-    public SmsLoginApiController(ISmsOtpLoginService otp, SignInManager<Customer> signInManager,
-        UserManager<Customer> userManager, SmartDbContext db, IEventPublisher events)
-    {
-        _otp = otp;
-        _signInManager = signInManager;
-        _userManager = userManager;
-        _db = db;
-        _events = events;
-    }
-
-    /// <summary>Requests a login code with an account-independent response.</summary>
-    [HttpPost("request"), HttpPost("~/api/sms-login/request"), AllowAnonymous]
-    [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
+    /// <summary>Requests a challenge without disclosing account existence or delivery outcome.</summary>
+    [HttpPost("request")]
+    [ProducesResponseType(typeof(MobileSmsChallengeResponse), 200)]
     [ProducesResponseType(typeof(OtpErrorResponse), 429)]
     [ProducesResponseType(typeof(OtpErrorResponse), 400)]
-    public async Task<IActionResult> RequestCode([FromBody] SmsCodeRequest request, CancellationToken ct)
+    public async Task<IActionResult> RequestCode([FromBody] SmsCodeRequest input, CancellationToken ct)
     {
-        if (!await _otp.IsEnabledAsync())
-        {
-            return NotFound();
-        }
-
-        try { await _otp.RequestLoginCodeAsync(request.Phone, ct); }
+        if (!IdentityTransportPolicy.IsAllowed(Request)) return BadRequest(new IdentityCodeResponse("https_required"));
+        if (!tokens.IsEnabled) return StatusCode(503, new IdentityCodeResponse("mobile_tokens_unavailable"));
+        if (!await otp.IsEnabledAsync()) return NotFound(new IdentityCodeResponse("sms_login_disabled"));
+        var phone = SmsPhoneNormalizer.Normalize(input.Phone);
+        if (phone == null) return BadRequest(new IdentityCodeResponse("invalid_phone"));
+        string challenge;
+        try { challenge = await otp.RequestMobileChallengeAsync(phone, ct); }
         catch (OtpFlowException ex)
         {
             if (ex.RetryAfterSeconds.HasValue)
                 Response.Headers["Retry-After"] = ex.RetryAfterSeconds.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
             return StatusCode(ex.StatusCode, new OtpErrorResponse(ex.Code, ex.RetryAfterSeconds));
         }
-        return Ok(new IdentityCodeResponse("code_requested"));
+        var policy = await otp.GetOtpSettingsAsync();
+        var local = SmsPhoneNormalizer.ToProviderPhone(phone);
+        return Ok(new MobileSmsChallengeResponse(challenge, policy.EffectiveOtpExpirationSeconds(),
+            policy.EffectiveOtpResendIntervalSeconds(), local[..4] + "***" + local[^4..]));
     }
 
-    /// <summary>Consumes an OTP and creates the native, non-persistent login cookie.</summary>
-    [HttpPost("verify"), HttpPost("~/api/sms-login/verify"), AllowAnonymous]
-    [ProducesResponseType(typeof(SmsSignInResponse), 200)]
+    /// <summary>Consumes a valid OTP and returns only customer API credentials.</summary>
+    [HttpPost("verify")]
+    [ProducesResponseType(typeof(MobileSmsSignInResponse), 200)]
     [ProducesResponseType(typeof(OtpErrorResponse), 429)]
     [ProducesResponseType(typeof(OtpErrorResponse), 400)]
-    public async Task<IActionResult> VerifyCode([FromBody] SmsCodeVerificationRequest request, CancellationToken ct)
+    public async Task<IActionResult> VerifyCode([FromBody] MobileSmsVerifyRequest input, CancellationToken ct)
     {
-        if (!await _otp.IsVerificationEnabledAsync())
-        {
-            return NotFound();
-        }
-
-        var tokenService = request.IssueTokens ? HttpContext.RequestServices.GetService<IMobileApiTokenService>() : null;
-        if (request.IssueTokens && (!IdentityTransportPolicy.IsAllowed(Request) || tokenService?.IsEnabled != true))
-            return StatusCode(503, new IdentityCodeResponse("mobile_tokens_unavailable"));
-
+        if (!IdentityTransportPolicy.IsAllowed(Request)) return BadRequest(new IdentityCodeResponse("https_required"));
+        if (!tokens.IsEnabled) return StatusCode(503, new IdentityCodeResponse("mobile_tokens_unavailable"));
+        if (!await otp.IsVerificationEnabledAsync()) return NotFound(new IdentityCodeResponse("sms_login_disabled"));
         Customer customer;
-        try { customer = await _otp.ConfirmLoginAsync(request.Phone, request.Code, ct); }
+        try { customer = await otp.ConfirmMobileLoginAsync(input.ChallengeId, input.Code, ct); }
         catch (OtpFlowException ex)
         {
             if (ex.RetryAfterSeconds.HasValue)
                 Response.Headers["Retry-After"] = ex.RetryAfterSeconds.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
             return StatusCode(ex.StatusCode, new OtpErrorResponse(ex.Code, ex.RetryAfterSeconds));
         }
-        if (customer is null || customer.Deleted || !customer.Active || !customer.IsRegistered() ||
-            !await _signInManager.CanSignInAsync(customer) ||
-            (_userManager.SupportsUserLockout && await _userManager.IsLockedOutAsync(customer)) ||
-            (_userManager.SupportsUserTwoFactor && await _userManager.GetTwoFactorEnabledAsync(customer)))
-        {
-            return BadRequest(new IdentityCodeResponse("invalid_code"));
-        }
+        if (customer == null) return BadRequest(new IdentityCodeResponse("invalid_code"));
+        var pair = await tokens.IssueAsync(customer, ct);
+        if (pair == null) return BadRequest(new IdentityCodeResponse("invalid_code"));
 
-        MobileApiTokenPair pair = null;
-        if (request.IssueTokens)
-        {
-            pair = await tokenService.IssueAsync(customer, ct);
-            if (pair == null)
-                return Unauthorized(new IdentityCodeResponse("mobile_tokens_unavailable"));
-        }
-
-        await _signInManager.SignInAsync(customer, isPersistent: false);
-        await _events.PublishAsync(new CustomerSignedInEvent { Customer = customer });
+        // Do not run the native browser sign-in/guest-cart transfer pipeline.
         customer.LastLoginDateUtc = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
-        bool profileRequired = await _otp.IsProfileIncompleteAsync(customer.Id, ct);
-        var missing = profileRequired ? new[] { "guildId" } : Array.Empty<string>();
-        if (request.IssueTokens)
-        {
-            return Ok(new SmsSignInResponse("signed_in", profileRequired, "/sms-login/profile",
-                pair.AccessToken, pair.RefreshToken, pair.ExpiresIn, "Bearer", missing));
-        }
-        return Ok(new SmsSignInResponse("signed_in", profileRequired, "/sms-login/profile", MissingRequiredFields: missing));
+        await db.SaveChangesAsync(ct);
+        var required = await otp.IsProfileIncompleteAsync(customer.Id, ct);
+        return Ok(new MobileSmsSignInResponse(pair.AccessToken, pair.RefreshToken, "Bearer", pair.ExpiresIn,
+            required, required ? new[] { "guildId" } : Array.Empty<string>()));
     }
 }

@@ -25,7 +25,7 @@ namespace BonakMarket.Core.Tests.Platform.Messaging;
 [TestFixture]
 public class SwaggerContractTests
 {
-    [TestCase("identity", "identity", "api/identity/v1/auth/session", true)]
+    [TestCase("identity", "identity", "api/identity/v1/auth/sms/request", true)]
     [TestCase("identity", "identity", "api/sms-login/session", false)]
     [TestCase("identity", "storefront", "api/storefront/v1/cart", false)]
     [TestCase("identity", null, "api/sms-gateway/test", false)]
@@ -80,18 +80,16 @@ public class SwaggerContractTests
     }
 
     [Test]
-    public void Auth_response_preserves_the_existing_wire_contract()
+    public void Unified_login_returns_token_pair_and_profile_state()
     {
-        using var cookie = JsonDocument.Parse(JsonSerializer.Serialize(new SmsSignInResponse("signed_in", false, "/sms-login/profile")));
-        Assert.That(cookie.RootElement.GetProperty("code").GetString(), Is.EqualTo("signed_in"));
-        Assert.That(cookie.RootElement.TryGetProperty("accessToken", out _), Is.False);
-        Assert.That(cookie.RootElement.TryGetProperty("refreshToken", out _), Is.False);
-        Assert.That(cookie.RootElement.TryGetProperty("expiresIn", out _), Is.False);
-        Assert.That(cookie.RootElement.TryGetProperty("tokenType", out _), Is.False);
-
-        using var bearer = JsonDocument.Parse(JsonSerializer.Serialize(new SmsSignInResponse("signed_in", false, "/sms-login/profile", "access", "refresh", 600, "Bearer")));
-        Assert.That(bearer.RootElement.GetProperty("accessToken").GetString(), Is.EqualTo("access"));
-        Assert.That(bearer.RootElement.GetProperty("expiresIn").GetInt32(), Is.EqualTo(600));
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        using var json = JsonDocument.Parse(JsonSerializer.Serialize(new MobileSmsSignInResponse(
+            "access", "refresh", "Bearer", 600, true, new[] { "guildId" }), options));
+        Assert.That(json.RootElement.GetProperty("accessToken").GetString(), Is.EqualTo("access"));
+        Assert.That(json.RootElement.GetProperty("refreshToken").GetString(), Is.EqualTo("refresh"));
+        Assert.That(json.RootElement.GetProperty("expiresIn").GetInt32(), Is.EqualTo(600));
+        Assert.That(json.RootElement.GetProperty("profileRequired").GetBoolean(), Is.True);
+        Assert.That(json.RootElement.TryGetProperty("profilePath", out _), Is.False);
     }
 
     [Test]
@@ -144,25 +142,30 @@ public class SwaggerContractTests
             var key = "/api/storefront/v1" + path;
             Assert.That(storefront.Paths.ContainsKey(key), Is.True, key);
             foreach (var operation in storefront.Paths[key].Operations.Values)
-                Assert.That(operation.Security.Count, Is.EqualTo(2), key);
+                Assert.That(operation.Security.Count, Is.EqualTo(1), key);
         }
         Assert.That(integration.Paths.Keys, Is.Empty);
         Assert.That(integration.Components.SecuritySchemes.Keys, Does.Contain("Basic"));
 
         foreach (var doc in new[] { identity, storefront })
         {
-            Assert.That(doc.Components.SecuritySchemes.Keys, Is.EquivalentTo(new[] { "Bearer", "CustomerCookie" }));
+            Assert.That(doc.Components.SecuritySchemes.Keys, Is.EquivalentTo(new[] { "Bearer" }));
             Assert.That(doc.SecurityRequirements, Is.Empty);
             var ids = doc.Paths.Values.SelectMany(p => p.Operations.Values).Select(o => o.OperationId).ToArray();
             Assert.That(ids.All(id => !string.IsNullOrWhiteSpace(id)), Is.True);
             Assert.That(ids.Distinct().Count(), Is.EqualTo(ids.Length));
         }
 
+        Assert.That(identity.Paths.ContainsKey("/api/identity/v1/auth/session"), Is.False);
+        Assert.That(identity.Paths.Keys.Any(x => x.Contains("/auth/mobile/")), Is.False);
+        var logout = identity.Paths["/api/identity/v1/auth/logout"].Operations[OperationType.Post];
+        Assert.That(logout.Security.Count, Is.EqualTo(2));
+        Assert.That(logout.Security.Any(x => x.Count == 0), Is.True);
         var request = identity.Paths["/api/identity/v1/auth/sms/request"].Operations[OperationType.Post];
         Assert.That(request.Security, Is.Empty);
-        Assert.That(request.Parameters.Any(p => p.Name == "X-Test-CSRF" && p.Required), Is.True);
+        Assert.That(request.Parameters.Any(p => p.Name == "X-Test-CSRF"), Is.False);
         Assert.That(request.Responses["200"].Content, Is.Not.Empty);
-        foreach (var path in new[] { "/api/identity/v1/auth/mobile/sms/request", "/api/identity/v1/auth/mobile/sms/verify" })
+        foreach (var path in new[] { "/api/identity/v1/auth/sms/request", "/api/identity/v1/auth/sms/verify" })
         {
             var mobile = identity.Paths[path].Operations[OperationType.Post];
             Assert.That(mobile.Security, Is.Empty);
@@ -174,8 +177,8 @@ public class SwaggerContractTests
         Assert.That(refresh.Security, Is.Empty);
         Assert.That(refresh.Parameters.Any(p => p.Name == "X-Test-CSRF"), Is.False);
         var profile = identity.Paths["/api/identity/v1/me/profile"].Operations[OperationType.Put];
-        Assert.That(profile.Security.Count, Is.EqualTo(2));
-        Assert.That(profile.Parameters.Any(p => p.Name == "X-Test-CSRF" && !p.Required), Is.True);
+        Assert.That(profile.Security.Count, Is.EqualTo(1));
+        Assert.That(profile.Parameters.Any(p => p.Name == "X-Test-CSRF"), Is.False);
         Assert.That(profile.Responses.ContainsKey("422"), Is.True);
         Assert.That(profile.Responses["422"].Content["application/problem+json"].Schema.Properties.ContainsKey("code"), Is.True);
         foreach (var path in new[] { "/bootstrap", "/pages", "/pages/{id}", "/products/facets",
@@ -188,7 +191,7 @@ public class SwaggerContractTests
         var quote = storefront.Paths["/api/storefront/v1/products/{id}/quote"].Operations[OperationType.Post];
         Assert.That(quote.Security.Any(x => x.Count == 0), Is.True);
         Assert.That(quote.Responses["200"].Content, Is.Not.Empty);
-        Assert.That(quote.Parameters.Any(x => x.Name == "X-Test-CSRF" && !x.Required), Is.True);
+        Assert.That(quote.Parameters.Any(x => x.Name == "X-Test-CSRF"), Is.False);
         var cart = storefront.Paths["/api/storefront/v1/cart"].Operations[OperationType.Get];
         Assert.That(cart.Security.Any(s => s.Count == 0), Is.False);
         Assert.That(cart.Responses["200"].Content, Is.Not.Empty);

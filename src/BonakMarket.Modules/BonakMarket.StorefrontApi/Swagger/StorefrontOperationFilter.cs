@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using BonakMarket.StorefrontApi.Security;
@@ -8,7 +6,7 @@ using BonakMarket.StorefrontApi.Security;
 namespace BonakMarket.StorefrontApi.Swagger;
 
 /// <summary>Uses the same public catalog metadata as the runtime authorization filter.</summary>
-internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> antiforgery) : IOperationFilter
+internal sealed class StorefrontOperationFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
@@ -55,14 +53,12 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
             route.Replace('/', '_').Replace("{", "").Replace("}", "").Replace(":", "_");
         operation.Security = new List<OpenApiSecurityRequirement>
         {
-            Requirement("Bearer"),
-            Requirement("CustomerCookie")
+            Requirement("Bearer")
         };
         if (context.MethodInfo.IsDefined(typeof(PublicCatalogAttribute), true))
             operation.Security.Add(new OpenApiSecurityRequirement());
 
-        if (method != "GET" && method != "HEAD") AddCsrf(operation, false);
-        AddResponse(operation, "400", "Invalid request, HTTPS requirement or invalid cookie antiforgery token (ProblemDetails).");
+        AddResponse(operation, "400", "Invalid request or HTTPS requirement (ProblemDetails).");
         AddResponse(operation, "401", "Missing or invalid required customer identity / token (ProblemDetails).");
         AddResponse(operation, "403", "Native permission or account/store context denied (ProblemDetails).");
         AddResponse(operation, "503", "Store unavailable (ProblemDetails).");
@@ -138,20 +134,4 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
             operation.Responses.Add(code, new OpenApiResponse { Description = description });
     }
 
-    private void AddCsrf(OpenApiOperation operation, bool required)
-    {
-        var header = antiforgery.Value.HeaderName;
-        if (string.IsNullOrWhiteSpace(header)) return;
-        operation.Parameters ??= new List<OpenApiParameter>();
-        if (operation.Parameters.Any(p => p.In == ParameterLocation.Header &&
-            p.Name.Equals(header, StringComparison.OrdinalIgnoreCase))) return;
-        operation.Parameters.Add(new OpenApiParameter
-        {
-            Name = header, In = ParameterLocation.Header, Required = required,
-            Schema = new OpenApiSchema { Type = "string" },
-            Description = required
-                ? "Request token from GET /api/identity/v1/auth/session. Keep the accompanying antiforgery cookie."
-                : "Required for cookie-authenticated mutations; omit for Bearer requests. Fetch a fresh token from GET /api/identity/v1/auth/session after signing in."
-        });
-    }
 }

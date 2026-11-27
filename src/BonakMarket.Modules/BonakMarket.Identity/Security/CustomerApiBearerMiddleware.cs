@@ -16,6 +16,21 @@ public sealed class CustomerApiBearerMiddleware(RequestDelegate next)
 
     public async Task InvokeAsync(HttpContext context)
     {
+        // The host may already have authenticated an MVC cookie. Isolate the
+        // customer API before WorkContext/CustomerService can cache that identity.
+        if (!CustomerApiProblemFilter.IsCanonicalPath(context.Request.Path))
+        {
+            await next(context);
+            return;
+        }
+
+        context.User = new ClaimsPrincipal(new ClaimsIdentity());
+        context.Features.Set<IAuthenticateResultFeature>(new AuthenticationFeature
+        {
+            // Non-null NoResult prevents Core from re-running default cookie auth.
+            AuthenticateResult = AuthenticateResult.NoResult()
+        });
+        context.Items.Remove(typeof(IMobileApiTokenService));
         if (!UsesCustomerBearer(context.Request.Path) ||
             !context.Request.Headers.ContainsKey("Authorization"))
         {
@@ -68,17 +83,8 @@ public sealed class CustomerApiBearerMiddleware(RequestDelegate next)
         if (path.StartsWithSegments("/api/storefront/v1") || path.StartsWithSegments("/api/identity/v1/me"))
             return true;
         if (path.StartsWithSegments("/api/identity/v1/auth", out var auth))
-        {
-            var action = auth.Value?.TrimEnd('/') ?? "";
-            return action.Equals("/session", StringComparison.OrdinalIgnoreCase)
-                || action.Equals("/logout", StringComparison.OrdinalIgnoreCase);
-        }
-        if (!path.StartsWithSegments("/api/sms-login", out var remainder))
-            return false;
-        var endpoint = remainder.Value?.TrimEnd('/') ?? "";
-        return !endpoint.Equals("/request", StringComparison.OrdinalIgnoreCase)
-            && !endpoint.Equals("/verify", StringComparison.OrdinalIgnoreCase)
-            && !endpoint.Equals("/refresh", StringComparison.OrdinalIgnoreCase);
+            return (auth.Value?.TrimEnd('/') ?? "").Equals("/logout", StringComparison.OrdinalIgnoreCase);
+        return false;
     }
 
     private sealed class AuthenticationFeature : IAuthenticateResultFeature

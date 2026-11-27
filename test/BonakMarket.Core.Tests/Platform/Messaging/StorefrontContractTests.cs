@@ -18,6 +18,7 @@ using BonakMarket.StorefrontApi.Controllers;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
+using BonakMarket.StorefrontApi.Services;
 using BonakMarket.Identity.Controllers;
 using BonakMarket.Identity.Security;
 using Microsoft.AspNetCore.Http;
@@ -45,6 +46,45 @@ public class StorefrontContractTests
     public void PageBoundsAreValidated(int page, int size, bool expected)
     {
         Assert.That(IsValid(new ProductSearchRequest { Page = page, PageSize = size }), Is.EqualTo(expected));
+    }
+
+    [TestCase(0, false)]
+    [TestCase(1, true)]
+    [TestCase(1000, true)]
+    [TestCase(1001, false)]
+    public void CartAndQuoteUseSameQuantityBounds(int quantity, bool valid)
+    {
+        Assert.That(IsValid(new AddCartItem { ProductId = 1, Quantity = quantity }), Is.EqualTo(valid));
+        Assert.That(IsValid(new UpdateCartItem { Quantity = quantity }), Is.EqualTo(valid));
+        Assert.That(IsValid(new ProductQuoteRequest { Quantity = quantity }), Is.EqualTo(valid));
+    }
+
+    [TestCase(0, true)]
+    [TestCase(30, true)]
+    [TestCase(31, false)]
+    public void CartAndQuoteUseSameVariantChoiceLimit(int count, bool valid)
+    {
+        var variants = Enumerable.Range(1, count).Select(i => new VariantChoice
+        {
+            VariantAttributeId = i, ValueId = i
+        }).ToList();
+        Assert.That(IsValid(new AddCartItem { ProductId = 1, Variants = variants }), Is.EqualTo(valid));
+        Assert.That(IsValid(new ProductQuoteRequest { Variants = variants }), Is.EqualTo(valid));
+    }
+
+    [TestCase(null, "Original")]
+    [TestCase("", "Original")]
+    [TestCase("   ", "Original")]
+    [TestCase("Translated", "Translated")]
+    public void CatalogLocalizationPreservesFallbackForBlankTranslations(string translated, string expected)
+    {
+        var labels = new Dictionary<(int EntityId, string LocaleKey), string>
+        {
+            [(1, "Name")] = translated
+        };
+        Assert.That(CatalogLocalization.ValueOrFallback(labels, 1, "Name", "Original"), Is.EqualTo(expected));
+        Assert.That(CatalogLocalization.ValueOrFallback(labels, 2, "Name", "Original"), Is.EqualTo("Original"));
+        Assert.That(CatalogLocalization.ValueOrFallback(labels, 1, "Description", "Original"), Is.EqualTo("Original"));
     }
 
     [Test]

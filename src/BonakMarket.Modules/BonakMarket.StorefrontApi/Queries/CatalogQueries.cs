@@ -4,6 +4,7 @@ using BonakMarket.Core.Catalog.Brands;
 using BonakMarket.Core.Catalog.Categories;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Data;
+using BonakMarket.Core.Localization;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
 using BonakMarket.StorefrontApi.Services;
@@ -13,12 +14,17 @@ namespace BonakMarket.StorefrontApi.Queries;
 public sealed class CatalogQueries(SmartDbContext db, StorefrontRequestContext request, IMediaService media,
     MediaSettings mediaSettings, IWorkContext work)
 {
+    private IQueryable<LocalizedProperty> LocalizedNames(string entityName)
+    {
+        var languageId = work.WorkingLanguage.Id;
+        return db.LocalizedProperties.AsNoTracking().Where(x => x.LanguageId == languageId &&
+            x.LocaleKeyGroup == entityName && x.LocaleKey == "Name" && x.LocaleValue != null && x.LocaleValue != "");
+    }
+
     private IQueryable<CategoryDto> CategoryRows()
     {
         var visible = StorefrontScope.Categories(db, request.Customer, request.StoreId).AsNoTracking();
-        var languageId = work.WorkingLanguage.Id;
-        var names = db.LocalizedProperties.AsNoTracking().Where(x => x.LanguageId == languageId &&
-            x.LocaleKeyGroup == nameof(Category) && x.LocaleKey == "Name" && x.LocaleValue != null && x.LocaleValue != "");
+        var names = LocalizedNames(nameof(Category));
         return visible.Select(x => new CategoryDto
         {
             Id = x.Id, ParentId = x.ParentId, DisplayOrder = x.DisplayOrder, MediaFileId = x.MediaFileId,
@@ -30,9 +36,7 @@ public sealed class CatalogQueries(SmartDbContext db, StorefrontRequestContext r
     private IQueryable<BrandDto> BrandRows()
     {
         var visible = StorefrontScope.Brands(db, request.Customer, request.StoreId).AsNoTracking();
-        var languageId = work.WorkingLanguage.Id;
-        var names = db.LocalizedProperties.AsNoTracking().Where(x => x.LanguageId == languageId &&
-            x.LocaleKeyGroup == nameof(Manufacturer) && x.LocaleKey == "Name" && x.LocaleValue != null && x.LocaleValue != "");
+        var names = LocalizedNames(nameof(Manufacturer));
         return visible.Select(x => new BrandDto
         {
             Id = x.Id, DisplayOrder = x.DisplayOrder, MediaFileId = x.MediaFileId,

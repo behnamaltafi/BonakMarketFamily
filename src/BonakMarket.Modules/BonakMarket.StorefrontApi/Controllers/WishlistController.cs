@@ -36,20 +36,14 @@ public sealed class WishlistController(CartFacade cart) : StorefrontController
     public async Task<ActionResult<CartTransferDto>> ToCart(int id, CancellationToken ct)
     {
         var result = await cart.TransferAsync(id, ShoppingCartType.Wishlist, ct);
-        if (result.Status != 200) return await Failure(result);
+        if (result.Status != 200) return await CartFailureAsync(result, cart);
         return Ok(new CartTransferDto(await cart.StateAsync(ct), await cart.WishlistStateAsync(ct)));
     }
 
     private async Task<ActionResult<WishlistStateDto>> Result(CartChange result, CancellationToken ct)
     {
         if (result.Status == 200) return Ok(await cart.WishlistStateAsync(ct, result.Warnings));
-        return await Failure(result);
+        return await CartFailureAsync(result, cart);
     }
 
-    private async Task<ObjectResult> Failure(CartChange result)
-    {
-        var problem = new ProblemDetails { Status = result.Status, Title = result.Code };
-        if (result.Warnings?.Count > 0 && await cart.CanDisplayPriceAsync()) problem.Extensions["warnings"] = result.Warnings;
-        return new ObjectResult(problem) { StatusCode = result.Status, ContentTypes = { "application/problem+json" } };
-    }
 }

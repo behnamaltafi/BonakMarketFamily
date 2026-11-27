@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using NUnit.Framework;
 using BonakMarket.Core.Catalog.Search;
@@ -60,6 +62,23 @@ public class StorefrontSearchContractTests
         var action = typeof(CatalogController).GetMethod(methodName);
         Assert.That(action.IsDefined(typeof(PublicCatalogAttribute), true), Is.True);
         Assert.That(action.GetCustomAttributes<HttpGetAttribute>().Select(a => a.Template), Does.Contain(route));
+    }
+
+    [TestCase(null, true)]
+    [TestCase("   ", true)]
+    [TestCase("a", true)]
+    [TestCase("rice", false)]
+    public async Task ShortOrDisabledSearchReturnsEmptyWithoutQueryingDatabase(string term, bool enabled)
+    {
+        // All dependencies are deliberately null: a rejected/disabled search must not touch them.
+        var facade = new CatalogFacade(null, null, null, null, null, null, null, null, null, null, null, null);
+        var result = await facade.InstantSearchAsync(new InstantSearchRequest { Search = term },
+            new SearchSettings { InstantSearchEnabled = enabled, InstantSearchTermMinLength = 2 },
+            CancellationToken.None);
+        Assert.That(result.Items, Is.Empty);
+        Assert.That(result.HasMore, Is.False);
+        Assert.That(result.Enabled, Is.EqualTo(enabled));
+        Assert.That(result.Search, Is.EqualTo(term?.Trim() ?? string.Empty));
     }
 
     [Test]

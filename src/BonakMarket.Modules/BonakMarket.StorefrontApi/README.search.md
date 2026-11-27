@@ -11,3 +11,7 @@ Full search filters: categoryId, brandId, minPrice, maxPrice, inStock, hasDiscou
 All three routes use the same scoped SQL query for text matching; only native supported fields (name, SKU, short description) and the configured search mode apply. No fuzzy search, automatic Persian character normalization, or external search index is promised. Search result names use working-language translations with a fallback to stored names. Search-as-you-type uses a smaller thumbnail.
 
 No shared cache: results may differ by customer role/store. HTTP 400 validation, 401 invalid token, 403 access/price permission, 503 unavailable store use the existing problem response contract. Do not retry invalid requests automatically.
+
+## Category and brand images
+
+GET /categories and GET /brands retain mediaFileId and now include imageUrl (nullable), generated with the existing category/manufacturer thumbnail settings. Resolve relative URLs against the API origin; render a client placeholder if imageUrl is null. Images are resolved only for the current filtered page, in a single batch. Pagination, filtering, customer/store visibility and authentication behavior are unchanged.

@@ -186,6 +186,13 @@ public class SwaggerContractTests
             Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.True);
         foreach (var path in new[] { "/me/summary", "/me/reviews" })
             Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.False);
+        foreach (var schemaName in new[] { "CategoryDto", "BrandDto" })
+        {
+            var schema = storefront.Components.Schemas[schemaName];
+            Assert.That(schema.Properties.ContainsKey("mediaFileId"), Is.True);
+            Assert.That(schema.Properties.ContainsKey("imageUrl"), Is.True);
+            Assert.That(schema.Properties["imageUrl"].Type, Is.EqualTo("string"));
+        }
         var products = storefront.Paths["/api/storefront/v1/products"].Operations[OperationType.Get];
         Assert.That(products.Security.Any(s => s.Count == 0), Is.True);
         var quote = storefront.Paths["/api/storefront/v1/products/{id}/quote"].Operations[OperationType.Post];

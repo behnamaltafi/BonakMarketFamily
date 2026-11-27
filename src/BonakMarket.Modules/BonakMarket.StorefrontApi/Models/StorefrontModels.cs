@@ -3,17 +3,17 @@ using BonakMarket.StorefrontApi.Services;
 
 namespace BonakMarket.StorefrontApi.Models;
 
+#nullable enable
 public class ProductDto
 {
     public int Id { get; set; }
-    public string Name { get; set; }
-    public string ShortDescription { get; set; }
-    public string Sku { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? ShortDescription { get; set; }
+    public string? Sku { get; set; }
     public int? MediaFileId { get; set; }
-    public string ImageUrl { get; set; }
-    public PriceDto Price { get; set; }
+    public string? ImageUrl { get; set; }
+    public PriceDto? Price { get; set; }
 }
-#nullable enable
 /// <summary>Search-as-you-type inputs. Empty or too-short terms return no suggestions.</summary>
 public sealed class InstantSearchRequest
 {
@@ -120,9 +120,10 @@ public class PageRequest
     [Range(1, 100)] public int PageSize { get; set; } = 20;
 }
 public enum CatalogSort { Initial, NameAsc, NameDesc, PriceAsc, PriceDesc, Newest }
+#nullable enable
 public sealed class ProductSearchRequest : PageRequest, IValidatableObject
 {
-    [StringLength(200)] public string Search { get; set; }
+    [StringLength(200)] public string? Search { get; set; }
     [Range(1, int.MaxValue)] public int? CategoryId { get; set; }
     [Range(1, int.MaxValue)] public int? BrandId { get; set; }
     public decimal? MinPrice { get; set; }
@@ -138,6 +139,7 @@ public sealed class ProductSearchRequest : PageRequest, IValidatableObject
             yield return new ValidationResult("Invalid price range.", new[] { nameof(MinPrice), nameof(MaxPrice) });
     }
 }
+#nullable restore
 public sealed class CategorySearchRequest : PageRequest
 {
     [StringLength(200)] public string Search { get; set; }

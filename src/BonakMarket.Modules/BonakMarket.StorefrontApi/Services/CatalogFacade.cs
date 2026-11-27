@@ -124,10 +124,13 @@ public sealed class CatalogFacade(
         var source = search.PrepareQuery(query, StorefrontScope.Products(db, request.Customer, request.StoreId,
             forSearch: hasTerm).AsNoTracking());
         source = ApplyStockFilter(source, EffectiveStockFilter(filter, settings));
+        return ApplyCatalogPriceAndSort(source, filter, DateTime.UtcNow);
+    }
 
+    internal static IQueryable<Product> ApplyCatalogPriceAndSort(IQueryable<Product> source, ProductSearchRequest filter, DateTime now)
+    {
         // Catalog price (base currency, before customer-specific taxes/discounts), not a checkout quote.
         // Keep decimal precision and use a single timestamp for the range and price order.
-        var now = DateTime.UtcNow;
         if (filter.MinPrice.HasValue || filter.MaxPrice.HasValue ||
             filter.Sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc)
         {
@@ -181,8 +184,23 @@ public sealed class CatalogFacade(
             orderby count.Count descending, brand.Id
             select new CatalogFacetValueDto(brand.Id, brand.Name, count.Count))
             .Take(limit + 1).ToListAsync(ct);
-        return new(await products.CountAsync(ct), categories.Take(limit).ToArray(), brands.Take(limit).ToArray(),
-            categories.Count > limit, brands.Count > limit);
+        var categoryItems = categories.Take(limit).ToArray();
+        var brandItems = brands.Take(limit).ToArray();
+        var categoryIds = categoryItems.Select(x => x.Id).ToArray();
+        var brandIds = brandItems.Select(x => x.Id).ToArray();
+        var languageId = work.WorkingLanguage.Id;
+        var translations = await db.LocalizedProperties.AsNoTracking()
+            .Where(x => x.LanguageId == languageId && x.LocaleKey == "Name" &&
+                ((x.LocaleKeyGroup == nameof(Category) && categoryIds.Contains(x.EntityId)) ||
+                 (x.LocaleKeyGroup == nameof(Manufacturer) && brandIds.Contains(x.EntityId))))
+            .OrderBy(x => x.Id).Select(x => new { x.LocaleKeyGroup, x.EntityId, x.LocaleValue }).ToListAsync(ct);
+        var labels = translations.GroupBy(x => (x.LocaleKeyGroup, x.EntityId))
+            .ToDictionary(x => x.Key, x => x.Select(y => y.LocaleValue).FirstOrDefault(y => !string.IsNullOrWhiteSpace(y)));
+        CatalogFacetValueDto Localize(CatalogFacetValueDto item, string entity) =>
+            labels.TryGetValue((entity, item.Id), out var label) && !string.IsNullOrWhiteSpace(label)
+                ? item with { Name = label } : item;
+        return new(await products.CountAsync(ct), categoryItems.Select(x => Localize(x, nameof(Category))).ToArray(),
+            brandItems.Select(x => Localize(x, nameof(Manufacturer))).ToArray(), categories.Count > limit, brands.Count > limit);
     }
 
     public async Task<ProductDto> FindAsync(int id, CancellationToken ct)

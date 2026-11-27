@@ -118,6 +118,38 @@ public class StorefrontSearchContractTests
     }
 
     [Test]
+    public void CatalogPriceFilterIsInclusiveAndUsesOnlyActiveSpecialPrice()
+    {
+        var now = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var products = new[]
+        {
+            new Product { Id = 1, Price = 100, SpecialPrice = 50, SpecialPriceStartDateTimeUtc = now },
+            new Product { Id = 2, Price = 50, SpecialPrice = 20, SpecialPriceEndDateTimeUtc = now.AddDays(-1) },
+            new Product { Id = 3, Price = 100, SpecialPrice = 50, SpecialPriceStartDateTimeUtc = now.AddDays(1) }
+        }.AsQueryable();
+        var filter = new ProductSearchRequest { MinPrice = 50, MaxPrice = 50, Sort = CatalogSort.PriceDesc };
+        Assert.That(CatalogFacade.ApplyCatalogPriceAndSort(products, filter, now).Select(x => x.Id),
+            Is.EqualTo(new[] { 1, 2 }));
+    }
+
+    [TestCase(CatalogSort.NameAsc)]
+    [TestCase(CatalogSort.NameDesc)]
+    [TestCase(CatalogSort.PriceAsc)]
+    [TestCase(CatalogSort.PriceDesc)]
+    [TestCase(CatalogSort.Newest)]
+    public void ExplicitSortUsesIdTieBreaker(CatalogSort sort)
+    {
+        var products = new[]
+        {
+            new Product { Id = 3, Name = "same", Price = 10 },
+            new Product { Id = 1, Name = "same", Price = 10 },
+            new Product { Id = 2, Name = "same", Price = 10 }
+        }.AsQueryable();
+        Assert.That(CatalogFacade.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { Sort = sort },
+            DateTime.UtcNow).Select(x => x.Id), Is.EqualTo(new[] { 1, 2, 3 }));
+    }
+
+    [Test]
     public void InstantProductContractDoesNotExposePrice()
     {
         Assert.That(typeof(InstantSearchProductDto).GetProperties().Select(x => x.Name),

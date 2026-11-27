@@ -26,7 +26,7 @@ using BonakMarket.StorefrontApi.Security;
 namespace BonakMarket.StorefrontApi.Services;
 
 // Batch-load the data required by product cards, without per-product EF queries.
-internal sealed class ProductCatalogData(SmartDbContext db, StorefrontRequestContext request,
+public sealed class ProductCatalogData(SmartDbContext db, StorefrontRequestContext request,
     IPermissionService permissions, IConfiguration configuration)
 {
     internal async Task<Dictionary<int, decimal>> LoadPackageMetadataAsync(int[] ids, int packageAttributeId,

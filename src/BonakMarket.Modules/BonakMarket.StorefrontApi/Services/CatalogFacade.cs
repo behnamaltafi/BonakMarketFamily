@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Autofac;
 using BonakMarket.Core;
 using BonakMarket.Core.Catalog.Products;
 using BonakMarket.Core.Catalog.Categories;
@@ -12,51 +10,44 @@ using BonakMarket.Core.Common;
 using BonakMarket.Core.Catalog.Pricing;
 using BonakMarket.Core.Checkout.Cart;
 using BonakMarket.Core.Checkout.Orders;
-using BonakMarket.Core.Configuration;
-using BonakMarket.StorefrontApi.Configuration;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Security;
-using BonakMarket.Core.Stores;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-public sealed class CatalogFacade(
-    SmartDbContext db, ICatalogSearchService search, IPriceCalculationService prices,
-    IMediaService media, IPermissionService permissions, IWorkContext work,
-    IStoreContext stores, IComponentContext components, CatalogSettings catalogSettings, StorefrontRequestContext request,
-    IProductAttributeMaterializer attributes, IShoppingCartValidator validator, IConfiguration configuration = null, ISettingFactory settingFactory = null)
+public sealed class CatalogFacade(SmartDbContext db, IPriceCalculationService prices,
+    IMediaService media, IPermissionService permissions, StorefrontRequestContext request,
+    IProductAttributeMaterializer attributes, IShoppingCartValidator validator,
+    ProductCatalogQueries queries, ProductCatalogMapper mapper)
 {
-    private readonly ProductCatalogQueries _queries = new(db, search, work, catalogSettings, request);
-    private readonly ProductCatalogMapper _mapper = new(db, prices, media, permissions, work, stores, components,
-        request, configuration, settingFactory);
 
-    public Task<bool> CanDisplayPriceAsync() => _mapper.CanDisplayPriceAsync();
+    public Task<bool> CanDisplayPriceAsync() => mapper.CanDisplayPriceAsync();
 
     public async Task<PageDto<ProductDto>> SearchAsync(ProductSearchRequest filter, CancellationToken ct, SearchSettings settings = null)
     {
-        var source = await _queries.SearchSourceAsync(filter, ct, settings);
+        var source = await queries.SearchSourceAsync(filter, ct, settings);
         if (filter.Sort == CatalogSort.BestSellers)
         {
             var orders = CatalogPurchaseRanking.EligibleOrders(db.Set<Order>().AsNoTracking(), request.StoreId,
                 DateTime.UtcNow.AddDays(-90));
             source = CatalogPurchaseRanking.BestSellers(source, CatalogPurchaseRanking.Items(db.Set<OrderItem>().AsNoTracking(), orders));
         }
-        return await source.PageAsync(filter, items => _mapper.MapAsync(items, filter.IncludePrice, ct: ct), ct);
+        return await source.PageAsync(filter, items => mapper.MapAsync(items, filter.IncludePrice, ct: ct), ct);
     }
 
     public async Task<PageDto<ProductDto>> FrequentlyPurchasedAsync(ProductFilterRequest filter, CancellationToken ct, SearchSettings settings = null)
     {
         var orders = CatalogPurchaseRanking.EligibleOrders(StorefrontScope.Orders(db, request.Customer, request.StoreId)
             .AsNoTracking(), request.StoreId, DateTime.UtcNow.AddDays(-365));
-        var products = await _queries.SearchSourceAsync(filter, ct, settings);
+        var products = await queries.SearchSourceAsync(filter, ct, settings);
         var source = CatalogPurchaseRanking.FrequentlyPurchased(products,
             CatalogPurchaseRanking.Items(db.Set<OrderItem>().AsNoTracking(), orders));
-        return await source.PageAsync(filter, items => _mapper.MapAsync(items, filter.IncludePrice, ct: ct), ct);
+        return await source.PageAsync(filter, items => mapper.MapAsync(items, filter.IncludePrice, ct: ct), ct);
     }
 
     internal static (bool Enabled, int MinimumTermLength, int Limit) InstantSearchPolicy(
@@ -74,7 +65,7 @@ public sealed class CatalogFacade(
             return new(term, enabled, minimum, limit, false, Array.Empty<InstantSearchProductDto>());
 
         // Use exactly the same term, search settings, visibility and availability as the full results.
-        var source = await _queries.SearchSourceAsync(new ProductSearchRequest { Search = term }, ct, settings);
+        var source = await queries.SearchSourceAsync(new ProductSearchRequest { Search = term }, ct, settings);
         var products = await source.Take(limit + 1).ToListAsync(ct);
         var hasMore = products.Count > limit;
         if (hasMore) products.RemoveAt(limit);
@@ -82,7 +73,7 @@ public sealed class CatalogFacade(
         if (products.Count == 0)
             return new(term, enabled, minimum, limit, false, Array.Empty<InstantSearchProductDto>());
 
-        var mapped = await _mapper.MapAsync(products, false, includeImages: settings.ShowProductImagesInInstantSearch,
+        var mapped = await mapper.MapAsync(products, false, includeImages: settings.ShowProductImagesInInstantSearch,
             imageSize: 120, ct: ct, includePurchaseInfo: false);
         var items = mapped.Select(x => new InstantSearchProductDto(x.Id, x.Name,
             x.Sku, x.MediaFileId, x.ImageUrl)).ToArray();
@@ -91,23 +82,14 @@ public sealed class CatalogFacade(
 
     public Task<CatalogFacetsDto> FacetsAsync(ProductFacetsRequest filter, CancellationToken ct,
         SearchSettings settings = null, string priceCurrencyCode = null) =>
-        _queries.FacetsAsync(filter, ct, settings, priceCurrencyCode);
-
-    // Keep existing internal policy entry points for the module's contract tests.
-    internal static string[] SearchFields(SearchSettings settings) => ProductCatalogQueries.SearchFields(settings);
-    internal static bool? EffectiveStockFilter(ProductFilterRequest filter, SearchSettings settings) =>
-        ProductCatalogQueries.EffectiveStockFilter(filter, settings);
-    internal static IQueryable<Product> ApplyStockFilter(IQueryable<Product> source, bool? inStock) =>
-        ProductCatalogQueries.ApplyStockFilter(source, inStock);
-    internal static IQueryable<Product> ApplyCatalogPriceAndSort(IQueryable<Product> source, ProductFilterRequest filter, DateTime now) =>
-        ProductCatalogQueries.ApplyCatalogPriceAndSort(source, filter, now);
+        queries.FacetsAsync(filter, ct, settings, priceCurrencyCode);
 
     public async Task<ProductDto> FindAsync(int id, CancellationToken ct)
     {
         var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
             .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (product == null) return null;
-        return (await _mapper.MapAsync(new[] { product }, true, false, ct: ct))[0];
+        return (await mapper.MapAsync(new[] { product }, true, false, ct: ct))[0];
     }
 
     public async Task<ProductDetailDto> DetailAsync(int id, CancellationToken ct)
@@ -118,8 +100,8 @@ public sealed class CatalogFacade(
             .AsSplitQuery().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (product == null) return null;
 
-        var wholesaleSettings = await _mapper.LoadWholesaleSettingsAsync();
-        var summary = (await _mapper.MapAsync(new[] { product }, true, false, ct: ct, wholesaleSettings: wholesaleSettings))[0];
+        var wholesaleSettings = await mapper.LoadWholesaleSettingsAsync();
+        var summary = (await mapper.MapAsync(new[] { product }, true, false, ct: ct, wholesaleSettings: wholesaleSettings))[0];
         var imageIds = await db.Set<ProductMediaFile>().AsNoTracking()
             .Where(x => x.ProductId == id && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
             .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).Select(x => x.MediaFileId).ToListAsync(ct);
@@ -211,5 +193,4 @@ public sealed class CatalogFacade(
             Array.Empty<string>(), true));
     }
 
-    internal static (int Min, int Max, int[] Allowed) QuantityRules(Product product) => ProductCatalogMapper.QuantityRules(product);
 }

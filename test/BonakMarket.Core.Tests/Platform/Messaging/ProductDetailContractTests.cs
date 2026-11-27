@@ -44,14 +44,14 @@ public class ProductDetailContractTests
     [Test]
     public void WholesaleQuantityRulesUseAllowedValuesAndApiLimit()
     {
-        var range = CatalogFacade.QuantityRules(new Product { OrderMinimumQuantity = 6, OrderMaximumQuantity = 2000 });
+        var range = ProductCatalogMapper.QuantityRules(new Product { OrderMinimumQuantity = 6, OrderMaximumQuantity = 2000 });
         Assert.That(range.Min, Is.EqualTo(6));
         Assert.That(range.Max, Is.EqualTo(1000));
-        var choices = CatalogFacade.QuantityRules(new Product { AllowedQuantities = "0,12,24,24,2000" });
+        var choices = ProductCatalogMapper.QuantityRules(new Product { AllowedQuantities = "0,12,24,24,2000" });
         Assert.That(choices.Min, Is.EqualTo(12));
         Assert.That(choices.Max, Is.EqualTo(24));
         Assert.That(choices.Allowed, Is.EqualTo(new[] { 12, 24 }));
-        var unsupported = CatalogFacade.QuantityRules(new Product { AllowedQuantities = "1500,2000" });
+        var unsupported = ProductCatalogMapper.QuantityRules(new Product { AllowedQuantities = "1500,2000" });
         Assert.That(unsupported.Max, Is.LessThan(unsupported.Min));
         Assert.That(unsupported.Allowed, Is.Empty);
     }

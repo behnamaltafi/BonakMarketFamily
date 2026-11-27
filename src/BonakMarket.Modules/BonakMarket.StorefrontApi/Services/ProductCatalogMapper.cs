@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Autofac;
 using BonakMarket.Core;
 using BonakMarket.Core.Catalog.Products;
@@ -25,11 +24,10 @@ using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-internal sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationService prices,
+public sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationService prices,
     IMediaService media, IPermissionService permissions, IWorkContext work, IStoreContext stores,
-    IComponentContext components, StorefrontRequestContext request, IConfiguration configuration, ISettingFactory settingFactory)
+    IComponentContext components, StorefrontRequestContext request, ProductCatalogData data, ISettingFactory settingFactory = null)
 {
-    private readonly ProductCatalogData _data = new(db, request, permissions, configuration);
 
     internal Task<WholesaleCardSettings> LoadWholesaleSettingsAsync() => settingFactory == null
         ? Task.FromResult(new WholesaleCardSettings())
@@ -49,7 +47,7 @@ internal sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationS
                 includeHidden: false, loadMainMediaOnly: true)) : null;
         var ids = products.Select(x => x.Id).ToArray();
         wholesaleSettings ??= includePurchaseInfo || allowed ? await LoadWholesaleSettingsAsync() : new WholesaleCardSettings();
-        var metadata = await _data.LoadPackageMetadataAsync(ids, wholesaleSettings.UnitsPerPackageSpecificationId, includePurchaseInfo, ct);
+        var metadata = await data.LoadPackageMetadataAsync(ids, wholesaleSettings.UnitsPerPackageSpecificationId, includePurchaseInfo, ct);
         var languageId = work.WorkingLanguage.Id;
         var translated = await CatalogLocalization.LoadAsync(db, ids, languageId, nameof(Product),
             [nameof(Product.Name), nameof(Product.ShortDescription)], ct);
@@ -57,7 +55,7 @@ internal sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationS
         var lookup = includeImages && ids.Length > 0
             ? await CatalogMedia.MainPictureIdsAsync(db, ids, ct) : new Dictionary<int, int>();
         var imageUrls = await CatalogMedia.UrlsAsync(media, lookup.Values.Select(x => (int?)x), imageSize, ct);
-        var purchase = includePurchaseInfo ? await _data.LoadPurchaseDataAsync(products, ids, languageId, ct) : null;
+        var purchase = includePurchaseInfo ? await data.LoadPurchaseDataAsync(products, ids, languageId, ct) : null;
         var items = new List<ProductDto>(products.Count);
         foreach (var product in products)
         {

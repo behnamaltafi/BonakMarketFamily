@@ -25,7 +25,7 @@ using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Queries;
 
-internal sealed class ProductCatalogQueries(SmartDbContext db, ICatalogSearchService search,
+public sealed class ProductCatalogQueries(SmartDbContext db, ICatalogSearchService search,
     IWorkContext work, CatalogSettings catalogSettings, StorefrontRequestContext request)
 {
     // Only these three term fields are supported by the native LINQ visitor.

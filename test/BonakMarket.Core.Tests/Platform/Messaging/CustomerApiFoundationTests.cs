@@ -35,6 +35,17 @@ public class CustomerApiFoundationTests
     }
 
     [Test]
+    public void Otp_error_preserves_specific_code_and_retry_after()
+    {
+        var result = (ObjectResult)CustomerApiProblemFilter.Normalize(
+            new ObjectResult(new OtpErrorResponse("otp_resend_too_soon", 37)) { StatusCode = 429 },
+            new DefaultHttpContext());
+        var problem = (ProblemDetails)result.Value;
+        Assert.That(problem.Extensions["code"], Is.EqualTo("otp_resend_too_soon"));
+        Assert.That(problem.Extensions["retryAfter"], Is.EqualTo(37));
+    }
+
+    [Test]
     public void Native_validation_errors_and_warnings_are_preserved()
     {
         var http = new DefaultHttpContext();

@@ -181,7 +181,7 @@ public class SwaggerContractTests
         Assert.That(profile.Parameters.Any(p => p.Name == "X-Test-CSRF"), Is.False);
         Assert.That(profile.Responses.ContainsKey("422"), Is.True);
         Assert.That(profile.Responses["422"].Content["application/problem+json"].Schema.Properties.ContainsKey("code"), Is.True);
-        foreach (var path in new[] { "/bootstrap", "/pages", "/pages/{id}", "/products/facets", "/products/suggestions" })
+        foreach (var path in new[] { "/bootstrap", "/pages", "/pages/{id}", "/products/facets", "/products/suggestions", "/categories", "/categories/{id}", "/brands", "/brands/{id}" })
             Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.True);
         foreach (var path in new[] { "/me/summary", "/me/reviews" })
             Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.False);
@@ -192,9 +192,18 @@ public class SwaggerContractTests
             Assert.That(schema.Properties.ContainsKey("imageUrl"), Is.True);
             Assert.That(schema.Properties["imageUrl"].Type, Is.EqualTo("string"));
         }
+        Assert.That(storefront.Components.Schemas["CategoryDto"].Properties.Keys, Does.Contain("hasChildren"));
+        Assert.That(storefront.Components.Schemas["CategoryDto"].Properties.Keys, Does.Contain("showOnHomePage"));
+        Assert.That(storefront.Components.Schemas["BrandDto"].Properties.Keys, Does.Contain("displayOrder"));
+        foreach (var property in new[] { "availability", "minimumQuantity", "maximumQuantity", "quantityStep",
+            "allowedQuantities", "quantityUnit", "requiresConfiguration", "canAddToCart", "hasDiscount", "isPreOrder" })
+            Assert.That(storefront.Components.Schemas["ProductDto"].Properties.Keys, Does.Contain(property));
+        Assert.That(storefront.Components.Schemas["PriceDto"].Properties.Keys, Does.Contain("pricingQuantity"));
+        Assert.That(storefront.Components.Schemas["CatalogFacetsDto"].Properties.Keys, Does.Contain("priceRange"));
+        Assert.That(storefront.Components.Schemas["CatalogFacetsDto"].Properties.Keys, Does.Contain("availability"));
         var products = storefront.Paths["/api/storefront/v1/products"].Operations[OperationType.Get];
         Assert.That(products.Security.Any(s => s.Count == 0), Is.True);
-        foreach (var removed in new[] { "/search", "/search/instant", "/search/facets" })
+        foreach (var removed in new[] { "/search", "/search/instant", "/search/facets", "/products/{id}/variants", "/products/{id}/price" })
             Assert.That(storefront.Paths.ContainsKey("/api/storefront/v1" + removed), Is.False);
         var suggestions = storefront.Paths["/api/storefront/v1/products/suggestions"].Operations[OperationType.Get];
         var facets = storefront.Paths["/api/storefront/v1/products/facets"].Operations[OperationType.Get];

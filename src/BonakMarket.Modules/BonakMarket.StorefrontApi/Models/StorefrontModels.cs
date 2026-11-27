@@ -13,7 +13,19 @@ public class ProductDto
     public int? MediaFileId { get; set; }
     public string? ImageUrl { get; set; }
     public PriceDto? Price { get; set; }
+    // Availability describes sellability, not an inventory reservation.
+    public string Availability { get; set; } = "unavailable";
+    public int MinimumQuantity { get; set; }
+    public int MaximumQuantity { get; set; }
+    public int QuantityStep { get; set; }
+    public IReadOnlyList<int> AllowedQuantities { get; set; } = [];
+    public QuantityUnitDto? QuantityUnit { get; set; }
+    public bool RequiresConfiguration { get; set; }
+    public bool CanAddToCart { get; set; }
+    public bool? HasDiscount { get; set; }
+    public bool IsPreOrder { get; set; }
 }
+public sealed record QuantityUnitDto(int Id, string Name, string? NamePlural);
 /// <summary>Search-as-you-type inputs. Empty or too-short terms return no suggestions.</summary>
 public sealed class InstantSearchRequest
 {
@@ -25,24 +37,26 @@ public sealed record InstantSearchProductDto(int Id, string Name, string? Sku, i
 
 public sealed record InstantSearchDto(string Search, bool Enabled, int MinimumTermLength, int Limit,
     bool HasMore, IReadOnlyList<InstantSearchProductDto> Items);
-#nullable restore
-
 public sealed class CategoryDto
 {
     public int Id { get; set; }
     public int? ParentId { get; set; }
     public int DisplayOrder { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
     public int? MediaFileId { get; set; }
-    public string ImageUrl { get; set; }
+    public string? ImageUrl { get; set; }
+    public bool HasChildren { get; set; }
+    public bool ShowOnHomePage { get; set; }
 }
 public sealed class BrandDto
 {
     public int Id { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int DisplayOrder { get; set; }
     public int? MediaFileId { get; set; }
-    public string ImageUrl { get; set; }
+    public string? ImageUrl { get; set; }
 }
+#nullable restore
 public sealed class OrderDto
 {
     public int Id { get; set; }
@@ -93,7 +107,11 @@ public sealed class CouponRequest
 }
 public sealed record CartTotalDto(decimal? Total, decimal DiscountAmount, string CurrencyCode);
 public sealed record CartItemDto(int Id, int ProductId, int Quantity, bool Active, int? ParentItemId);
-public sealed record PriceDto(int ProductId, string CurrencyCode, decimal FinalPrice, decimal? RegularPrice, decimal DiscountAmount);
+public sealed record PriceDto(int ProductId, string CurrencyCode, decimal FinalPrice, decimal? RegularPrice, decimal DiscountAmount)
+{
+    /// <summary>Number of units used to calculate the displayed unit price.</summary>
+    public int PricingQuantity { get; init; } = 1;
+}
 public sealed class AddCartItem
 {
     [Range(1, int.MaxValue)] public int ProductId { get; set; }
@@ -162,16 +180,17 @@ public sealed class ProductFacetsRequest : IValidatableObject
         HasDiscount = HasDiscount, IncludePrice = false
     };
 }
-#nullable restore
 public sealed class CategorySearchRequest : PageRequest
 {
-    [StringLength(200)] public string Search { get; set; }
+    [StringLength(200)] public string? Search { get; set; }
     [Range(0, int.MaxValue)] public int? ParentId { get; set; }
+    public bool? ShowOnHomePage { get; set; }
 }
 public sealed class BrandSearchRequest : PageRequest
 {
-    [StringLength(200)] public string Search { get; set; }
+    [StringLength(200)] public string? Search { get; set; }
 }
+#nullable restore
 public sealed class OrderSearchRequest : PageRequest
 {
     public int? OrderStatusId { get; set; }
@@ -184,5 +203,4 @@ public sealed class VariantChoice
     [Range(1, int.MaxValue)] public int VariantAttributeId { get; set; }
     [Range(1, int.MaxValue)] public int ValueId { get; set; }
 }
-public sealed record VariantValueDto(int Id, string Name);
-public sealed record VariantDto(int Id, string Name, int ControlTypeId, bool Required, List<VariantValueDto> Values);
+

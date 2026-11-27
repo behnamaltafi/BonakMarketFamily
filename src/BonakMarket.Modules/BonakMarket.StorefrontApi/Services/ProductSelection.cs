@@ -10,10 +10,13 @@ internal static class ProductSelection
     internal static bool SupportsControl(AttributeControlType type) => type is AttributeControlType.DropdownList
         or AttributeControlType.RadioList or AttributeControlType.Boxes or AttributeControlType.Checkboxes;
 
+    internal static bool SupportsProduct(Product product) =>
+        !product.CustomerEntersPrice && !product.IsGiftCard && !product.CallForPrice && !product.DisableBuyButton &&
+        product.ProductType == ProductType.SimpleProduct;
+
     internal static string UnsupportedCode(Product product)
     {
-        if (product.CustomerEntersPrice || product.IsGiftCard || product.CallForPrice || product.DisableBuyButton ||
-            product.ProductType != ProductType.SimpleProduct)
+        if (!SupportsProduct(product))
             return "product_requires_configuration";
         if (product.ProductVariantAttributes.Any(x => x.IsRequired && !SupportsControl(x.AttributeControlType)))
             return "unsupported_required_attribute";

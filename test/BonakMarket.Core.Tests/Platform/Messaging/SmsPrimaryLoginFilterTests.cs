@@ -94,6 +94,23 @@ public class SmsPrimaryLoginFilterTests
         Assert.That(((RedirectToActionResult)context.Result).RouteValues["returnUrl"], Is.Null);
     }
 
+    [Test]
+    public async Task Redirect_uses_selected_login_template_not_legacy_default()
+    {
+        var settings = new Mock<ISettingFactory>();
+        settings.Setup(x => x.LoadSettingsAsync<CustomerIdentitySettings>(0)).ReturnsAsync(new CustomerIdentitySettings
+        {
+            OtpLoginEnabled = true, SmsAsPrimaryLogin = true, LoginOtpTemplateKey = "SIGNIN"
+        });
+        var delivery = new Mock<ISmsDeliveryAvailability>();
+        delivery.Setup(x => x.IsOtpTemplateAvailableAsync("SIGNIN", It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync(true);
+        var context = Context("GET");
+        await new SmsPrimaryLoginFilter(settings.Object, delivery.Object).OnActionExecutionAsync(context,
+            () => throw new System.InvalidOperationException("Unexpected native login."));
+        Assert.That(context.Result, Is.TypeOf<RedirectToActionResult>());
+        delivery.Verify(x => x.IsOtpTemplateAvailableAsync("SIGNIN", It.IsAny<System.Threading.CancellationToken>()), Times.Once);
+    }
+
     private static Mock<ISettingFactory> SettingsFactory(bool otp, bool primary)
     {
         var settings = new Mock<ISettingFactory>();
@@ -108,7 +125,7 @@ public class SmsPrimaryLoginFilterTests
     private static Mock<ISmsDeliveryAvailability> Delivery(bool enabled)
     {
         var delivery = new Mock<ISmsDeliveryAvailability>();
-        delivery.Setup(x => x.IsEnabledAsync()).ReturnsAsync(enabled);
+        delivery.Setup(x => x.IsOtpTemplateAvailableAsync(It.IsAny<string>(), It.IsAny<System.Threading.CancellationToken>())).ReturnsAsync(enabled);
         return delivery;
     }
 

@@ -4,6 +4,8 @@ Identity owns native Customer sign-in/registration, verified phone binding, OTP 
 
 Install MultiSms -> Identity -> StorefrontApi. Keep all existing Data Protection keys, MobileApi signing configuration, historical SQL tables and migrations. No new database or migration is introduced.
 
+Configure SMS transport in MultiSms and OTP/primary login in Identity. In SMS Templates, map the seeded LOGINOTP logical template to approved provider templates. Identity selects independent logical keys for login/registration, phone enrollment/change, and reauthentication (all default to LOGINOTP). The login template must be routable when enabling SMS login or changing its key; other flows have independent readiness. Unchanged unavailable templates do not block policy edits. Existing OTP challenges can be verified during delivery outages, subject to the Identity enable switch and challenge security checks. Message text is managed in provider-approved templates; the old OTP message text setting is retired. No Identity schema migration or OTP policy reset is required.
+
 ## Customer API (JWT only)
 
 | Method | Path | Authentication |

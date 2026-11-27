@@ -1,0 +1,36 @@
+@model ConnectionModel
+@{ Layout = "_ConfigureModule"; }
+<h3>ERP connection</h3>
+<form asp-action="Edit" method="post" autocomplete="off">
+    <div asp-validation-summary="All"></div>
+    <input asp-for="Id" type="hidden" />
+    <input asp-for="ConfigurationVersion" type="hidden" />
+    <div class="mb-3"><label asp-for="CompanyCode"></label><input asp-for="CompanyCode" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="SourceCode">Stable source code</label><input asp-for="SourceCode" class="form-control" /><small>Same code only for connections to the same external product identity namespace. Immutable after creation.</small></div>
+    <div class="mb-3"><label asp-for="Code"></label><input asp-for="Code" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Name"></label><input asp-for="Name" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="Provider"></label><select asp-for="Provider" class="form-control">
+    @foreach (var p in Model.Providers) { <option value="@p">@p</option> }
+    </select></div>
+    <div class="mb-3"><label asp-for="BaseUrl"></label><input asp-for="BaseUrl" class="form-control" /></div>
+    <div class="mb-3"><label asp-for="ProviderSettingsJson">Provider settings (non-secret JSON)</label><textarea asp-for="ProviderSettingsJson" rows="9" class="form-control"></textarea></div>
+    <div class="mb-3"><label asp-for="AuthenticationType"></label><select asp-for="AuthenticationType" class="form-control">
+    @foreach (var a in Model.AuthenticationTypes) { <option value="@a">@a</option> }
+    </select></div>
+    <div class="mb-3"><label asp-for="AuthenticationSettingsJson">Authentication options (non-secret JSON)</label><textarea asp-for="AuthenticationSettingsJson" rows="8" class="form-control"></textarea></div>
+    <div class="mb-3"><label for="NewUsername">Username</label><input id="NewUsername" name="NewUsername" class="form-control" autocomplete="off" /></div>
+    <div class="mb-3"><label for="NewPassword">Password</label><input id="NewPassword" name="NewPassword" type="password" class="form-control" autocomplete="new-password" /></div>
+    <small>Enter both fields to replace credentials. Configured: @Model.HasCredentials. Legacy payload: @Model.LegacyLoginPayload.</small>
+    <div class="mb-3"><input asp-for="ClearCredentials" /><label asp-for="ClearCredentials"></label></div>
+    <div class="mb-3"><label asp-for="TimeoutSeconds"></label><input asp-for="TimeoutSeconds" class="form-control" /></div>
+    <div class="mb-3"><input asp-for="Enabled" /><label asp-for="Enabled"></label></div>
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>
+@if (Model.Id > 0)
+{
+    <form asp-action="TestConnection" method="post" target="_blank" class="mt-3">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <select name="operation"><option>Products</option><option>Prices</option><option>Inventory</option><option>Categories</option><option>Warehouses</option></select>
+        <button type="submit" class="btn btn-secondary">Test saved connection (read only)</button>
+    </form>
+}

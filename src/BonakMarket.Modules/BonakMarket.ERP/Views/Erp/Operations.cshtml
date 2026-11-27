@@ -1,0 +1,26 @@
+@model OperationsModel
+@{ Layout = "_ConfigureModule"; }
+<h3>ERP operations</h3>
+<p>One connection per company and operation. Only product staging can be scheduled; other operations are read-only previews.</p>
+<form asp-action="RegisterSchedule" method="post"><button class="btn btn-secondary" type="submit">Register native scheduler</button></form>
+<form asp-action="SaveOperation" method="post" class="my-3">
+    <label>Company code</label><input name="CompanyCode" required />
+    <label>Operation</label><select name="Operation">@foreach (var op in Model.Operations) { <option>@op</option> }</select>
+    <label>Connection</label><select name="ConnectionId">@foreach (var c in Model.Connections) { <option value="@c.Id">@c.CompanyCode / @c.Name</option> }</select>
+    <label><input type="checkbox" name="Enabled" value="true" /> Enabled</label>
+    <label><input type="checkbox" name="ScheduleEnabled" value="true" /> Schedule products</label>
+    <label>Interval (minutes)</label><input type="number" name="IntervalMinutes" value="60" min="1" max="10080" />
+    <label>Batch size</label><input type="number" name="BatchSize" value="100" min="1" max="100" />
+    <button class="btn btn-primary" type="submit">Save / replace route</button>
+</form>
+<table class="table">
+<thead><tr><th>Company</th><th>Operation</th><th>Connection</th><th>Enabled</th><th>Scheduled</th><th>Next offset</th><th>Last complete (UTC)</th><th></th></tr></thead>
+<tbody>
+@foreach (var r in Model.Routes)
+{
+    <tr><td>@r.CompanyCode</td><td>@r.Operation</td><td>@r.ConnectionId</td><td>@r.Enabled</td><td>@r.ScheduleEnabled</td><td>@r.NextOffset</td><td>@r.LastSucceededUtc</td>
+    <td><form asp-action="PreviewOperation" method="post" target="_blank">
+    <input type="hidden" name="companyCode" value="@r.CompanyCode" /><input type="hidden" name="operation" value="@r.Operation" />
+    <button type="submit" class="btn btn-secondary">Preview route</button></form></td></tr>
+}
+</tbody></table>

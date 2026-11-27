@@ -11,8 +11,8 @@ public class SmsIrProviderTests
     public void Positive_confirmation_returns_id(string raw, bool verify)
         => Assert.That(SmsIrSmsProvider.ParseConfirmation(raw, 200, verify), Is.EqualTo("12345678901"));
 
-    [TestCase("{\"status\":1,\"data\":{\"messageIds\":[0]}}", false, true)]
-    [TestCase("{\"status\":1,\"data\":{\"messageIds\":[null]}}", false, true)]
+    [TestCase("{\"status\":1,\"data\":{\"messageIds\":[0]}}", false, false)]
+    [TestCase("{\"status\":1,\"data\":{\"messageIds\":[null]}}", false, false)]
     [TestCase("{\"status\":113}", true, true)]
     [TestCase("{\"status\":0}", false, false)]
     [TestCase("{\"status\":1,\"data\":{\"messageIds\":[]}}", false, false)]

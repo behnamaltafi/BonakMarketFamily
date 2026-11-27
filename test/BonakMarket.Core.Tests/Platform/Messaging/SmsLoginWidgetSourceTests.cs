@@ -24,6 +24,7 @@ public class SmsLoginWidgetSourceTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         var source = new SmsLoginWidgetSource(new Lazy<ISmsOtpLoginService>(() => otp.Object));
 
         var widgets = (await source.GetWidgetsAsync(new PlainWidgetZone("after_login_buttons"), true)).ToArray();
@@ -36,7 +37,8 @@ public class SmsLoginWidgetSourceTests
     public async Task Verified_mobile_profile_editor_is_available_on_native_customer_info_page()
     {
         var otp = new Mock<ISmsOtpLoginService>();
-        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(false);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
         var source = new SmsLoginWidgetSource(new Lazy<ISmsOtpLoginService>(() => otp.Object));
 
         var widgets = (await source.GetWidgetsAsync(new PlainWidgetZone("customer_info_top"), true)).ToArray();

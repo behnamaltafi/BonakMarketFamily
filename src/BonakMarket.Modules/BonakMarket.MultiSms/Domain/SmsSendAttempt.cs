@@ -15,6 +15,9 @@ public sealed class SmsSendAttempt : BaseEntity
     [Required, MaxLength(50)]
     public string Provider { get; set; }
 
+    [MaxLength(50)]
+    public string Method { get; set; }
+
     [Required, MaxLength(20)]
     public string Status { get; set; }
 

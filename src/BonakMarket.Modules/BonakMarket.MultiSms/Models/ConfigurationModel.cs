@@ -5,6 +5,27 @@ public sealed class ConfigurationModel : ModelBase
 {
     [LocalizedDisplay("*Enabled")]
     public bool Enabled { get; set; }
+    public bool DeliveryRoutingConfigured { get; set; }
+    public string FreeTextPrimary { get; set; }
+    public string FreeTextFallback1 { get; set; }
+    public string FreeTextFallback2 { get; set; }
+    public bool FreeTextFailover { get; set; }
+    public string TemplatePrimary { get; set; }
+    public string TemplateFallback1 { get; set; }
+    public string TemplateFallback2 { get; set; }
+    public bool TemplateFailover { get; set; }
+    public bool KavenegarFreeTextEnabled { get; set; }
+    public bool KavenegarTemplateEnabled { get; set; }
+    public bool MelipayamakFreeTextEnabled { get; set; }
+    public bool MelipayamakTemplateEnabled { get; set; }
+    public string MelipayamakAuthMode { get; set; } = "Console";
+    public bool SmsIrFreeTextEnabled { get; set; }
+    public bool SmsIrTemplateEnabled { get; set; }
+    public string NewMelipayamakApiToken { get; set; }
+    public bool ClearMelipayamakApiToken { get; set; }
+    public bool HasMelipayamakApiToken { get; set; }
+    public string TestProvider { get; set; }
+    public bool TestOtp { get; set; }
 
     [LocalizedDisplay("*MockEnabled")]
     public bool MockEnabled { get; set; }
@@ -69,11 +90,7 @@ public sealed class ConfigurationModel : ModelBase
     [LocalizedDisplay("*SmsIrLineNumber")]
     public long? SmsIrLineNumber { get; set; }
 
-    [LocalizedDisplay("*SmsIrTemplateId")]
-    public int? SmsIrTemplateId { get; set; }
 
-    [LocalizedDisplay("*SmsIrCodeParameter")]
-    public string SmsIrCodeParameter { get; set; } = "Code";
 
     [LocalizedDisplay("*NewSmsIrApiKey")]
     public string NewSmsIrApiKey { get; set; }
@@ -88,6 +105,12 @@ public sealed class ConfigurationModel : ModelBase
 
     [LocalizedDisplay("*TestMessage")]
     public string TestMessage { get; set; }
+
+    public Dictionary<string, string> TemplateProviderIssues { get; set; } = new();
+    public Dictionary<string, string> FreeTextProviderIssues { get; set; } = new();
+
+    public string[] TemplateReadyProviders { get; set; } = [];
+    public string[] FreeTextReadyProviders { get; set; } = [];
 
     public string[] AvailableProviders { get; set; } = [];
 

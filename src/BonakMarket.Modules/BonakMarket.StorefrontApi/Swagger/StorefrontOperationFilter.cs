@@ -24,6 +24,7 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
         operation.Tags = new List<OpenApiTag> { new() { Name = tag ?? (section switch
         {
             "products" => "Products",
+            "search" => "Search",
             "categories" => "Categories",
             "brands" => "Brands",
             "cart" => "Cart",
@@ -41,6 +42,12 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
             "me" => "Customer Services",
             _ => "Commerce"
         }) } };
+        if (section == "search" || route == "products" || route == "products/facets")
+        {
+            operation.Description = route == "search/instant"
+                ? "Optional search text (max 200 characters), optional limit (1–16, capped by admin settings). Disabled, empty, or too-short searches return 200 with empty items. No price or total count; hasMore indicates additional matches. Images may be null or relative to the API origin."
+                : "Optional search text, 1-based page (1–10000), pageSize (1–100). For nonblank searches, omitted inStock follows admin availability settings; true selects sellable products, false selects unavailable products. Price filters and sorting use catalog base-currency prices before customer-specific pricing/tax; returned final prices can differ. Facets are conjunctive and ignore pagination. Price/discount filtering and sorting require price-display permission.";
+        }
         // Use the route template and verb (not overloaded CLR method names).
         operation.OperationId = "Storefront_" + method + "_" +
             route.Replace('/', '_').Replace("{", "").Replace("}", "").Replace(":", "_");

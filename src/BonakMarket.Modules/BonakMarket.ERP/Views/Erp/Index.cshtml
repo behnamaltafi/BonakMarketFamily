@@ -1,0 +1,27 @@
+@model ErpIndexModel
+@{
+    Layout = "_ConfigureModule";
+}
+<h3>ERP Integration</h3>
+<a class="btn btn-primary" asp-action="Edit" asp-route-id="0">New connection</a>
+<a class="btn btn-secondary" asp-action="Operations">Operations and schedules</a>
+<table class="table">
+    <thead><tr><th>Company</th><th>Source</th><th>Connection</th><th>Provider</th><th>Enabled</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var c in Model.Connections)
+    {
+        <tr><td>@c.CompanyCode</td><td>@c.SourceCode</td><td>@c.Name (@c.Code)</td><td>@c.Provider</td><td>@c.Enabled</td>
+            <td><a asp-action="Edit" asp-route-id="@c.Id">Configure</a> | <a asp-action="Catalog" asp-route-id="@c.Id">Catalog</a></td></tr>
+    }
+    </tbody>
+</table>
+<h4>Recent product synchronization runs</h4>
+<table class="table">
+    <thead><tr><th>Connection</th><th>Operation</th><th>Status</th><th>Started UTC</th><th>Rows</th><th>Error</th></tr></thead>
+    <tbody>
+    @foreach (var run in Model.Runs)
+    {
+        <tr><td>@run.ConnectionId</td><td>@run.Operation</td><td>@run.Status</td><td>@run.StartedUtc</td><td>@run.Rows</td><td>@run.ErrorCode</td></tr>
+    }
+    </tbody>
+</table>

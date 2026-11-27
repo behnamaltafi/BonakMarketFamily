@@ -27,7 +27,9 @@ public sealed class SmsLoginWidgetSource : IWidgetSource
         if (!isPublicArea ||
             (!string.Equals(zone.Name, "after_login_buttons", StringComparison.OrdinalIgnoreCase) &&
              !string.Equals(zone.Name, "customer_info_top", StringComparison.OrdinalIgnoreCase)) ||
-            !await _otp.Value.IsEnabledAsync())
+            !(string.Equals(zone.Name, "customer_info_top", StringComparison.OrdinalIgnoreCase)
+                ? await _otp.Value.IsEnrollmentEnabledAsync()
+                : await _otp.Value.IsEnabledAsync()))
         {
             return Array.Empty<Widget>();
         }

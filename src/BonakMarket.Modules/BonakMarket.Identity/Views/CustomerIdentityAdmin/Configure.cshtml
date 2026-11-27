@@ -30,12 +30,70 @@
             </div>
         </div>
         <div class="adminRow">
-            <div class="adminTitle">
-                <smart-label asp-for="OtpMessageTemplate" />
-            </div>
+            <div class="adminTitle"><label asp-for="UseSeparateOtpTemplates">@T("Plugins.Identity.Customer.Fields.UseSeparateOtpTemplates")</label></div>
+            <div class="adminData"><input asp-for="UseSeparateOtpTemplates" type="checkbox" /></div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><label asp-for="LoginOtpTemplateKey" id="otp-main-label" data-shared="@T("Plugins.Identity.Customer.Fields.DefaultOtpTemplate")" data-separate="@T("Plugins.Identity.Customer.Fields.LoginOtpTemplateKey")">@T("Plugins.Identity.Customer.Fields.DefaultOtpTemplate")</label></div>
             <div class="adminData">
-                <textarea asp-for="OtpMessageTemplate" class="form-control" rows="6" dir="auto"></textarea>
-                <span asp-validation-for="OtpMessageTemplate"></span>
+                <select asp-for="LoginOtpTemplateKey" class="form-control">
+                    @if (!Model.OtpTemplates.Any(t => string.Equals(t.Key, Model.LoginOtpTemplateKey, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@Model.LoginOtpTemplateKey">@Model.LoginOtpTemplateKey — @T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort")</option>
+                    }
+                    @foreach (var template in Model.OtpTemplates)
+                    {
+                        <option value="@template.Key">@template.Title (@template.Key) @(template.IsReady ? "" : "— " + T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort").Value)</option>
+                    }
+                </select>
+                <span asp-validation-for="LoginOtpTemplateKey"></span>
+                <div class="otp-detail mt-1" data-field="LoginOtpTemplateKey"></div>
+            </div>
+        </div>
+        <div class="adminRow otp-separate">
+            <div class="adminTitle"><smart-label asp-for="PhoneEnrollmentOtpTemplateKey" /></div>
+            <div class="adminData">
+                <select asp-for="PhoneEnrollmentOtpTemplateKey" class="form-control">
+                    @if (!Model.OtpTemplates.Any(t => string.Equals(t.Key, Model.PhoneEnrollmentOtpTemplateKey, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@Model.PhoneEnrollmentOtpTemplateKey">@Model.PhoneEnrollmentOtpTemplateKey — @T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort")</option>
+                    }
+                    @foreach (var template in Model.OtpTemplates)
+                    {
+                        <option value="@template.Key">@template.Title (@template.Key) @(template.IsReady ? "" : "— " + T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort").Value)</option>
+                    }
+                </select>
+                <span asp-validation-for="PhoneEnrollmentOtpTemplateKey"></span>
+                <div class="otp-detail mt-1" data-field="PhoneEnrollmentOtpTemplateKey"></div>
+            </div>
+        </div>
+        <div class="adminRow otp-separate">
+            <div class="adminTitle"><smart-label asp-for="ReauthenticationOtpTemplateKey" /></div>
+            <div class="adminData">
+                <select asp-for="ReauthenticationOtpTemplateKey" class="form-control">
+                    @if (!Model.OtpTemplates.Any(t => string.Equals(t.Key, Model.ReauthenticationOtpTemplateKey, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        <option value="@Model.ReauthenticationOtpTemplateKey">@Model.ReauthenticationOtpTemplateKey — @T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort")</option>
+                    }
+                    @foreach (var template in Model.OtpTemplates)
+                    {
+                        <option value="@template.Key">@template.Title (@template.Key) @(template.IsReady ? "" : "— " + T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort").Value)</option>
+                    }
+                </select>
+                <span asp-validation-for="ReauthenticationOtpTemplateKey"></span>
+                <div class="otp-detail mt-1" data-field="ReauthenticationOtpTemplateKey"></div>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"></div>
+            <div class="adminData">
+                <p class="text-muted">@T("Plugins.Identity.Customer.Fields.OtpTemplateHelp")</p>
+                @if (!Model.OtpTemplates.Any(t => t.IsReady))
+                {
+                    <div class="alert alert-warning">@T("Plugins.Identity.Customer.Fields.NoReadyOtpTemplates")</div>
+                }
+                <a asp-area="Admin" asp-controller="MultiSms" asp-action="Configure" class="btn btn-outline-secondary">@T("Plugins.Identity.Customer.Fields.OpenGateway")</a>
+                <a asp-area="Admin" asp-controller="MultiSms" asp-action="Templates" class="btn btn-outline-secondary">@T("Plugins.Identity.Customer.Fields.ManageOtpTemplates")</a>
             </div>
         </div>
         <div class="adminRow">
@@ -68,3 +126,44 @@
         </div>
     </div>
 </form>
+
+<div id="otp-template-diagnostics" hidden>
+    @foreach (var template in Model.OtpTemplates)
+    {
+        <div data-template-key="@template.Key">
+            @if (template.IsReady)
+            {
+                <span class="text-success">@T("Plugins.Identity.Customer.Fields.OtpTemplateReady") — @string.Join(", ", template.ReadyProviders ?? Array.Empty<string>())</span>
+            }
+            else
+            {
+                <span class="text-danger">@T("Plugins.Identity.Customer.Fields.OtpTemplateUnavailableShort")</span>
+            }
+            @foreach (var issue in template.Issues ?? Array.Empty<BonakMarket.Core.Messaging.SmsOtpTemplateIssue>())
+            {
+                <div class="text-muted">@(issue.Provider == null ? "" : issue.Provider + ": ")@T("Plugins.Identity.Customer.Readiness." + issue.Code)</div>
+            }
+        </div>
+    }
+</div>
+<script>
+(function () {
+    const separate = document.getElementById('UseSeparateOtpTemplates');
+    const label = document.getElementById('otp-main-label');
+    const options = Array.from(document.querySelectorAll('[data-template-key]'));
+    function sync() {
+        label.textContent = separate.checked ? label.dataset.separate : label.dataset.shared;
+        for (const row of document.querySelectorAll('.otp-separate')) row.hidden = !separate.checked;
+        for (const detail of document.querySelectorAll('.otp-detail')) {
+            const select = document.getElementById(detail.dataset.field);
+            const source = options.find(x => x.dataset.templateKey === select.value);
+            detail.replaceChildren();
+            if (source) for (const child of source.children) detail.appendChild(child.cloneNode(true));
+            else detail.textContent = select.selectedOptions[0]?.textContent || '';
+        }
+    }
+    separate.addEventListener('change', sync);
+    for (const detail of document.querySelectorAll('.otp-detail')) document.getElementById(detail.dataset.field).addEventListener('change', sync);
+    sync();
+})();
+</script>

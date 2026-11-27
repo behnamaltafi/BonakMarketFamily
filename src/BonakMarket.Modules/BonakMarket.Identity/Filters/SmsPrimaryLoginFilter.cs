@@ -33,7 +33,7 @@ public sealed class SmsPrimaryLoginFilter : IAsyncActionFilter
         }
 
         var settings = await _settings.LoadSettingsAsync<CustomerIdentitySettings>();
-        if (!settings.OtpLoginEnabled || !settings.SmsAsPrimaryLogin || !await _delivery.IsEnabledAsync())
+        if (!settings.OtpLoginEnabled || !settings.SmsAsPrimaryLogin || !await _delivery.IsOtpTemplateAvailableAsync(settings.GetOtpTemplateKey("login"), context.HttpContext.RequestAborted))
         {
             await next();
             return;

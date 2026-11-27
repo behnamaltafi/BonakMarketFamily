@@ -37,6 +37,9 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var controller = CreateLoginController(otp);
 
         var known = (OkObjectResult)await controller.RequestCode(new SmsCodeRequest { Phone = "09123456789" }, default);
@@ -54,6 +57,9 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.RequestMobileChallengeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OtpFlowException(code, retryAfter));
         var controller = CreateLoginController(otp);
@@ -69,12 +75,27 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.ConfirmMobileLoginAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OtpFlowException(code));
         var result = (ObjectResult)await CreateLoginController(otp).VerifyCode(
             new MobileSmsVerifyRequest { ChallengeId = "challenge", Code = "123456" }, default);
         Assert.That(result.StatusCode, Is.EqualTo(status));
         Assert.That(((OtpErrorResponse)result.Value).Code, Is.EqualTo(code));
+    }
+
+    [Test]
+    public async Task Existing_otp_can_be_verified_during_delivery_outage()
+    {
+        var otp = new Mock<ISmsOtpLoginService>();
+        otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(false);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
+        var controller = CreateLoginController(otp);
+        var result = await controller.VerifyCode(new MobileSmsVerifyRequest { ChallengeId = "challenge", Code = "123456" }, default);
+        Assert.That(result, Is.TypeOf<BadRequestObjectResult>());
+        otp.Verify(x => x.ConfirmMobileLoginAsync("challenge", "123456", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Test]
@@ -92,6 +113,9 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var controller = CreateSecurityController(otp);
 
         Assert.That(await controller.RequestEnrollment(new PhoneChangeRequest(), default), Is.TypeOf<UnauthorizedResult>());
@@ -105,6 +129,9 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var customer = RegisteredCustomer();
         var users = CreateUserManager();
         users.Setup(x => x.GetUserAsync(It.IsAny<ClaimsPrincipal>())).ReturnsAsync(customer);
@@ -123,6 +150,9 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var customer = RegisteredCustomer();
         otp.Setup(x => x.GetVerifiedPhoneAsync(customer.Id, It.IsAny<CancellationToken>())).ReturnsAsync("+989123456789");
         var users = CreateUserManager();
@@ -141,6 +171,9 @@ public class SmsApiControllerTests
     {
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         var customer = RegisteredCustomer();
         otp.Setup(x => x.ConfirmMobileLoginAsync("challenge", "123456", It.IsAny<CancellationToken>())).ReturnsAsync(customer);
         var tokens = new Mock<IMobileApiTokenService>();
@@ -156,6 +189,9 @@ public class SmsApiControllerTests
         var customer = RegisteredCustomer();
         var otp = new Mock<ISmsOtpLoginService>();
         otp.Setup(x => x.IsEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsVerificationEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsEnrollmentEnabledAsync()).ReturnsAsync(true);
+        otp.Setup(x => x.IsReauthenticationEnabledAsync()).ReturnsAsync(true);
         otp.Setup(x => x.ConfirmMobileLoginAsync("challenge", "123456", It.IsAny<CancellationToken>())).ReturnsAsync(customer);
         var tokens = new Mock<IMobileApiTokenService>();
         tokens.SetupGet(x => x.IsEnabled).Returns(true);

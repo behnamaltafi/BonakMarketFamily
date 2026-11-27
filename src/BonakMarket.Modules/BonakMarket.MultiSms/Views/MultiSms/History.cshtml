@@ -51,6 +51,8 @@
         <th>@T("Plugins.Sms.MultiSms.HistoryDate")</th>
         <th>@T("Plugins.Sms.MultiSms.HistoryPhone")</th>
         <th>@T("Plugins.Sms.MultiSms.HistoryKind")</th>
+        <th>@T("Plugins.Sms.MultiSms.Routing.DeliveryMode")</th>
+        <th>@T("Plugins.Sms.MultiSms.Routing.TemplateKey")</th>
         <th>@T("Plugins.Sms.MultiSms.HistoryProvider")</th>
         <th>@T("Plugins.Sms.MultiSms.HistoryStatus")</th>
         <th>@T("Plugins.Sms.MultiSms.HistoryAttempts")</th>
@@ -64,6 +66,8 @@
                 <td>@message.CreatedOnUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</td>
                 <td dir="ltr">@SmsHistoryFormatter.MaskPhone(message.Phone)</td>
                 <td>@message.Kind</td>
+                <td>@(message.DeliveryMode ?? "—")</td>
+                <td>@(message.TemplateKey ?? "—")</td>
                 <td>@message.Provider</td>
                 <td>@message.Status</td>
                 <td>@message.AttemptCount</td>
@@ -76,7 +80,7 @@
         }
         @if (Model.Messages.Count == 0)
         {
-            <tr><td colspan="8" class="text-center text-muted">@T("Plugins.Sms.MultiSms.HistoryEmpty")</td></tr>
+            <tr><td colspan="10" class="text-center text-muted">@T("Plugins.Sms.MultiSms.HistoryEmpty")</td></tr>
         }
     </tbody>
 </table>

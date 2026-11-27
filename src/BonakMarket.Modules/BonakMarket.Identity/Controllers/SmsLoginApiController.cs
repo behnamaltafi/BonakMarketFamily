@@ -53,7 +53,7 @@ public sealed class SmsLoginApiController(ISmsOtpLoginService otp, IMobileApiTok
     {
         if (!IdentityTransportPolicy.IsAllowed(Request)) return BadRequest(new IdentityCodeResponse("https_required"));
         if (!tokens.IsEnabled) return StatusCode(503, new IdentityCodeResponse("mobile_tokens_unavailable"));
-        if (!await otp.IsEnabledAsync()) return NotFound(new IdentityCodeResponse("sms_login_disabled"));
+        if (!await otp.IsVerificationEnabledAsync()) return NotFound(new IdentityCodeResponse("sms_login_disabled"));
         Customer customer;
         try { customer = await otp.ConfirmMobileLoginAsync(input.ChallengeId, input.Code, ct); }
         catch (OtpFlowException ex)

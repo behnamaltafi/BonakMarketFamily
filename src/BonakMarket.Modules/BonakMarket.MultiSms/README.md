@@ -42,10 +42,24 @@ Run in Development, configure and enable Mock in MultiSms and enable OTP in Iden
 
 Preserve existing SQL history and Data Protection keys during upgrade. See ../BonakMarket.Identity/README.md for account API and migration instructions.
 
-## SMS.ir configuration
+## Delivery modes and upgrade
 
-Select SmsIr as primary or safe fallback in SMS Gateway. Enable it and set the encrypted API key. Set the numeric dedicated line number for free-text messages and the existing manual Test SMS action. For OTP, optionally enter an approved SMS.ir Verify template ID and its exact code parameter name (default Code). When the template is configured, OTP uses /v1/send/verify with the original six-digit code (not parsed from message text); the message body is controlled by the approved provider template. Without a template ID, OTP uses /v1/send/bulk and the Identity message template. A Verify-only configuration does not support free-text tests or general SMS. Verify requires an approved SMS.ir template and appropriate account permissions. Test real delivery with your own account after deployment. No raw responses or OTPs are logged. No automatic retry on ambiguous delivery.
+Routes are now FreeText and Template, independent of the message purpose (General, Otp, Test).
+Old settings must be re-entered; there is no implicit legacy routing. The module migration creates MultiSmsTemplate and MultiSmsTemplateProvider, seeds LOGINOTP and adds nullable DeliveryMode and TemplateKey columns to message history. Existing history remains intact.
+
+Configure provider credentials and capability switches in SMS Gateway. Use SMS Templates to define a logical key, title, purpose and parameter schema, then map the logical parameters to an approved external ID for each provider. Keys are case-insensitive and stored uppercase. Identity configures independent logical keys for login/registration, enrollment/change and reauthentication. All default to LOGINOTP; every selected template requires Code and a usable mapping in the configured Template route. OTP cannot use FreeText. Define further logical keys when adding business notifications.
+
+Example OrderShipped: logical parameters OrderNumber, TrackingCode; Kavenegar slots token, token2; Melipayamak slots 0, 1; SMS.ir slots ORDER, TRACKING. A mapping missing on a provider permits moving to the next configured template provider only when safe failover is enabled. No cross-mode fallback. No raw template values are persisted.
+
+Template callers use ISmsSender.SendAsync with SmsSendRequest(phone, null) { DeliveryMode = SmsDeliveryMode.Template, TemplateKey = "OrderShipped", TemplateParameters = new Dictionary<string, string> { ... } }. Existing free-text callers remain unchanged.
+
+Melipayamak supports Console token (simple/shared) and Legacy REST (SendSMS/BaseServiceNumber). Console receives ordered args; legacy joins the ordered values with semicolon and rejects delimiter-containing values. Verify with real accounts before rollout.
+
+Admin tests use saved settings and exactly the selected provider. Template tests can be run from the template edit page; OTP test does not create a login challenge or persist test codes. Keep a non-SMS administrator login available until configuration is verified. Mock is isolated, Development only. Accepted is not handset delivery.
 
 ## Optional OTP code history
 
 ShowOtpCodeInHistory defaults to false and requires HistoryEnabled. Only the explicit six-digit VerificationCode is captured (not parsed from text), using a dedicated time-limited Data Protection purpose and the existing Body column. The admin details view rechecks the setting on every request. When enabled, all environments reveal the code immediately, including Production. This exposes active authentication codes to authorized administrators; use only for troubleshooting. The encrypted value becomes unreadable after 15 minutes and is removed with normal history retention. Disabling hides existing codes immediately and stops new capture; re-enabling within the window may show previously captured codes. This is an opt-in diagnostic feature; keep disabled in normal production. No raw OTP body or test text is captured by this option.
+
+## Unified readiness and Test Center
+Provider capability, route readiness, and actual delivery tests are separate. All local checks use SmsReadinessService, including credential decryption, route membership and template mapping. Templates show the reason for each unusable route provider. Test Center sends through configured routing or directly to one provider; it always records a Test message and does not expose OTP values. Direct testing can bypass the global gateway switch, but route testing cannot. Test results are provider acceptance only, not delivery confirmation. OTP mapping for Melipayamak and Kavenegar is automatic; other mappings are per logical parameter. No new schema migration is required for these UI and readiness changes.

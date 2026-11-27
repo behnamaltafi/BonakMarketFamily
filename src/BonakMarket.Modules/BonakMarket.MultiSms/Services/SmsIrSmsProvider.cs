@@ -8,7 +8,7 @@ using BonakMarket.MultiSms.Configuration;
 namespace BonakMarket.MultiSms.Services;
 
 /// <summary>SMS.ir v1 free-text and approved Verify template transport.</summary>
-public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
+public sealed class SmsIrSmsProvider : ISmsProvider, ITemplateSmsProvider
 {
     private const string BaseUrl = "https://api.sms.ir/v1/send/";
     private static readonly HttpClient Client = new(new SocketsHttpHandler
@@ -24,18 +24,33 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
     public SmsIrSmsProvider(SmsCredentialProtection credentials) => _credentials = credentials;
 
     public string Name => "SmsIr";
+    public string GetMethod(bool otp, SmsGatewaySettings settings) => otp ? "Verify" : "Bulk";
 
     public static bool IsValidParameterName(string name)
         => name is { Length: >= 1 and <= 50 } && name.All(ch => char.IsAsciiLetterOrDigit(ch) || ch == '_');
 
     public bool IsAvailable(SmsGatewaySettings settings)
-        => settings.SmsIrEnabled && !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) &&
-            (settings.SmsIrLineNumber is > 0 ||
-             (settings.SmsIrTemplateId is > 0 && IsValidParameterName(settings.SmsIrCodeParameter)));
+        => settings.SmsIrEnabled && settings.SmsIrFreeTextEnabled &&
+            !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey) && settings.SmsIrLineNumber is > 0;
+
+    public bool IsTemplateAvailable(SmsGatewaySettings settings)
+        => settings.SmsIrEnabled && settings.SmsIrTemplateEnabled &&
+            !string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey);
+    public string GetConfigurationIssue(SmsGatewaySettings settings, bool templateMode)
+    {
+        if (!settings.SmsIrEnabled) return "ProviderDisabled";
+        if (templateMode ? !settings.SmsIrTemplateEnabled : !settings.SmsIrFreeTextEnabled) return "ModeDisabled";
+        if (!templateMode && settings.SmsIrLineNumber is not > 0) return "SenderMissing";
+        if (string.IsNullOrWhiteSpace(settings.EncryptedSmsIrApiKey)) return "CredentialsMissing";
+        return _credentials?.ConfigurationIssue(settings.EncryptedSmsIrApiKey);
+    }
+
+    public bool IsValidMapping(string externalId, IEnumerable<string> slots)
+        => SmsTemplateRules.IsPositiveId(externalId) && slots.All(IsValidParameterName);
 
     public Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken)
     {
-        if (settings.SmsIrLineNumber is not > 0)
+        if (!IsAvailable(settings))
             throw new SmsProviderException("SMS.ir free-text line is not configured.", true, reason: SmsFailureReason.ProviderUnavailable);
 
         return PostAsync("bulk", new
@@ -46,28 +61,23 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
         }, settings, false, cancelToken);
     }
 
-    public Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken cancelToken)
+    public Task<string> SendTemplateAsync(string phone, SmsTemplatePayload template, SmsGatewaySettings settings, CancellationToken ct)
     {
-        if (settings.SmsIrTemplateId is not > 0)
-            return SendAsync(phone, text, settings, cancelToken);
-
-        if (!IsValidParameterName(settings.SmsIrCodeParameter) ||
-            verificationCode is not { Length: 6 } || !verificationCode.All(char.IsAsciiDigit))
-            throw new SmsProviderException("SMS.ir Verify parameters are not configured.", true, reason: SmsFailureReason.ProviderUnavailable);
-
+        if (!IsTemplateAvailable(settings) || !IsValidMapping(template.ExternalTemplateId, template.Parameters.Keys))
+            throw new SmsProviderException("SMS.ir template is not configured.", true);
         return PostAsync("verify", new
         {
             mobile = GetPhone(phone),
-            templateId = settings.SmsIrTemplateId.Value,
-            parameters = new[] { new { name = settings.SmsIrCodeParameter, value = verificationCode } }
-        }, settings, true, cancelToken);
+            templateId = int.Parse(template.ExternalTemplateId, CultureInfo.InvariantCulture),
+            parameters = template.Parameters.Select(p => new { name = p.Key, value = p.Value }).ToArray()
+        }, settings, true, ct);
     }
 
     private static string GetPhone(string phone)
     {
         var canonical = SmsPhoneNormalizer.Normalize(phone);
         if (canonical is null)
-            throw new SmsProviderException("SMS.ir requires an Iranian mobile number.", true);
+            throw new SmsProviderException("SMS.ir requires an Iranian mobile number.");
         return SmsPhoneNormalizer.ToProviderPhone(canonical);
     }
 
@@ -129,7 +139,7 @@ public sealed class SmsIrSmsProvider : ISmsProvider, IOtpSmsProvider
                 // SMS.ir explicitly reports zero for blacklist and null for an invalid recipient/message.
                 if (id.ValueKind == JsonValueKind.Null ||
                     (id.ValueKind == JsonValueKind.Number && id.TryGetInt64(out long value) && value == 0))
-                    throw new SmsProviderException("SMS.ir did not accept the recipient.", true, httpStatusCode: httpStatus,
+                    throw new SmsProviderException("SMS.ir did not accept the recipient.", false, httpStatusCode: httpStatus,
                         providerStatus: 1, providerErrorCode: id.ValueKind == JsonValueKind.Null ? null : 0);
             }
 

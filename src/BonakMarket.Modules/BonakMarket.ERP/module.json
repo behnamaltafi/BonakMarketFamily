@@ -1,0 +1,12 @@
+{
+  "$schema": "../module.schema.json",
+  "Author": "BonakMarket",
+  "Group": "Data",
+  "SystemName": "BonakMarket.ERP",
+  "FriendlyName": "ERP Integration",
+  "Description": "ERP connections and catalog synchronization.",
+  "Version": "6.4.0",
+  "MinAppVersion": "6.4.0",
+  "Order": 5,
+  "ResourceRootKey": "Plugins.ERP"
+}

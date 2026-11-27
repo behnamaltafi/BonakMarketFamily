@@ -1,0 +1,52 @@
+@model IReadOnlyList<SmsTemplateListItem>
+@{
+    Layout = "_ConfigureModule";
+}
+<h3>@T("Plugins.Sms.MultiSms.Routing.Templates")</h3>
+<p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.TemplateHelp")</p>
+<p class="text-muted">@T("Plugins.Sms.MultiSms.Routing.NotTestedHint")</p>
+<div class="mb-3">
+    <a asp-action="Configure" class="btn btn-secondary">@T("Plugins.Sms.MultiSms.SettingsLink")</a>
+    <a asp-action="Template" asp-route-id="0" class="btn btn-primary">@T("Plugins.Sms.MultiSms.Routing.AddTemplate")</a>
+    <a asp-action="TestCenter" class="btn btn-outline-secondary">@T("Plugins.Sms.MultiSms.Routing.TestCenter")</a>
+</div>
+<div class="table-responsive">
+<table class="table table-striped">
+    <thead><tr><th>@T("Plugins.Sms.MultiSms.Routing.TemplateKey")</th><th>@T("Plugins.Sms.MultiSms.Routing.TemplateTitle")</th><th>OTP</th><th>@T("Plugins.Sms.MultiSms.Routing.MappingCount")</th><th>@T("Plugins.Sms.MultiSms.HistoryStatus")</th><th>@T("Plugins.Sms.MultiSms.Routing.LastRecordedTest")</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var item in Model)
+    {
+        var template = item.Template;
+        <tr>
+            <td dir="ltr">@template.Key</td><td>@template.Title</td><td>@(template.IsOtp ? "✓" : "—")</td>
+            <td>@template.Providers.Count — @string.Join(", ", template.Providers.Keys)</td>
+            <td>
+                <span class="badge @(item.Readiness.IsReady ? "badge-success" : "badge-warning")">@(item.Readiness.IsReady ? T("Plugins.Sms.MultiSms.Routing.Ready").Value : T("Plugins.Sms.MultiSms.Routing.NotReady").Value)</span>
+                @foreach (var issue in item.Readiness.Issues)
+                {
+                    <div class="text-muted small">@(issue.Provider == null ? "" : issue.Provider + ": ")@T("Plugins.Sms.MultiSms.Readiness." + issue.Code)</div>
+                }
+            </td>
+            <td>
+                @if (item.LastTest is { } test)
+                {
+                    <a asp-action="Message" asp-route-id="@test.MessageId">@T("Plugins.Sms.MultiSms.Routing.TestStatus." + test.Status)</a>
+                    <div class="small text-muted">@test.Provider — @test.CreatedOnUtc.ToString("yyyy-MM-dd HH:mm") UTC</div>
+                }
+                else
+                {
+                    <span class="text-muted">@T("Plugins.Sms.MultiSms.Routing.NoRecordedTest")</span>
+                }
+            </td>
+            <td>
+                <a class="btn btn-sm btn-secondary" asp-action="Template" asp-route-id="@template.Id">@T("Admin.Common.Edit")</a>
+                @if (template.IsActive)
+                {
+                    <a class="btn btn-sm btn-outline-primary" asp-action="TestCenter" asp-route-templateKey="@template.Key">@T("Plugins.Sms.MultiSms.Routing.TestTemplate")</a>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+</div>

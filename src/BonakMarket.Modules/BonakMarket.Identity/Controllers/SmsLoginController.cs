@@ -97,7 +97,7 @@ public sealed class SmsLoginController : PublicController
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> VerifyCode(SmsOtpLoginModel model, CancellationToken ct)
     {
-        if (!await _otp.IsEnabledAsync())
+        if (!await _otp.IsVerificationEnabledAsync())
         {
             return NotFound();
         }
@@ -206,7 +206,7 @@ public sealed class SmsLoginController : PublicController
     [HttpGet("enroll")]
     public async Task<IActionResult> Enroll()
     {
-        if (!await _otp.IsEnabledAsync())
+        if (!await _otp.IsEnrollmentEnabledAsync())
         {
             return NotFound();
         }

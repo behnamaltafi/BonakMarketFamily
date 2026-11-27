@@ -26,7 +26,7 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
     {
         var (customer, error) = await RequireAccountAsync();
         if (error != null) return error;
-        if (!await _otp.IsEnabledAsync()) return NotFound();
+        if (!await _otp.IsReauthenticationEnabledAsync()) return NotFound();
         return await _otp.RequestReauthAsync(customer, ct) ? Ok(new IdentityCodeResponse("code_requested")) : BadRequest(new IdentityCodeResponse("reauth_unavailable"));
     }
 
@@ -36,7 +36,7 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
     {
         var (customer, error) = await RequireAccountAsync();
         if (error != null) return error;
-        if (!await _otp.IsEnabledAsync()) return NotFound();
+        if (!await _otp.IsVerificationEnabledAsync()) return NotFound();
         var proof = await _otp.ConfirmReauthAsync(customer, request.Code, ct);
         return proof == null ? BadRequest(new IdentityCodeResponse("invalid_code")) : Ok(new PhoneReauthResponse(proof, 600));
     }
@@ -46,13 +46,13 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
     [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
     public async Task<IActionResult> RequestEnrollment([FromBody] PhoneChangeRequest request, CancellationToken ct)
     {
-        if (!await _otp.IsEnabledAsync())
+        var (customer, error) = await RequireAccountAsync();
+        if (error is not null) return error;
+
+        if (!await _otp.IsEnrollmentEnabledAsync())
         {
             return NotFound();
         }
-
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
 
         var old = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
         if (old != null)
@@ -72,13 +72,13 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
     [ProducesResponseType(typeof(PhoneChangeResponse), 200)]
     public async Task<IActionResult> ConfirmEnrollment([FromBody] PhoneChangeVerificationRequest request, CancellationToken ct)
     {
-        if (!await _otp.IsEnabledAsync())
+        var (customer, error) = await RequireAccountAsync();
+        if (error is not null) return error;
+
+        if (!await _otp.IsVerificationEnabledAsync())
         {
             return NotFound();
         }
-
-        var (customer, error) = await RequireAccountAsync();
-        if (error is not null) return error;
 
         var old = await _otp.GetVerifiedPhoneAsync(customer.Id, ct);
         var success = old == null

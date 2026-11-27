@@ -35,8 +35,10 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
         {
             Phone = request.PhoneNumber,
             Kind = request.Kind.ToString(),
+            DeliveryMode = request.EffectiveDeliveryMode.ToString(),
+            TemplateKey = request.EffectiveDeliveryMode == SmsDeliveryMode.Template ? request.TemplateKey : null,
             Status = "Pending",
-            Body = request.Kind == SmsMessageKind.General && settings.StoreNonOtpMessageBody
+            Body = request.Kind == SmsMessageKind.General && request.EffectiveDeliveryMode == SmsDeliveryMode.FreeText && settings.StoreNonOtpMessageBody
                 ? request.Text : null,
             CreatedOnUtc = DateTime.UtcNow
         };
@@ -75,7 +77,7 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
     }
 
     public async Task RecordAttemptAsync(
-        SmsMessage message, string provider, string status, string messageId,
+        SmsMessage message, string provider, string method, string status, string messageId,
         string errorCategory, DateTime startedOnUtc, int durationMs, CancellationToken ct)
     {
         if (message is null) return;
@@ -84,6 +86,7 @@ public sealed class SmsHistoryStore : ISmsHistoryWriter
         {
             SmsMessageId = message.Id,
             Provider = provider,
+            Method = method,
             Status = status,
             ProviderMessageId = messageId,
             ErrorCategory = errorCategory,

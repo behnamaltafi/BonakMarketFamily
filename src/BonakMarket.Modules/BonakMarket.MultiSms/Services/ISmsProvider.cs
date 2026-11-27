@@ -1,3 +1,4 @@
+using System.Threading;
 using BonakMarket.MultiSms.Configuration;
 
 namespace BonakMarket.MultiSms.Services;
@@ -5,14 +6,20 @@ namespace BonakMarket.MultiSms.Services;
 public interface ISmsProvider
 {
     string Name { get; }
+    string GetMethod(bool templateMode, SmsGatewaySettings settings) => templateMode ? "Template" : "FreeText";
     bool IsAvailable(SmsGatewaySettings settings);
+    string GetConfigurationIssue(SmsGatewaySettings settings, bool templateMode)
+        => (templateMode ? this is ITemplateSmsProvider t && t.IsTemplateAvailable(settings) : IsAvailable(settings))
+            ? null : "ProviderUnavailable";
     Task<string> SendAsync(string phone, string text, SmsGatewaySettings settings, CancellationToken cancelToken);
 }
 
-/// <summary>Optional template-based OTP transport, separate from free-text sending.</summary>
-public interface IOtpSmsProvider
+/// <summary>Provider capability for any approved service template, independent of message purpose.</summary>
+public interface ITemplateSmsProvider
 {
-    Task<string> SendOtpAsync(string phone, string text, string verificationCode, SmsGatewaySettings settings, CancellationToken cancelToken);
+    bool IsTemplateAvailable(SmsGatewaySettings settings);
+    bool IsValidMapping(string externalId, IEnumerable<string> slots);
+    Task<string> SendTemplateAsync(string phone, SmsTemplatePayload template, SmsGatewaySettings settings, CancellationToken ct);
 }
 
 /// <summary>
@@ -50,5 +57,7 @@ public enum SmsFailureReason
     CredentialsDecryptionFailed,
     MissingConfirmation,
     InvalidResponse,
-    IncompleteConfirmation
+    IncompleteConfirmation,
+    MissingMapping,
+    InvalidMapping
 }

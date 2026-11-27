@@ -24,7 +24,7 @@ public sealed class SmsProfileLinkViewComponent : SmartViewComponent
 
     public async Task<IViewComponentResult> InvokeAsync()
     {
-        if (!await _otp.IsEnabledAsync() || !_signInManager.IsSignedIn(HttpContext.User))
+        if (!await _otp.IsEnrollmentEnabledAsync() || !_signInManager.IsSignedIn(HttpContext.User))
         {
             return Empty();
         }

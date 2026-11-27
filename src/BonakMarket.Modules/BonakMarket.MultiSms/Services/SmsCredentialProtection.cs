@@ -18,6 +18,12 @@ public sealed class SmsCredentialProtection
     public string Protect(string plaintext)
         => string.IsNullOrWhiteSpace(plaintext) ? null : Prefix + _protector.Protect(plaintext);
 
+    public string ConfigurationIssue(string ciphertext)
+    {
+        try { Unprotect(ciphertext); return null; }
+        catch (SmsProviderException ex) { return ex.Reason.ToString(); }
+    }
+
     public string Unprotect(string ciphertext)
     {
         if (string.IsNullOrWhiteSpace(ciphertext))

@@ -27,7 +27,9 @@ internal sealed class Startup : StarterBase
         services.AddSingleton<OtpHistoryProtection>();
         services.AddScoped<SmsHistoryStore>();
         services.AddScoped<ISmsHistoryWriter>(sp => sp.GetRequiredService<SmsHistoryStore>());
-        services.AddScoped<ISmsSender, SmsGatewaySender>();
+        services.AddScoped<ISmsTemplateCatalog, SmsTemplateCatalog>();
+        services.AddScoped<SmsGatewaySender>();
+        services.AddScoped<ISmsSender>(sp => sp.GetRequiredService<SmsGatewaySender>());
         services.AddScoped<ISmsDeliveryAvailability, SmsDeliveryAvailability>();
         services.AddTransient<IDbContextConfigurationSource<SmartDbContext>, MultiSmsModelConfigurer>();
     }

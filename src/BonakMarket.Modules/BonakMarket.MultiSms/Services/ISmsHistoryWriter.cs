@@ -11,6 +11,6 @@ public interface ISmsHistoryWriter
         SmsSendRequest request, SmsGatewaySettings settings, CancellationToken ct);
 
     Task RecordAttemptAsync(
-        SmsMessage message, string provider, string status, string messageId,
+        SmsMessage message, string provider, string method, string status, string messageId,
         string errorCategory, DateTime startedOnUtc, int durationMs, CancellationToken ct);
 }

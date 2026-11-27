@@ -17,7 +17,7 @@ namespace BonakMarket.Core.Tests.Platform.Messaging;
 [TestFixture]
 public class SmsHistoryTransportTests
 {
-    private static readonly SmsSendRequest Otp = new("09123456789", "Secret 123456", SmsMessageKind.Otp);
+    private static readonly SmsSendRequest Otp = new("09123456789", "Secret 123456", SmsMessageKind.Otp) { VerificationCode = "123456" };
 
     [Test]
     public async Task History_failure_does_not_turn_accepted_SMS_into_retry_or_failure()
@@ -28,7 +28,7 @@ public class SmsHistoryTransportTests
                 It.IsAny<SmsGatewaySettings>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new SmsMessage { Id = 12 });
         history.Setup(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("SQL audit unavailable"));
@@ -81,11 +81,11 @@ public class SmsHistoryTransportTests
             .ReturnsAsync(message);
 
         history.Setup(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(),
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<int>(),
                 It.IsAny<CancellationToken>()))
-            .Callback<SmsMessage, string, string, string, string, DateTime, int, CancellationToken>(
-                (m, provider, status, id, error, started, ms, ct) =>
+            .Callback<SmsMessage, string, string, string, string, string, DateTime, int, CancellationToken>(
+                (m, provider, method, status, id, error, started, ms, ct) =>
                 {
                     Assert.That(m, Is.SameAs(message));
                     events.Add(provider + ":" + status);
@@ -116,7 +116,7 @@ public class SmsHistoryTransportTests
         var sender = CreateSender(Config(), history.Object, primary, fallback);
         Assert.ThrowsAsync<HttpRequestException>(async () => await sender.SendAsync(Otp));
 
-        history.Verify(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(), "Kavenegar",
+        history.Verify(x => x.RecordAttemptAsync(It.IsAny<SmsMessage>(), "Kavenegar", "Template",
             "Unknown", null, "Transport", It.IsAny<DateTime>(),
             It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
 
@@ -130,17 +130,17 @@ public class SmsHistoryTransportTests
         factory.Setup(x => x.LoadSettingsAsync<SmsGatewaySettings>(0))
             .ReturnsAsync(settings);
         return new SmsGatewaySender(factory.Object, providers,
-            NullLogger<SmsGatewaySender>.Instance, history);
+            NullLogger<SmsGatewaySender>.Instance, history, TestSmsTemplates.Catalog());
     }
 
     private static SmsGatewaySettings Config() => new()
     {
         Enabled = true, HistoryEnabled = true,
-        PrimaryProvider = "Kavenegar", EnableFailover = true,
-        FallbackProvider = "Melipayamak"
+        DeliveryRoutingConfigured = true, TemplatePrimary = "Kavenegar", TemplateFailover = true,
+        TemplateFallback1 = "Melipayamak"
     };
 
-    private sealed class StubProvider : ISmsProvider
+    private sealed class StubProvider : ISmsProvider, ITemplateSmsProvider
     {
         public StubProvider(string name) => Name = name;
         public string Name { get; }
@@ -148,6 +148,10 @@ public class SmsHistoryTransportTests
         public Exception Failure { get; set; }
 
         public bool IsAvailable(SmsGatewaySettings settings) => true;
+        public bool IsTemplateAvailable(SmsGatewaySettings settings) => true;
+        public bool IsValidMapping(string externalId, IEnumerable<string> slots) => true;
+        public Task<string> SendTemplateAsync(string phone, SmsTemplatePayload template, SmsGatewaySettings settings, CancellationToken ct)
+            => SendAsync(phone, "", settings, ct);
 
         public Task<string> SendAsync(string phone, string text,
             SmsGatewaySettings settings, CancellationToken cancelToken)

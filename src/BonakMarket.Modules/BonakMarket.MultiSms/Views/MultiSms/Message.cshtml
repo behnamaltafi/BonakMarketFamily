@@ -17,6 +17,10 @@
         <dd class="col-md-9" dir="ltr">@SmsHistoryFormatter.MaskPhone(Model.Message.Phone)</dd>
         <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryKind")</dt>
         <dd class="col-md-9">@Model.Message.Kind</dd>
+        <dt class="col-md-3">@T("Plugins.Sms.MultiSms.Routing.DeliveryMode")</dt>
+        <dd class="col-md-9">@(Model.Message.DeliveryMode ?? "—")</dd>
+        <dt class="col-md-3">@T("Plugins.Sms.MultiSms.Routing.TemplateKey")</dt>
+        <dd class="col-md-9">@(Model.Message.TemplateKey ?? "—")</dd>
         <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryStatus")</dt>
         <dd class="col-md-9">@Model.Message.Status</dd>
         <dt class="col-md-3">@T("Plugins.Sms.MultiSms.HistoryProvider")</dt>
@@ -46,6 +50,7 @@
 <thead><tr>
     <th>@T("Plugins.Sms.MultiSms.HistoryDate")</th>
     <th>@T("Plugins.Sms.MultiSms.HistoryProvider")</th>
+    <th>@T("Plugins.Sms.MultiSms.Routing.Method")</th>
     <th>@T("Plugins.Sms.MultiSms.HistoryStatus")</th>
     <th>@T("Plugins.Sms.MultiSms.HistoryDuration")</th>
     <th>@T("Plugins.Sms.MultiSms.HistoryMessageId")</th>
@@ -57,6 +62,7 @@
     <tr>
         <td>@attempt.StartedOnUtc.ToString("yyyy-MM-dd HH:mm:ss") UTC</td>
         <td>@attempt.Provider</td>
+        <td>@(attempt.Method ?? "—")</td>
         <td>@attempt.Status</td>
         <td>@attempt.DurationMs ms</td>
         <td>@attempt.ProviderMessageId</td>

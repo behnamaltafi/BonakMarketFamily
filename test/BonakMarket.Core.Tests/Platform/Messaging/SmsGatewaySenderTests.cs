@@ -48,8 +48,8 @@ public class SmsGatewaySenderTests
     public async Task Send_falls_back_after_definite_provider_rejection()
     {
         var config = Settings("Kavenegar");
-        config.EnableFailover = true;
-        config.FallbackProvider = "Melipayamak";
+        config.FreeTextFailover = true;
+        config.FreeTextFallback1 = "Melipayamak";
 
         var primary = new FakeProvider("Kavenegar")
         {
@@ -72,8 +72,8 @@ public class SmsGatewaySenderTests
     public void Send_does_not_resend_after_ambiguous_provider_failure()
     {
         var config = Settings("Kavenegar");
-        config.EnableFailover = true;
-        config.FallbackProvider = "Melipayamak";
+        config.FreeTextFailover = true;
+        config.FreeTextFallback1 = "Melipayamak";
 
         var primary = new FakeProvider("Kavenegar") { Error = new HttpRequestException("Transport lost.") };
         var backup = new FakeProvider("Melipayamak");
@@ -87,8 +87,8 @@ public class SmsGatewaySenderTests
     public void Send_does_not_resend_to_the_same_provider()
     {
         var config = Settings("Kavenegar");
-        config.EnableFailover = true;
-        config.FallbackProvider = "Kavenegar";
+        config.FreeTextFailover = true;
+        config.FreeTextFallback1 = "Kavenegar";
 
         var primary = new FakeProvider("Kavenegar")
         {
@@ -123,10 +123,40 @@ public class SmsGatewaySenderTests
         Assert.That(primary.Calls, Is.Zero);
     }
 
+    [Test]
+    public void Otp_never_uses_a_free_text_only_provider()
+    {
+        var config = Settings("Kavenegar");
+        config.TemplatePrimary = "Kavenegar";
+        var provider = new FakeProvider("Kavenegar");
+        var sender = CreateSender(config, provider);
+        Assert.ThrowsAsync<SmsProviderException>(async () => await sender.SendAsync(
+            new SmsSendRequest("09123456789", "OTP", SmsMessageKind.Otp) { VerificationCode = "123456" }));
+        Assert.That(provider.Calls, Is.Zero);
+    }
+
+    [Test]
+    public async Task General_route_supports_two_ordered_fallbacks()
+    {
+        var config = Settings("Kavenegar");
+        config.FreeTextFailover = true;
+        config.FreeTextFallback1 = "Melipayamak";
+        config.FreeTextFallback2 = "SmsIr";
+        var first = new FakeProvider("Kavenegar") { Error = new SmsProviderException("Rejected", true) };
+        var second = new FakeProvider("Melipayamak") { Error = new SmsProviderException("Rejected", true) };
+        var third = new FakeProvider("SmsIr");
+        var result = await CreateSender(config, first, second, third).SendAsync(Request);
+        Assert.That(result.Provider, Is.EqualTo("SmsIr"));
+        Assert.That(first.Calls, Is.EqualTo(1));
+        Assert.That(second.Calls, Is.EqualTo(1));
+        Assert.That(third.Calls, Is.EqualTo(1));
+    }
+
     private static SmsGatewaySettings Settings(string primary) => new()
     {
         Enabled = true,
-        PrimaryProvider = primary
+        DeliveryRoutingConfigured = true,
+        FreeTextPrimary = primary
     };
 
     private static SmsGatewaySender CreateSender(SmsGatewaySettings settings, params ISmsProvider[] providers)
@@ -137,7 +167,7 @@ public class SmsGatewaySenderTests
     }
 
     private static SmsGatewaySender CreateSender(ISettingFactory factory, params ISmsProvider[] providers)
-        => new(factory, providers, NullLogger<SmsGatewaySender>.Instance);
+        => new(factory, providers, NullLogger<SmsGatewaySender>.Instance, templates: TestSmsTemplates.Catalog());
 
     private sealed class FakeProvider : ISmsProvider
     {

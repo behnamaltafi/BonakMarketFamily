@@ -1,4 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
+using BonakMarket.Core.Data;
+using BonakMarket.Data;
+using BonakMarket.Data.Providers;
+using BonakMarket.StorefrontApi.Domain;
 using BonakMarket.Engine;
 using BonakMarket.Engine.Builders;
 using BonakMarket.StorefrontApi.Security;
@@ -19,6 +25,9 @@ internal sealed class Startup : StarterBase
         services.AddScoped<CatalogQueries>();
         services.AddScoped<OrderQueries>();
         services.AddScoped<CartFacade>();
+        services.AddScoped<GuestCartService>();
+        services.AddScoped<GuestCartSqlLock>();
+        services.AddTransient<IDbContextConfigurationSource<SmartDbContext>, GuestCartModelConfigurer>();
         services.AddStorefrontSwagger();
     }
 
@@ -27,5 +36,13 @@ internal sealed class Startup : StarterBase
         if (!builder.ApplicationContext.IsInstalled) return;
         builder.Configure(StarterOrdering.BeforeRoutingMiddleware, app =>
             app.UseStorefrontSwagger(builder.ApplicationContext.HostEnvironment));
+        builder.Configure(StarterOrdering.BeforeWorkContextMiddleware + 1, app =>
+            app.UseMiddleware<GuestCartMiddleware>());
+    }
+
+    private sealed class GuestCartModelConfigurer : IDbContextConfigurationSource<SmartDbContext>
+    {
+        public void Configure(IServiceProvider services, DbContextOptionsBuilder builder) =>
+            builder.UseDbFactory(factory => factory.AddModelAssembly(typeof(GuestCartToken).Assembly));
     }
 }

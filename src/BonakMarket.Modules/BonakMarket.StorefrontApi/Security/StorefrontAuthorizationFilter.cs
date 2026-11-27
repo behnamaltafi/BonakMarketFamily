@@ -8,6 +8,7 @@ using BonakMarket.Core;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Security;
 using BonakMarket.Core.Stores;
+using BonakMarket.StorefrontApi.Domain;
 
 namespace BonakMarket.StorefrontApi.Security;
 
@@ -24,6 +25,7 @@ public sealed class StorefrontRequestContext
 {
     public Customer Customer { get; internal set; }
     public int StoreId { get; internal set; }
+    public bool IsGuestCart { get; internal set; }
 }
 
 public sealed class StorefrontAuthorizationFilter(
@@ -36,6 +38,8 @@ public sealed class StorefrontAuthorizationFilter(
         var action = context.ActionDescriptor as ControllerActionDescriptor;
         if (action == null) { Deny(context, 403, "permission_denied"); return; }
         var isPublic = action.MethodInfo.IsDefined(typeof(PublicCatalogAttribute), true);
+        var guestAction = action.MethodInfo.IsDefined(typeof(AllowGuestCartAttribute), true);
+        var guestCreate = action.MethodInfo.IsDefined(typeof(CreateGuestCartAttribute), true);
         var bearer = http.Request.Headers.ContainsKey("Authorization");
         Customer identity = null;
         // Keep the same secure-by-default transport policy as Identity without a module assembly dependency.
@@ -49,7 +53,13 @@ public sealed class StorefrontAuthorizationFilter(
             if (identity == null) { Deny(context, 401, "invalid_access_token"); return; }
         }
 
-        if (identity == null && !isPublic) { Deny(context, 401, "authentication_required"); return; }
+        var guestToken = http.Items.TryGetValue(typeof(GuestCartToken), out var token) ? token as GuestCartToken : null;
+        if (identity == null && !isPublic && !guestCreate && !(guestAction && guestToken != null))
+        { Deny(context, 401, guestAction ? "guest_cart_token_required" : "authentication_required"); return; }
+        if (guestCreate && identity != null)
+        { Deny(context, 409, "guest_cart_creation_requires_anonymous"); return; }
+        if (identity == null && (guestAction || guestCreate) && !GuestCartPolicy.Enabled(configuration))
+        { Deny(context, 403, "guest_cart_disabled"); return; }
         var customer = work.CurrentCustomer;
         if (customer == null || work.CurrentImpersonator != null ||
             (identity != null && customer.Id != identity.Id) ||
@@ -58,6 +68,9 @@ public sealed class StorefrontAuthorizationFilter(
 
         var storeId = stores.CurrentStore.Id;
         if (storeId <= 0) { Deny(context, 503, "store_unavailable"); return; }
+        if (identity == null && (guestAction || guestCreate || guestToken != null) &&
+            (!GuestCartPolicy.IsGuest(customer) || (!guestCreate && (guestToken == null || guestToken.CustomerId != customer.Id || guestToken.StoreId != storeId))))
+        { Deny(context, 403, "identity_mismatch"); return; }
         if (!await permissions.AuthorizeAsync(Permissions.System.AccessShop, customer))
         { Deny(context, 403, "shop_access_denied"); return; }
 
@@ -67,12 +80,17 @@ public sealed class StorefrontAuthorizationFilter(
                 .Concat(action.MethodInfo.GetCustomAttributes(typeof(StorefrontPermissionAttribute), true))
                 .Cast<StorefrontPermissionAttribute>();
             foreach (var permission in required)
-                if (!await permissions.AuthorizeAsync(permission.Permission, customer))
+            {
+                var name = identity == null && (guestAction || guestCreate) && permission.Permission == StorefrontPermissions.Cart
+                    ? StorefrontPermissions.GuestCart : permission.Permission;
+                if (!await permissions.AuthorizeAsync(name, customer))
                 { Deny(context, 403, "permission_denied"); return; }
+            }
         }
 
         request.Customer = customer;
         request.StoreId = storeId;
+        request.IsGuestCart = identity == null && guestToken != null;
     }
 
     private static void Deny(AuthorizationFilterContext context, int status, string code)

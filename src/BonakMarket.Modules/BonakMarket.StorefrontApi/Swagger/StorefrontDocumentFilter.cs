@@ -17,5 +17,10 @@ internal sealed class StorefrontDocumentFilter : IDocumentFilter
             Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",
             Description = "Customer access token from SMS verification or refresh. Enter the token without the Bearer prefix."
         };
+        document.Components.SecuritySchemes["GuestCartToken"] = new OpenApiSecurityScheme
+        {
+            Type = SecuritySchemeType.ApiKey, In = ParameterLocation.Header, Name = "X-Guest-Cart-Token",
+            Description = "Opaque guest cart token from POST /cart/guest. Never use as a customer Bearer token."
+        };
     }
 }

@@ -88,6 +88,29 @@ public class StorefrontContractTests
     }
 
     [Test]
+    public void StorefrontCollaboratorsHaveScopedLifetime()
+    {
+        var services = new ServiceCollection();
+        new BonakMarket.StorefrontApi.Startup().ConfigureServices(services, null);
+
+        var collaborators = new[]
+        {
+            typeof(StorefrontRequestContext),
+            typeof(ProductCatalogQueries), typeof(ProductCatalogData), typeof(ProductCatalogMapper), typeof(CatalogFacade),
+            typeof(CartStateReader), typeof(CartAdjustments), typeof(CartFacade),
+            typeof(CheckoutDraftStore), typeof(CheckoutAddressChecks), typeof(CheckoutSessionState),
+            typeof(CheckoutOptions), typeof(OfflineCheckoutEligibility)
+        };
+
+        foreach (var type in collaborators)
+        {
+            var registrations = services.Where(x => x.ServiceType == type).ToList();
+            Assert.That(registrations.Count, Is.EqualTo(1), type.Name);
+            Assert.That(registrations[0].Lifetime, Is.EqualTo(ServiceLifetime.Scoped), type.Name);
+        }
+    }
+
+    [Test]
     public void InvalidPriceRangeAndSortAreRejected()
     {
         Assert.That(IsValid(new ProductSearchRequest { MinPrice = 100, MaxPrice = 50 }), Is.False);

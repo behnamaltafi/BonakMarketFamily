@@ -5,6 +5,7 @@ using NUnit.Framework;
 using BonakMarket.Core.Catalog.Products;
 using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Checkout.Payment;
+using BonakMarket.StorefrontApi;
 using BonakMarket.StorefrontApi.Controllers;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;

@@ -1,17 +1,18 @@
 @model string
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery PhoneAntiforgery
 
 @{
     // This widget is rendered INSIDE the native Customer/Info form.
     // Use buttons + same-origin fetch: nested forms would be invalid markup.
-    var sessionUrl = Url.Content("~/api/identity/v1/auth/session");
-    var requestUrl = Url.Content("~/api/identity/v1/me/security/phone/request");
-    var verifyUrl = Url.Content("~/api/identity/v1/me/security/phone/verify");
-    var reauthRequestUrl = Url.Content("~/api/identity/v1/me/security/phone/reauth/request");
-    var reauthVerifyUrl = Url.Content("~/api/identity/v1/me/security/phone/reauth/verify");
+    var csrf = PhoneAntiforgery.GetAndStoreTokens(Context);
+    var requestUrl = Url.Content("~/sms-login/account/phone/request");
+    var verifyUrl = Url.Content("~/sms-login/account/phone/verify");
+    var reauthRequestUrl = Url.Content("~/sms-login/account/phone/reauth/request");
+    var reauthVerifyUrl = Url.Content("~/sms-login/account/phone/reauth/verify");
 }
 
 <div id="multi-sms-phone-settings" class="card mb-4"
-     data-session-url="@sessionUrl"
+     data-csrf-header="@csrf.HeaderName" data-csrf-token="@csrf.RequestToken"
      data-request-url="@requestUrl"
      data-verify-url="@verifyUrl"
      data-reauth-request="@reauthRequestUrl" data-reauth-verify="@reauthVerifyUrl" data-bound="@(!string.IsNullOrEmpty(Model) ? "true" : "false")" data-login-url="@Url.Content("~/login")"
@@ -105,16 +106,8 @@
         }
 
         async function otpRequest(path, payload) {
-            const sessionResponse = await fetch(root.dataset.sessionUrl, {
-                credentials: "same-origin", cache: "no-store"
-            });
-            if (!sessionResponse.ok) throw new Error("session_failed");
-            const session = await sessionResponse.json();
-            if (!session.enabled || !session.isAuthenticated || !session.requestToken ||
-                !session.headerName) throw new Error("not_authenticated");
-
             const headers = { "Content-Type": "application/json" };
-            headers[session.headerName] = session.requestToken;
+            headers[root.dataset.csrfHeader] = root.dataset.csrfToken;
             const result = await fetch(path, {
                 method: "POST",
                 credentials: "same-origin",

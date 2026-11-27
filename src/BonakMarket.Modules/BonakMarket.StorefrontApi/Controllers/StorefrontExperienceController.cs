@@ -14,6 +14,7 @@ using BonakMarket.Core.Identity;
 using BonakMarket.Core.Localization;
 using BonakMarket.Core.Stores;
 using BonakMarket.StorefrontApi.Models;
+using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Controllers;
@@ -53,14 +54,10 @@ public sealed class StorefrontExperienceController(SmartDbContext db, Storefront
     [HttpGet("pages"), PublicCatalog]
     public async Task<ActionResult<PageDto<TopicSummaryDto>>> Pages([FromQuery] PageRequest page, CancellationToken ct)
     {
-        var query = Topics();
-        var count = await query.CountAsync(ct);
-        var rows = await query.OrderBy(x => x.Priority).ThenBy(x => x.Id)
-            .Skip((page.Page - 1) * page.PageSize).Take(page.PageSize).ToListAsync(ct);
-        var items = rows.Select(x => new TopicSummaryDto(x.Id, x.SystemName,
-            x.GetLocalized(y => y.Title).Value, x.GetLocalized(y => y.Intro).Value)).ToList();
-        return Ok(new PageDto<TopicSummaryDto>(items, page.Page, page.PageSize, count,
-            (int)Math.Ceiling(count / (double)page.PageSize)));
+        var query = Topics().OrderBy(x => x.Priority).ThenBy(x => x.Id);
+        return Ok(await query.PageAsync(page, rows => Task.FromResult(rows.Select(x =>
+            new TopicSummaryDto(x.Id, x.SystemName,
+                x.GetLocalized(y => y.Title).Value, x.GetLocalized(y => y.Intro).Value)).ToList()), ct));
     }
 
     [HttpGet("pages/{id:int}"), PublicCatalog]

@@ -16,8 +16,7 @@ public sealed class RewardPointsController(SmartDbContext db, StorefrontRequestC
     public async Task<ActionResult<RewardPointsDto>> Get([FromQuery] PageRequest page, CancellationToken ct)
     {
         if (!settings.Enabled) return Error(403, "reward_points_disabled");
-        var query = db.RewardPointsHistory.AsNoTracking().Where(x => x.CustomerId == request.Customer.Id)
-            .OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id);
+        var query = db.RewardPointsHistory.AsNoTracking().ApplyCustomerFilter([request.Customer.Id]);
         var balance = await query.Select(x => (int?)x.PointsBalance).FirstOrDefaultAsync(ct) ?? 0;
         var history = await query.Select(x => new RewardPointDto(x.Id, x.Points, x.PointsBalance,
             x.UsedAmount, x.Message, x.CreatedOnUtc)).PageAsync(page, ct);

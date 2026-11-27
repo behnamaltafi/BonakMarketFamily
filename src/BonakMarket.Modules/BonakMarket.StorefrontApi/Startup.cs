@@ -22,7 +22,6 @@ internal sealed class Startup : StarterBase
     {
         services.AddScoped<StorefrontRequestContext>();
         services.AddScoped<ProductCatalogQueries>();
-        services.AddScoped<ProductCatalogData>();
         services.AddScoped<ProductCatalogMapper>();
         services.AddScoped<CatalogFacade>();
         services.AddScoped<CatalogQueries>();

@@ -4,6 +4,7 @@ using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Data;
 using BonakMarket.StorefrontApi.Models;
+using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Controllers;
@@ -24,10 +25,7 @@ public sealed class DownloadsController(SmartDbContext db, StorefrontRequestCont
     public async Task<ActionResult<PageDto<DownloadableItemDto>>> List([FromQuery] PageRequest page, CancellationToken ct)
     {
         var query = Owned().AsNoTracking().OrderByDescending(x => x.Order.CreatedOnUtc).ThenByDescending(x => x.Id);
-        var count = await query.CountAsync(ct);
-        var items = await query.Skip((page.Page - 1) * page.PageSize).Take(page.PageSize).ToListAsync(ct);
-        return Ok(new PageDto<DownloadableItemDto>(items.Select(Map).ToList(), page.Page, page.PageSize,
-            count, (int)Math.Ceiling(count / (double)page.PageSize)));
+        return Ok(await query.PageAsync(page, items => Task.FromResult(items.Select(Map).ToList()), ct));
     }
 
     [HttpGet("{id:guid}")]

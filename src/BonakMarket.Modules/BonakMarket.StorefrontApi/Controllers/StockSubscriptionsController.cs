@@ -14,8 +14,9 @@ namespace BonakMarket.StorefrontApi.Controllers;
 public sealed class StockSubscriptionsController(SmartDbContext db, StorefrontRequestContext request,
     IStockSubscriptionService subscriptions, CustomerSettings settings) : StorefrontController
 {
-    private IQueryable<BackInStockSubscription> Owned() => db.BackInStockSubscriptions.Where(x =>
-        x.CustomerId == request.Customer.Id && x.StoreId == request.StoreId);
+    private IQueryable<BackInStockSubscription> Owned() => db.BackInStockSubscriptions
+        .Where(x => request.Customer.Id > 0 && request.StoreId > 0)
+        .ApplyStandardFilter(customerId: request.Customer.Id, storeId: request.StoreId);
 
     [HttpGet]
     public async Task<ActionResult<PageDto<StockSubscriptionDto>>> Get([FromQuery] PageRequest page, CancellationToken ct)
@@ -47,6 +48,8 @@ public sealed class StockSubscriptionsController(SmartDbContext db, StorefrontRe
     {
         var subscription = await Owned().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (subscription == null) return Error(404, "subscription_not_found");
+        // Native UnsubscribeAsync selects by product/customer/store, not subscription ID.
+        // Delete the exact owned record even if the product is hidden/deleted or duplicate rows exist.
         db.BackInStockSubscriptions.Remove(subscription);
         await db.SaveChangesAsync(ct);
         return NoContent();

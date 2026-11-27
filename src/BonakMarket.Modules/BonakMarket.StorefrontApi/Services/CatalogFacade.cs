@@ -84,14 +84,6 @@ public sealed class CatalogFacade(SmartDbContext db, IPriceCalculationService pr
         SearchSettings settings = null, string priceCurrencyCode = null) =>
         queries.FacetsAsync(filter, ct, settings, priceCurrencyCode);
 
-    public async Task<ProductDto> FindAsync(int id, CancellationToken ct)
-    {
-        var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
-            .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
-        if (product == null) return null;
-        return (await mapper.MapAsync(new[] { product }, true, false, ct: ct))[0];
-    }
-
     public async Task<ProductDetailDto> DetailAsync(int id, CancellationToken ct)
     {
         var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)

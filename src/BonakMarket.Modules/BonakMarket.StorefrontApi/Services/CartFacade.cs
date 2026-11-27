@@ -94,8 +94,6 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart,
 
     public Task<bool> SetRewardPointsAsync(bool use, CancellationToken ct) => adjustments.SetRewardPointsAsync(use, ct);
 
-    public Task<CartTotalDto> TotalAsync() => reader.TotalAsync();
-
     public Task<bool> ApplyGiftCardAsync(string code, CancellationToken ct) => adjustments.ApplyGiftCardAsync(code, ct);
 
     public Task<bool> RemoveGiftCardAsync(int id, CancellationToken ct) => adjustments.RemoveGiftCardAsync(id, ct);

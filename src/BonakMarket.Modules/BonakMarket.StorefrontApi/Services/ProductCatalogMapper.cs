@@ -1,16 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Autofac;
 using BonakMarket.Core;
 using BonakMarket.Core.Catalog.Products;
-using BonakMarket.Core.Catalog.Categories;
-using BonakMarket.Core.Catalog.Brands;
 using BonakMarket.Core.Catalog;
 using BonakMarket.Core.Catalog.Attributes;
 using BonakMarket.Core.Catalog.Search;
 using BonakMarket.Core.Common;
 using BonakMarket.Core.Catalog.Pricing;
 using BonakMarket.Core.Checkout.Cart;
-using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Configuration;
 using BonakMarket.StorefrontApi.Configuration;
 using BonakMarket.Core.Identity;
@@ -26,9 +24,8 @@ namespace BonakMarket.StorefrontApi.Services;
 
 public sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationService prices,
     IMediaService media, IPermissionService permissions, IWorkContext work, IStoreContext stores,
-    IComponentContext components, StorefrontRequestContext request, ProductCatalogData data, ISettingFactory settingFactory = null)
+    IComponentContext components, StorefrontRequestContext request, IConfiguration configuration, ISettingFactory settingFactory = null)
 {
-
     internal Task<WholesaleCardSettings> LoadWholesaleSettingsAsync() => settingFactory == null
         ? Task.FromResult(new WholesaleCardSettings())
         : settingFactory.LoadSettingsAsync<WholesaleCardSettings>(0);
@@ -47,7 +44,7 @@ public sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationSer
                 includeHidden: false, loadMainMediaOnly: true)) : null;
         var ids = products.Select(x => x.Id).ToArray();
         wholesaleSettings ??= includePurchaseInfo || allowed ? await LoadWholesaleSettingsAsync() : new WholesaleCardSettings();
-        var metadata = await data.LoadPackageMetadataAsync(ids, wholesaleSettings.UnitsPerPackageSpecificationId, includePurchaseInfo, ct);
+        var metadata = await LoadPackageMetadataAsync(ids, wholesaleSettings.UnitsPerPackageSpecificationId, includePurchaseInfo, ct);
         var languageId = work.WorkingLanguage.Id;
         var translated = await CatalogLocalization.LoadAsync(db, ids, languageId, nameof(Product),
             [nameof(Product.Name), nameof(Product.ShortDescription)], ct);
@@ -55,7 +52,7 @@ public sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationSer
         var lookup = includeImages && ids.Length > 0
             ? await CatalogMedia.MainPictureIdsAsync(db, ids, ct) : new Dictionary<int, int>();
         var imageUrls = await CatalogMedia.UrlsAsync(media, lookup.Values.Select(x => (int?)x), imageSize, ct);
-        var purchase = includePurchaseInfo ? await data.LoadPurchaseDataAsync(products, ids, languageId, ct) : null;
+        var purchase = includePurchaseInfo ? await LoadPurchaseDataAsync(products, ids, languageId, ct) : null;
         var items = new List<ProductDto>(products.Count);
         foreach (var product in products)
         {
@@ -140,5 +137,65 @@ public sealed class ProductCatalogMapper(SmartDbContext db, IPriceCalculationSer
             SavingAmount = result.Saving.HasSaving ? result.Saving.SavingAmount?.Amount : null,
             SavingReference = result.Saving.HasSaving ? (result.RegularPrice.HasValue ? "regular_price" : "retail_price") : null
         };
+    }
+
+    // Batch-load product card data; never query per product.
+    private async Task<Dictionary<int, decimal>> LoadPackageMetadataAsync(int[] ids, int packageAttributeId,
+        bool includePurchaseInfo, CancellationToken ct)
+    {
+        var metadata = new Dictionary<int, decimal>();
+        if (includePurchaseInfo && packageAttributeId > 0)
+        {
+            var rows = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
+                .Where(x => ids.Contains(x.ProductId) && x.SpecificationAttributeOption.SpecificationAttributeId == packageAttributeId)
+                .Select(x => new { x.ProductId, Value = x.SpecificationAttributeOption.NumberValue }).ToListAsync(ct);
+            metadata = rows.GroupBy(x => x.ProductId).Where(g => g.Count() == 1)
+                .ToDictionary(g => g.Key, g => g.Single().Value);
+        }
+        return metadata;
+    }
+
+    private async Task<ProductPurchaseData> LoadPurchaseDataAsync(IList<Product> products, int[] ids, int languageId, CancellationToken ct)
+    {
+        var sellable = (await ProductCatalogQueries.ApplyStockFilter(db.Set<Product>().AsNoTracking().Where(x => ids.Contains(x.Id)), true)
+            .Select(x => x.Id).ToListAsync(ct)).ToHashSet();
+        var managedIds = products.Where(x => x.ManageInventoryMethod == ManageInventoryMethod.ManageStockByAttributes)
+            .Select(x => x.Id).ToArray();
+        var combinationCapacity = new Dictionary<int, (int MaxStock, bool Backorder)>();
+        if (managedIds.Length > 0)
+        {
+            var combinations = await db.Set<ProductVariantAttributeCombination>().AsNoTracking()
+                .Where(x => managedIds.Contains(x.ProductId) && x.IsActive)
+                .Select(x => new { x.ProductId, x.StockQuantity, x.AllowOutOfStockOrders }).ToListAsync(ct);
+            combinationCapacity = combinations.GroupBy(x => x.ProductId)
+                .ToDictionary(g => g.Key, g => (g.Max(x => x.StockQuantity), g.Any(x => x.AllowOutOfStockOrders)));
+        }
+        var variants = await db.Set<ProductVariantAttribute>().AsNoTracking().Where(x => ids.Contains(x.ProductId))
+            .Select(x => new { x.ProductId, x.IsRequired, x.AttributeControlTypeId }).ToListAsync(ct);
+        var variantInfo = variants.GroupBy(x => x.ProductId).ToDictionary(g => g.Key,
+            g => (true, g.Any(x => x.IsRequired && !ProductSelection.SupportsControl((AttributeControlType)x.AttributeControlTypeId))));
+        var (unitLookup, defaultUnit) = await LoadUnitsAsync(products, languageId, ct);
+        var canCart = (request.Customer.IsRegistered()
+            ? await permissions.AuthorizeAsync(StorefrontPermissions.Cart, request.Customer)
+            : GuestCartPolicy.Enabled(configuration) && GuestCartPolicy.IsGuest(request.Customer) &&
+                await permissions.AuthorizeAsync(StorefrontPermissions.GuestCart, request.Customer)) &&
+            await permissions.AuthorizeAsync(Permissions.Cart.AccessShoppingCart, request.Customer);
+        return new(sellable, combinationCapacity, variantInfo, unitLookup, defaultUnit, canCart);
+    }
+
+    private async Task<(Dictionary<int, QuantityUnitDto> Units, QuantityUnitDto Default)> LoadUnitsAsync(
+        IList<Product> products, int languageId, CancellationToken ct)
+    {
+        var unitIds = products.Select(x => x.QuantityUnitId).Where(x => x > 0).Select(x => x.Value).Distinct().ToArray();
+        var units = await db.Set<QuantityUnit>().AsNoTracking().Where(x => unitIds.Contains(x.Id) || x.IsDefault)
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).ToListAsync(ct);
+        var allUnitIds = units.Select(x => x.Id).ToArray();
+        var labels = await CatalogLocalization.LoadAsync(db, allUnitIds, languageId, nameof(QuantityUnit),
+            [nameof(QuantityUnit.Name), nameof(QuantityUnit.NamePlural)], ct);
+        string UnitLabel(int id, string key, string fallback) => CatalogLocalization.ValueOrFallback(labels, id, key, fallback);
+        var unitLookup = units.ToDictionary(x => x.Id, x => new QuantityUnitDto(x.Id,
+            UnitLabel(x.Id, nameof(QuantityUnit.Name), x.Name), UnitLabel(x.Id, nameof(QuantityUnit.NamePlural), x.NamePlural)));
+        var defaultEntity = units.FirstOrDefault(x => x.IsDefault);
+        return (unitLookup, defaultEntity != null ? unitLookup[defaultEntity.Id] : null);
     }
 }

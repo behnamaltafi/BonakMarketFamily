@@ -205,11 +205,4 @@ public sealed class CartStateReader(SmartDbContext db, IShoppingCartService cart
             return new CartItemDto(x.Id, x.ProductId, x.Quantity, x.Active, x.ParentItemId);
         }).ToList();
     }
-
-    public async Task<CartTotalDto> TotalAsync()
-    {
-        var current = await cart.GetCartAsync(request.Customer, ShoppingCartType.ShoppingCart, request.StoreId);
-        var result = await calculations.GetShoppingCartTotalAsync(current, ShoppingCartTotalOptions.Default);
-        return new CartTotalDto(result.Total?.Amount, result.DiscountAmount.Amount, result.DiscountAmount.Currency.CurrencyCode);
-    }
 }

@@ -17,7 +17,9 @@ namespace BonakMarket.StorefrontApi.Controllers;
 public sealed class ReturnsController(SmartDbContext db, StorefrontRequestContext request, IOrderProcessingService processing,
     OrderSettings settings, LocalizationSettings localization, IMessageFactory messages) : StorefrontController
 {
-    private IQueryable<ReturnCase> Owned() => db.ReturnCases.Where(x => x.CustomerId == request.Customer.Id && x.StoreId == request.StoreId);
+    private IQueryable<ReturnCase> Owned() => db.ReturnCases
+        .Where(x => request.Customer.Id > 0 && request.StoreId > 0)
+        .ApplyStandardFilter(customerId: request.Customer.Id, storeId: request.StoreId);
     private IQueryable<Order> Orders() => StorefrontScope.Orders(db, request.Customer, request.StoreId);
     private static IQueryable<ReturnCaseDto> Project(IQueryable<ReturnCase> query) => query.Select(x =>
         new ReturnCaseDto(x.Id, x.OrderItemId, x.Quantity, x.ReasonForReturn, x.RequestedAction,
@@ -25,7 +27,7 @@ public sealed class ReturnsController(SmartDbContext db, StorefrontRequestContex
 
     [HttpGet("returns")]
     public async Task<ActionResult<PageDto<ReturnCaseDto>>> List([FromQuery] PageRequest page, CancellationToken ct) =>
-        Ok(await Project(Owned().AsNoTracking().OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)).PageAsync(page, ct));
+        Ok(await Project(Owned().AsNoTracking()).PageAsync(page, ct));
 
     [HttpGet("returns/{id:int}")]
     public async Task<ActionResult<ReturnCaseDto>> Get(int id, CancellationToken ct)
@@ -45,6 +47,7 @@ public sealed class ReturnsController(SmartDbContext db, StorefrontRequestContex
     private async Task<List<ReturnableItemDto>> Quantities(Order order, CancellationToken ct)
     {
         var ids = order.OrderItems.Select(x => x.Id).ToArray();
+        // Native GetMaxReturnQuantity reads the full customer ReturnCases navigation; aggregate only this order's lines.
         var existing = await db.ReturnCases.AsNoTracking().Where(x => ids.Contains(x.OrderItemId))
             .GroupBy(x => x.OrderItemId).Select(x => new { Id = x.Key, Quantity = x.Sum(y => y.Quantity) })
             .ToDictionaryAsync(x => x.Id, x => x.Quantity, ct);

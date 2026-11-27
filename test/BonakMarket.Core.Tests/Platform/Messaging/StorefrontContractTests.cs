@@ -96,7 +96,7 @@ public class StorefrontContractTests
         var collaborators = new[]
         {
             typeof(StorefrontRequestContext),
-            typeof(ProductCatalogQueries), typeof(ProductCatalogData), typeof(ProductCatalogMapper), typeof(CatalogFacade),
+            typeof(ProductCatalogQueries), typeof(ProductCatalogMapper), typeof(CatalogFacade),
             typeof(CartStateReader), typeof(CartAdjustments), typeof(CartFacade),
             typeof(CheckoutDraftStore), typeof(CheckoutAddressChecks), typeof(CheckoutSessionState),
             typeof(CheckoutOptions), typeof(OfflineCheckoutEligibility)
@@ -146,6 +146,19 @@ public class StorefrontContractTests
         Assert.That(result.TotalCount, Is.EqualTo(10));
         Assert.That(result.TotalPages, Is.EqualTo(4));
         Assert.That(result.Page, Is.EqualTo(page));
+    }
+
+    [TestCase(0, 1, 0)]
+    [TestCase(10, 5, 4)]
+    public async Task NativeMappedPagingPreservesEmptyPageMetadata(int count, int page, int totalPages)
+    {
+        var source = Enumerable.Range(1, count).AsQueryable().OrderBy(x => x);
+        var result = await source.PageAsync(new PageRequest { Page = page, PageSize = 3 },
+            rows => Task.FromResult(rows.Select(x => x.ToString()).ToList()), CancellationToken.None);
+        Assert.That(result.Items, Is.Empty);
+        Assert.That(result.Page, Is.EqualTo(page));
+        Assert.That(result.TotalCount, Is.EqualTo(count));
+        Assert.That(result.TotalPages, Is.EqualTo(totalPages));
     }
 
     [Test]

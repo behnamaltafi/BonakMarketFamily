@@ -24,7 +24,7 @@ Source audit: all public storefront controllers under src/BonakMarket.Web/Contro
 | Admin, ERP/OData, installer, PDF template internals, external provider callbacks | Administrative/integration/provider boundary, not customer authentication | Not exposed as customer APIs |
 
 ## New routes
-All relative to /api/storefront/v1; require HTTPS and a valid customer bearer token or native cookie. Cookie mutations require CSRF. Customer and store are never accepted as input.
+All relative to /api/storefront/v1; require HTTPS and a valid customer Bearer access token. Native cookies are not accepted by the API. Customer and store are never accepted as input.
 
 - GET wishlist; POST wishlist/items; PUT/DELETE wishlist/items/{id}; POST wishlist/items/{id}/cart; POST cart/items/{id}/wishlist.
 - POST cart/gift-cards; DELETE cart/gift-cards/{id}; PUT cart/reward-points.

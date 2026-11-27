@@ -1,3 +1,4 @@
+#nullable enable
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -31,7 +32,7 @@ public sealed class AuthApiController(IMobileApiTokenService tokens, ICustomerSe
     /// <summary>Revokes the current session via a valid access token, or current refresh token with no Authorization header.</summary>
     [HttpPost("logout")]
     [ProducesResponseType(204)]
-    public async Task<IActionResult> Logout([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] CustomerLogoutRequest input, CancellationToken ct)
+    public async Task<IActionResult> Logout([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] CustomerLogoutRequest? input, CancellationToken ct)
     {
         if (!IdentityTransportPolicy.IsAllowed(Request))
             return BadRequest(new IdentityCodeResponse("https_required"));

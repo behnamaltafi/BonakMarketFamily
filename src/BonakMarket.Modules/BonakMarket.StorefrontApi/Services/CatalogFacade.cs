@@ -11,6 +11,9 @@ using BonakMarket.Core.Catalog.Search;
 using BonakMarket.Core.Common;
 using BonakMarket.Core.Catalog.Pricing;
 using BonakMarket.Core.Checkout.Cart;
+using BonakMarket.Core.Checkout.Orders;
+using BonakMarket.Core.Configuration;
+using BonakMarket.StorefrontApi.Configuration;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Data;
@@ -26,13 +29,35 @@ public sealed class CatalogFacade(
     SmartDbContext db, ICatalogSearchService search, IPriceCalculationService prices,
     IMediaService media, IPermissionService permissions, IWorkContext work,
     IStoreContext stores, IComponentContext components, CatalogSettings catalogSettings, StorefrontRequestContext request,
-    IProductAttributeMaterializer attributes, IShoppingCartValidator validator, IConfiguration configuration = null)
+    IProductAttributeMaterializer attributes, IShoppingCartValidator validator, IConfiguration configuration = null, ISettingFactory settingFactory = null)
 {
+    private Task<WholesaleCardSettings> LoadWholesaleSettingsAsync() => settingFactory == null
+        ? Task.FromResult(new WholesaleCardSettings())
+        : settingFactory.LoadSettingsAsync<WholesaleCardSettings>(0);
+
     public Task<bool> CanDisplayPriceAsync() => permissions.AuthorizeAsync(Permissions.Catalog.DisplayPrice, request.Customer);
 
     public async Task<PageDto<ProductDto>> SearchAsync(ProductSearchRequest filter, CancellationToken ct, SearchSettings settings = null)
     {
         var source = await SearchSourceAsync(filter, ct, settings);
+        if (filter.Sort == CatalogSort.BestSellers)
+        {
+            var orders = CatalogPurchaseRanking.EligibleOrders(db.Set<Order>().AsNoTracking(), request.StoreId,
+                DateTime.UtcNow.AddDays(-90));
+            source = CatalogPurchaseRanking.BestSellers(source, CatalogPurchaseRanking.Items(db.Set<OrderItem>().AsNoTracking(), orders));
+        }
+        var page = await source.ToPagedList(filter.Page - 1, filter.PageSize).LoadAsync(cancelToken: ct);
+        var items = await MapAsync(page.ToList(), filter.IncludePrice, ct: ct);
+        return NativePaging.Map(page, items);
+    }
+
+    public async Task<PageDto<ProductDto>> FrequentlyPurchasedAsync(ProductFilterRequest filter, CancellationToken ct, SearchSettings settings = null)
+    {
+        var orders = CatalogPurchaseRanking.EligibleOrders(StorefrontScope.Orders(db, request.Customer, request.StoreId)
+            .AsNoTracking(), request.StoreId, DateTime.UtcNow.AddDays(-365));
+        var products = await SearchSourceAsync(filter, ct, settings);
+        var source = CatalogPurchaseRanking.FrequentlyPurchased(products,
+            CatalogPurchaseRanking.Items(db.Set<OrderItem>().AsNoTracking(), orders));
         var page = await source.ToPagedList(filter.Page - 1, filter.PageSize).LoadAsync(cancelToken: ct);
         var items = await MapAsync(page.ToList(), filter.IncludePrice, ct: ct);
         return NativePaging.Map(page, items);
@@ -75,7 +100,7 @@ public sealed class CatalogFacade(
             x == CatalogSearchQuery.KnownFilters.Sku || x == CatalogSearchQuery.KnownFilters.ShortDescription)
             .Distinct().ToArray();
 
-    internal static bool? EffectiveStockFilter(ProductSearchRequest filter, SearchSettings settings) =>
+    internal static bool? EffectiveStockFilter(ProductFilterRequest filter, SearchSettings settings) =>
         filter.InStock ?? (!string.IsNullOrWhiteSpace(filter.Search) && !settings.IncludeNotAvailable ? true : (bool?)null);
 
     internal static IQueryable<Product> ApplyStockFilter(IQueryable<Product> source, bool? inStock)
@@ -92,7 +117,7 @@ public sealed class CatalogFacade(
             ) == inStock.Value);
     }
 
-    private async Task<IQueryable<Product>> SearchSourceAsync(ProductSearchRequest filter, CancellationToken ct, SearchSettings settings)
+    private async Task<IQueryable<Product>> SearchSourceAsync(ProductFilterRequest filter, CancellationToken ct, SearchSettings settings)
     {
         settings ??= new SearchSettings();
         var term = filter.Search?.Trim();
@@ -128,7 +153,8 @@ public sealed class CatalogFacade(
             query.WithManufacturerIds(null, filter.BrandId.Value);
         }
         if (filter.HasDiscount.HasValue) query.HasDiscount(filter.HasDiscount.Value);
-        if (hasTerm && filter.Sort == CatalogSort.Initial)
+        if (filter.ShowOnHomePage.HasValue) query.HomePageProductsOnly(filter.ShowOnHomePage.Value);
+        if (hasTerm && (filter is not ProductSearchRequest sorted || sorted.Sort == CatalogSort.Initial))
             query.SortBy(ProductSortingEnum.Relevance);
 
         // Native LINQ search with a strictly scoped base query. Unlike an external index,
@@ -138,12 +164,13 @@ public sealed class CatalogFacade(
         return ApplyCatalogPriceAndSort(source, filter, DateTime.UtcNow);
     }
 
-    internal static IQueryable<Product> ApplyCatalogPriceAndSort(IQueryable<Product> source, ProductSearchRequest filter, DateTime now)
+    internal static IQueryable<Product> ApplyCatalogPriceAndSort(IQueryable<Product> source, ProductFilterRequest filter, DateTime now)
     {
+        var sort = (filter as ProductSearchRequest)?.Sort ?? CatalogSort.Initial;
         // Catalog price (base currency, before customer-specific taxes/discounts), not a checkout quote.
         // Keep decimal precision and use a single timestamp for the range and price order.
         if (filter.MinPrice.HasValue || filter.MaxPrice.HasValue ||
-            filter.Sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc)
+            sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc)
         {
             // Do not reveal catalog prices for products whose prices are intentionally unavailable.
             // Price bounds exclude those rows, but sorting alone preserves them at the end.
@@ -155,19 +182,20 @@ public sealed class CatalogFacade(
                     ? x.SpecialPrice.Value : x.Price) });
             if (filter.MinPrice.HasValue) priced = priced.Where(x => x.Price.HasValue && x.Price.Value >= filter.MinPrice.Value);
             if (filter.MaxPrice.HasValue) priced = priced.Where(x => x.Price.HasValue && x.Price.Value <= filter.MaxPrice.Value);
-            if (filter.Sort == CatalogSort.PriceAsc)
+            if (sort == CatalogSort.PriceAsc)
                 return priced.OrderBy(x => !x.Price.HasValue).ThenBy(x => x.Price).ThenBy(x => x.Product.Id).Select(x => x.Product);
-            if (filter.Sort == CatalogSort.PriceDesc)
+            if (sort == CatalogSort.PriceDesc)
                 return priced.OrderBy(x => !x.Price.HasValue).ThenByDescending(x => x.Price).ThenBy(x => x.Product.Id).Select(x => x.Product);
             source = priced.Select(x => x.Product);
         }
 
         // Stable tie-breaking prevents duplicates/skipped products between pages with equal sort values.
-        return filter.Sort switch
+        return sort switch
         {
             CatalogSort.NameAsc => source.OrderBy(x => x.Name).ThenBy(x => x.Id),
             CatalogSort.NameDesc => source.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
             CatalogSort.Newest => source.OrderByDescending(x => x.CreatedOnUtc).ThenBy(x => x.Id),
+            CatalogSort.Initial when filter.ShowOnHomePage == true => source.OrderBy(x => x.HomePageDisplayOrder).ThenBy(x => x.Id),
             _ => source
         };
     }
@@ -253,7 +281,8 @@ public sealed class CatalogFacade(
             .AsSplitQuery().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (product == null) return null;
 
-        var summary = (await MapAsync(new[] { product }, true, false, ct: ct))[0];
+        var wholesaleSettings = await LoadWholesaleSettingsAsync();
+        var summary = (await MapAsync(new[] { product }, true, false, ct: ct, wholesaleSettings: wholesaleSettings))[0];
         var imageIds = await db.Set<ProductMediaFile>().AsNoTracking()
             .Where(x => x.ProductId == id && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
             .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).Select(x => x.MediaFileId).ToListAsync(ct);
@@ -282,6 +311,8 @@ public sealed class CatalogFacade(
             ImageUrl = summary.ImageUrl, MediaFileId = summary.MediaFileId, Price = summary.Price,
             Availability = summary.Availability, MinimumQuantity = summary.MinimumQuantity, MaximumQuantity = summary.MaximumQuantity,
             QuantityStep = summary.QuantityStep, AllowedQuantities = summary.AllowedQuantities, QuantityUnit = summary.QuantityUnit,
+            UnitsPerPackage = summary.UnitsPerPackage, ConsumerPrice = summary.ConsumerPrice,
+            ConsumerPriceCurrencyCode = summary.ConsumerPriceCurrencyCode,
             RequiresConfiguration = summary.RequiresConfiguration, CanAddToCart = summary.CanAddToCart, HasDiscount = summary.HasDiscount,
             FullDescriptionHtml = product.FullDescription, ProductTypeId = product.ProductTypeId,
             Images = images, Specifications = specifications,
@@ -344,7 +375,8 @@ public sealed class CatalogFacade(
     }
 
     private async Task<List<ProductDto>> MapAsync(IList<Product> products, bool includePrice, bool forListing = true, bool includeImages = true,
-        int imageSize = 400, CancellationToken ct = default, bool includePurchaseInfo = true)
+        int imageSize = 400, CancellationToken ct = default, bool includePurchaseInfo = true,
+        WholesaleCardSettings wholesaleSettings = null)
     {
         if (products.Count == 0) return new List<ProductDto>();
         var priceAllowed = (includePrice || includePurchaseInfo) && await CanDisplayPriceAsync();
@@ -353,6 +385,17 @@ public sealed class CatalogFacade(
             new ProductBatchContext(products, db, components, stores.CurrentStore, request.Customer,
                 includeHidden: false, loadMainMediaOnly: true)) : null;
         var ids = products.Select(x => x.Id).ToArray();
+        wholesaleSettings ??= includePurchaseInfo || allowed ? await LoadWholesaleSettingsAsync() : new WholesaleCardSettings();
+        var packageAttributeId = wholesaleSettings.UnitsPerPackageSpecificationId;
+        var metadata = new Dictionary<int, decimal>();
+        if (includePurchaseInfo && packageAttributeId > 0)
+        {
+            var rows = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
+                .Where(x => ids.Contains(x.ProductId) && x.SpecificationAttributeOption.SpecificationAttributeId == packageAttributeId)
+                .Select(x => new { x.ProductId, Value = x.SpecificationAttributeOption.NumberValue }).ToListAsync(ct);
+            metadata = rows.GroupBy(x => x.ProductId).Where(g => g.Count() == 1)
+                .ToDictionary(g => g.Key, g => g.Single().Value);
+        }
         var languageId = work.WorkingLanguage.Id;
         var translations = await db.LocalizedProperties.AsNoTracking()
             .Where(x => ids.Contains(x.EntityId) && x.LanguageId == languageId &&
@@ -443,6 +486,7 @@ public sealed class CatalogFacade(
                 item.AllowedQuantities = quantities.Allowed;
                 item.QuantityUnit = product.QuantityUnitId is int unitId && unitLookup.TryGetValue(unitId, out var unit)
                     ? unit : defaultUnit;
+                item.UnitsPerPackage = WholesaleCardMetadata.PackageSize(metadata.GetValueOrDefault(product.Id));
                 item.RequiresConfiguration = variant.HasVariants || !supported;
                 var capacity = combinationCapacity.GetValueOrDefault(product.Id);
                 var minimumAvailable = product.ManageInventoryMethod switch
@@ -459,6 +503,15 @@ public sealed class CatalogFacade(
             if (allowed && !product.CallForPrice && !product.CustomerEntersPrice &&
                 item.MinimumQuantity > 0 && item.MinimumQuantity <= item.MaximumQuantity)
                 item.Price = await Price(product, item.MinimumQuantity, options);
+            // A grouped or configurable product may be priced using another child/variant unit.
+            // Do not infer the per-item price until that sale unit is unambiguous.
+            if (!item.RequiresConfiguration && product.ProductType == ProductType.SimpleProduct && item.Price?.RetailPrice is decimal retailPrice &&
+                WholesaleCardMetadata.ConsumerPricePerItem(retailPrice, item.UnitsPerPackage, item.QuantityUnit?.Id,
+                    wholesaleSettings.PackageQuantityUnitId) is decimal consumerPrice)
+            {
+                item.ConsumerPrice = consumerPrice;
+                item.ConsumerPriceCurrencyCode = item.Price.CurrencyCode;
+            }
             items.Add(item);
         }
         return items;
@@ -484,7 +537,15 @@ public sealed class CatalogFacade(
     {
         var result = await prices.CalculatePriceAsync(new PriceCalculationContext(product, quantity, options));
         return new PriceDto(product.Id, result.FinalPrice.Currency.CurrencyCode, result.FinalPrice.Amount,
-            result.RegularPrice?.Amount, result.DiscountAmount.Amount) { PricingQuantity = quantity };
+            result.RegularPrice?.Amount, result.DiscountAmount.Amount)
+        {
+            PricingQuantity = quantity,
+            RetailPrice = result.RetailPrice?.Amount,
+            TaxInclusive = options.TaxInclusive,
+            SavingPercentage = result.Saving.HasSaving ? Math.Round((decimal)result.Saving.SavingPercent, 2) : null,
+            SavingAmount = result.Saving.HasSaving ? result.Saving.SavingAmount?.Amount : null,
+            SavingReference = result.Saving.HasSaving ? (result.RegularPrice.HasValue ? "regular_price" : "retail_price") : null
+        };
     }
 
     private static PageDto<ProductDto> Empty(PageRequest page) =>

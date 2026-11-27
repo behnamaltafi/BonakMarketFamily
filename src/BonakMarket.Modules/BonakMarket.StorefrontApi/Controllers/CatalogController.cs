@@ -15,8 +15,7 @@ public sealed class CatalogController(CatalogFacade catalog) : StorefrontControl
     [HttpGet, PublicCatalog]
     public async Task<ActionResult<PageDto<ProductDto>>> Search([FromQuery] ProductSearchRequest filter, [FromServices] SearchSettings settings, CancellationToken ct)
     {
-        if ((filter.MinPrice.HasValue || filter.MaxPrice.HasValue || filter.HasDiscount.HasValue ||
-            filter.Sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc) && !await catalog.CanDisplayPriceAsync())
+        if (filter.RequiresPriceSortAccess && !await catalog.CanDisplayPriceAsync())
             return Error(403, "price_access_denied");
         return Ok(await catalog.SearchAsync(filter, ct, settings));
     }

@@ -73,9 +73,9 @@ public class StorefrontSearchContractTests
     public void FacetsRequestContainsOnlySharedFilters()
     {
         Assert.That(typeof(ProductFacetsRequest).GetProperties().Select(x => x.Name), Is.EquivalentTo(
-            new[] { "Search", "CategoryId", "BrandId", "MinPrice", "MaxPrice", "InStock", "HasDiscount" }));
+            new[] { "Search", "CategoryId", "BrandId", "MinPrice", "MaxPrice", "InStock", "HasDiscount", "ShowOnHomePage" }));
         var filter = new ProductFacetsRequest { Search = "rice", CategoryId = 2, BrandId = 3,
-            MinPrice = 10, MaxPrice = 20, InStock = false, HasDiscount = true };
+            MinPrice = 10, MaxPrice = 20, InStock = false, HasDiscount = true, ShowOnHomePage = true };
         var mapped = filter.ToSearchRequest();
         Assert.That(mapped.Search, Is.EqualTo(filter.Search));
         Assert.That(mapped.CategoryId, Is.EqualTo(filter.CategoryId));
@@ -84,6 +84,7 @@ public class StorefrontSearchContractTests
         Assert.That(mapped.MaxPrice, Is.EqualTo(filter.MaxPrice));
         Assert.That(mapped.InStock, Is.EqualTo(filter.InStock));
         Assert.That(mapped.HasDiscount, Is.EqualTo(filter.HasDiscount));
+        Assert.That(mapped.ShowOnHomePage, Is.EqualTo(filter.ShowOnHomePage));
         Assert.That(mapped.IncludePrice, Is.False);
         Assert.That(mapped.Sort, Is.EqualTo(CatalogSort.Initial));
     }

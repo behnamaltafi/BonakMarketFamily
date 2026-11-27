@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core.Catalog.Products;
+using BonakMarket.Core.Catalog.Search;
 using BonakMarket.Core.Checkout.Cart;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Identity;
@@ -8,6 +9,7 @@ using BonakMarket.Core.Security;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
+using BonakMarket.StorefrontApi.Services;
 
 namespace BonakMarket.StorefrontApi.Controllers;
 
@@ -40,6 +42,18 @@ public sealed class CustomerServicesController(SmartDbContext db, StorefrontRequ
                 .Select(x => (int?)x.PointsBalance).FirstOrDefaultAsync(ct) ?? 0;
         return Ok(new CustomerSummaryDto(cart, wishlist, orders, returns, stock, points,
             await CustomerGuildPolicy.RequiresGuildAsync(db, request.Customer, ct)));
+    }
+
+    /// <summary>Products frequently purchased by the authenticated customer in this store.</summary>
+    [HttpGet("frequently-purchased")]
+    [StorefrontPermission(StorefrontPermissions.Orders)]
+    [StorefrontPermission(StorefrontPermissions.Catalog)]
+    public async Task<ActionResult<PageDto<ProductDto>>> FrequentlyPurchased([FromQuery] ProductFilterRequest filter,
+        [FromServices] CatalogFacade catalog, [FromServices] SearchSettings searchSettings, CancellationToken ct)
+    {
+        if (filter.RequiresPriceAccess && !await catalog.CanDisplayPriceAsync())
+            return Error(403, "price_access_denied");
+        return Ok(await catalog.FrequentlyPurchasedAsync(filter, ct, searchSettings));
     }
 
     [HttpGet("reviews")]

@@ -1,0 +1,41 @@
+@model WholesaleCardConfigurationModel
+@{
+    Layout = "_ConfigureModule";
+}
+
+<widget target-zone="admin_button_toolbar_before">
+    <button id="SaveConfigButton" type="submit" class="btn btn-primary" form="wholesale-card-settings">
+        <icon name="check" />
+        <span>@T("Admin.Common.Save")</span>
+    </button>
+</widget>
+
+<form id="wholesale-card-settings" asp-action="Configure" asp-area="Admin" method="post">
+    <div asp-validation-summary="All"></div>
+    <h3>@T("Plugins.StorefrontApi.WholesaleCardTitle")</h3>
+    <p class="text-muted">@T("Plugins.StorefrontApi.WholesaleCardIntro")</p>
+    <div class="adminContent">
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="UnitsPerPackageSpecificationId" /></div>
+            <div class="adminData">
+                <select asp-for="UnitsPerPackageSpecificationId" asp-items="Model.PackageSpecifications" class="form-control"></select>
+                <span asp-validation-for="UnitsPerPackageSpecificationId"></span>
+                <div class="form-text">@T("Plugins.StorefrontApi.Fields.UnitsPerPackageSpecificationId.Hint")</div>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"><smart-label asp-for="PackageQuantityUnitId" /></div>
+            <div class="adminData">
+                <select asp-for="PackageQuantityUnitId" asp-items="Model.PackageQuantityUnits" class="form-control"></select>
+                <span asp-validation-for="PackageQuantityUnitId"></span>
+                <div class="form-text">@T("Plugins.StorefrontApi.Fields.PackageQuantityUnitId.Hint")</div>
+            </div>
+        </div>
+        <div class="adminRow">
+            <div class="adminTitle"></div>
+            <div class="adminData">
+                <p class="text-muted">@T("Plugins.StorefrontApi.NativePriceHelp")</p>
+            </div>
+        </div>
+    </div>
+</form>

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using BonakMarket.Core.Common.Services;
 using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core;
+using BonakMarket.Core.Catalog;
 using BonakMarket.Core.Checkout.Cart;
 using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Content.Media;
@@ -24,7 +25,7 @@ public sealed class StorefrontExperienceController(SmartDbContext db, Storefront
     ShoppingCartSettings cart, OrderSettings orders, RewardPointsSettings rewards, CustomerSettings customers, ICurrencyService currencies, IConfiguration configuration) : StorefrontController
 {
     [HttpGet("bootstrap"), PublicCatalog]
-    public async Task<ActionResult<StorefrontBootstrapDto>> Bootstrap()
+    public async Task<ActionResult<StorefrontBootstrapDto>> Bootstrap([FromServices] CatalogSettings catalog)
     {
         var store = stores.CurrentStore;
         var language = work.WorkingLanguage;
@@ -38,7 +39,11 @@ public sealed class StorefrontExperienceController(SmartDbContext db, Storefront
             new(primary.CurrencyCode, primary.RoundNumDecimals),
             new(cart.ShowDiscountBox, cart.ShowGiftCardBox, rewards.Enabled, cart.AllowActivatableCartItems,
                 orders.ReturnRequestsEnabled, !customers.HideBackInStockSubscriptionsTab,
-                configuration.GetValue<bool>("StorefrontApi:EnableOfflineCheckout") && db.DataProvider.ProviderType == DbSystemType.SqlServer, false)));
+                configuration.GetValue<bool>("StorefrontApi:EnableOfflineCheckout") && db.DataProvider.ProviderType == DbSystemType.SqlServer, false)
+            {
+                ShowBestsellersOnHomepage = catalog.ShowBestsellersOnHomepage && catalog.NumberOfBestsellersOnHomepage > 0,
+                NumberOfBestsellersOnHomepage = Math.Max(0, catalog.NumberOfBestsellersOnHomepage)
+            }));
     }
 
     // Match public MVC visibility; password-protected topics and widget-only content are not exposed.

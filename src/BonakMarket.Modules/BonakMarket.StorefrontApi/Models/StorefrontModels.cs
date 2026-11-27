@@ -20,6 +20,10 @@ public class ProductDto
     public int QuantityStep { get; set; }
     public IReadOnlyList<int> AllowedQuantities { get; set; } = [];
     public QuantityUnitDto? QuantityUnit { get; set; }
+    public int? UnitsPerPackage { get; set; }
+    /// <summary>Derived retail price per individual item, only for an explicitly configured package sale unit.</summary>
+    public decimal? ConsumerPrice { get; set; }
+    public string? ConsumerPriceCurrencyCode { get; set; }
     public bool RequiresConfiguration { get; set; }
     public bool CanAddToCart { get; set; }
     public bool? HasDiscount { get; set; }
@@ -111,6 +115,15 @@ public sealed record PriceDto(int ProductId, string CurrencyCode, decimal FinalP
 {
     /// <summary>Number of units used to calculate the displayed unit price.</summary>
     public int PricingQuantity { get; init; } = 1;
+    /// <summary>Native retail/MSRP per sellable unit, in the same currency and tax basis as FinalPrice.</summary>
+    public decimal? RetailPrice { get; init; }
+    public bool TaxInclusive { get; init; }
+    /// <summary>Native saving relative to the regular price or retail price, not an applied discount rule.</summary>
+    public decimal? SavingPercentage { get; init; }
+    public decimal? SavingAmount { get; init; }
+    public string SavingReference { get; init; }
+    /// <summary>Native saving against regular price only; null for an MSRP-only comparison.</summary>
+    public decimal? DiscountPercentage => SavingReference == "regular_price" ? SavingPercentage : null;
 }
 public sealed class AddCartItem
 {
@@ -139,9 +152,9 @@ public class PageRequest
     [Range(1, 10000)] public int Page { get; set; } = 1;
     [Range(1, 100)] public int PageSize { get; set; } = 20;
 }
-public enum CatalogSort { Initial, NameAsc, NameDesc, PriceAsc, PriceDesc, Newest }
+public enum CatalogSort { Initial, NameAsc, NameDesc, PriceAsc, PriceDesc, Newest, BestSellers }
 #nullable enable
-public sealed class ProductSearchRequest : PageRequest, IValidatableObject
+public class ProductFilterRequest : PageRequest, IValidatableObject
 {
     [StringLength(200)] public string? Search { get; set; }
     [Range(1, int.MaxValue)] public int? CategoryId { get; set; }
@@ -150,13 +163,23 @@ public sealed class ProductSearchRequest : PageRequest, IValidatableObject
     public decimal? MaxPrice { get; set; }
     public bool? InStock { get; set; }
     public bool? HasDiscount { get; set; }
-    public CatalogSort Sort { get; set; }
+    public bool? ShowOnHomePage { get; set; }
     public bool IncludePrice { get; set; } = true;
-    public IEnumerable<ValidationResult> Validate(ValidationContext context)
+    internal bool RequiresPriceAccess => MinPrice.HasValue || MaxPrice.HasValue || HasDiscount.HasValue;
+    public virtual IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
-        if (!Enum.IsDefined(Sort)) yield return new ValidationResult("Invalid sort.", new[] { nameof(Sort) });
         if (MinPrice < 0 || MaxPrice < 0 || MinPrice > MaxPrice)
             yield return new ValidationResult("Invalid price range.", new[] { nameof(MinPrice), nameof(MaxPrice) });
+    }
+}
+public sealed class ProductSearchRequest : ProductFilterRequest
+{
+    public CatalogSort Sort { get; set; }
+    internal bool RequiresPriceSortAccess => RequiresPriceAccess || Sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc;
+    public override IEnumerable<ValidationResult> Validate(ValidationContext context)
+    {
+        foreach (var error in base.Validate(context)) yield return error;
+        if (!Enum.IsDefined(Sort)) yield return new ValidationResult("Invalid sort.", new[] { nameof(Sort) });
     }
 }
 /// <summary>Product filters only; facets do not depend on pagination, sorting or price projection.</summary>
@@ -169,6 +192,7 @@ public sealed class ProductFacetsRequest : IValidatableObject
     public decimal? MaxPrice { get; set; }
     public bool? InStock { get; set; }
     public bool? HasDiscount { get; set; }
+    public bool? ShowOnHomePage { get; set; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext context) =>
         ToSearchRequest().Validate(context);
@@ -177,7 +201,7 @@ public sealed class ProductFacetsRequest : IValidatableObject
     {
         Search = Search, CategoryId = CategoryId, BrandId = BrandId,
         MinPrice = MinPrice, MaxPrice = MaxPrice, InStock = InStock,
-        HasDiscount = HasDiscount, IncludePrice = false
+        HasDiscount = HasDiscount, ShowOnHomePage = ShowOnHomePage, IncludePrice = false
     };
 }
 public sealed class CategorySearchRequest : PageRequest

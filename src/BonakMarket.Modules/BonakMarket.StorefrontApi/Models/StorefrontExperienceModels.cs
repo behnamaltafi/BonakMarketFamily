@@ -5,7 +5,11 @@ public sealed record StorefrontLanguageDto(int Id, string Name, string Culture, 
 public sealed record StorefrontCurrencyDto(string Code, int DecimalPlaces);
 public sealed record StorefrontFeaturesDto(bool CouponEnabled, bool GiftCardEnabled, bool RewardPointsEnabled,
     bool ActivatableCartItems, bool ReturnRequestsEnabled, bool StockSubscriptionsEnabled,
-    bool NativeCheckoutConfirmationEnabled, bool NativeOnlinePaymentEnabled);
+    bool NativeCheckoutConfirmationEnabled, bool NativeOnlinePaymentEnabled)
+{
+    public bool ShowBestsellersOnHomepage { get; init; }
+    public int NumberOfBestsellersOnHomepage { get; init; }
+}
 public sealed record StorefrontBootstrapDto(int StoreId, string StoreName, string? LogoUrl,
     StorefrontLanguageDto Language, StorefrontCurrencyDto WorkingCurrency, StorefrontCurrencyDto BaseCurrency,
     StorefrontFeaturesDto Features);

@@ -2,4 +2,16 @@
   <LocaleResource Name="Plugins.Permissions.DisplayName.Storefront" AppendRootKey="false"><Value>رابط برنامه‌نویسی فروشگاه</Value></LocaleResource>
   <LocaleResource Name="Plugins.FriendlyName.BonakMarket.StorefrontApi" AppendRootKey="false"><Value>رابط برنامه‌نویسی فروشگاه</Value></LocaleResource>
   <LocaleResource Name="Plugins.Permissions.DisplayName.Storefront.GuestCart" AppendRootKey="false"><Value>سبد خرید مهمان</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.WholesaleCardTitle" AppendRootKey="false"><Value>کارت محصول عمده‌فروشی</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.WholesaleCardIntro" AppendRootKey="false"><Value>تنظیمات عمومی؛ استفاده از مشخصات، واحدهای فروش و قیمت‌گذاری موجود.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.UnitsPerPackageSpecificationId" AppendRootKey="false"><Value>تعداد داخل بسته</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.UnitsPerPackageSpecificationId.Hint" AppendRootKey="false"><Value>مشخصه‌ای با یک مقدار عددی صحیح و مثبت برای هر محصول انتخاب کنید.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.PackageQuantityUnitId" AppendRootKey="false"><Value>واحد فروش بسته</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.PackageQuantityUnitId.Hint" AppendRootKey="false"><Value>قیمت مرجع هر عدد فقط هنگامی محاسبه می‌شود که واحد فروش محصول همین واحد باشد و تعداد بسته مشخص باشد.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.NativePriceHelp" AppendRootKey="false"><Value>قیمت مقایسه‌ای و برچسب قیمت مصرف‌کننده را در ویرایشگر اصلی محصول تنظیم کنید. قیمت یا ارز مستقلی ذخیره نمی‌شود.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Disabled" AppendRootKey="false"><Value>غیرفعال</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Unavailable" AppendRootKey="false"><Value>مشخصه یا واحد ناموجود</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.InvalidSpecification" AppendRootKey="false"><Value>یک مشخصه موجود انتخاب کنید.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.InvalidQuantityUnit" AppendRootKey="false"><Value>یک واحد فروش موجود انتخاب کنید.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.PackageSpecificationRequired" AppendRootKey="false"><Value>پیش از فعال‌سازی واحد فروش بسته، مشخصه تعداد بسته را انتخاب کنید.</Value></LocaleResource>
 </Language>

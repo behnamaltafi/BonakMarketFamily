@@ -25,24 +25,26 @@ public sealed record InstantSearchProductDto(int Id, string Name, string? Sku, i
 
 public sealed record InstantSearchDto(string Search, bool Enabled, int MinimumTermLength, int Limit,
     bool HasMore, IReadOnlyList<InstantSearchProductDto> Items);
-#nullable restore
-
 public sealed class CategoryDto
 {
     public int Id { get; set; }
     public int? ParentId { get; set; }
     public int DisplayOrder { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
     public int? MediaFileId { get; set; }
-    public string ImageUrl { get; set; }
+    public string? ImageUrl { get; set; }
+    public bool HasChildren { get; set; }
+    public bool ShowOnHomePage { get; set; }
 }
 public sealed class BrandDto
 {
     public int Id { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int DisplayOrder { get; set; }
     public int? MediaFileId { get; set; }
-    public string ImageUrl { get; set; }
+    public string? ImageUrl { get; set; }
 }
+#nullable restore
 public sealed class OrderDto
 {
     public int Id { get; set; }
@@ -162,16 +164,17 @@ public sealed class ProductFacetsRequest : IValidatableObject
         HasDiscount = HasDiscount, IncludePrice = false
     };
 }
-#nullable restore
 public sealed class CategorySearchRequest : PageRequest
 {
-    [StringLength(200)] public string Search { get; set; }
+    [StringLength(200)] public string? Search { get; set; }
     [Range(0, int.MaxValue)] public int? ParentId { get; set; }
+    public bool? ShowOnHomePage { get; set; }
 }
 public sealed class BrandSearchRequest : PageRequest
 {
-    [StringLength(200)] public string Search { get; set; }
+    [StringLength(200)] public string? Search { get; set; }
 }
+#nullable restore
 public sealed class OrderSearchRequest : PageRequest
 {
     public int? OrderStatusId { get; set; }

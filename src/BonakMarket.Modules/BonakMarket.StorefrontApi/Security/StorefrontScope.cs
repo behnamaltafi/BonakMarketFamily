@@ -29,12 +29,18 @@ internal static class StorefrontScope
     {
         var now = DateTime.UtcNow;
         return Visible(db.Set<Product>(), db, customer, store).ApplyStandardFilter()
-            .Where(x => !x.Deleted && (x.Visibility == ProductVisibility.Full || ((forSearch || forDetail) && x.Visibility == ProductVisibility.SearchResults) || (forDetail && x.Visibility == ProductVisibility.ProductPage)) &&
+            .Where(x => !x.Deleted && !x.IsSystemProduct && (x.Visibility == ProductVisibility.Full || ((forSearch || forDetail) && x.Visibility == ProductVisibility.SearchResults) || (forDetail && x.Visibility == ProductVisibility.ProductPage)) &&
                 (x.AvailableStartDateTimeUtc == null || x.AvailableStartDateTimeUtc <= now) &&
                 (x.AvailableEndDateTimeUtc == null || x.AvailableEndDateTimeUtc >= now));
     }
-    public static IQueryable<Category> Categories(SmartDbContext db, Customer customer, int store) =>
-        Visible(db.Set<Category>(), db, customer, store).Where(x => x.Published && !x.Deleted);
+    public static IQueryable<Category> Categories(SmartDbContext db, Customer customer, int store)
+    {
+        var visible = Visible(db.Set<Category>(), db, customer, store).Where(x => x.Published && !x.Deleted);
+        // The native TreePath uses slash-delimited ancestor IDs; exclude detached and hidden-parent branches.
+        return visible.Where(c => (!c.ParentId.HasValue || visible.Any(p => p.Id == c.ParentId)) &&
+            !db.Set<Category>().Any(a => a.Id != c.Id && a.TreePath != "" &&
+                c.TreePath.StartsWith(a.TreePath) && !visible.Any(v => v.Id == a.Id)));
+    }
     public static IQueryable<Manufacturer> Brands(SmartDbContext db, Customer customer, int store) =>
         Visible(db.Set<Manufacturer>(), db, customer, store).Where(x => x.Published && !x.Deleted);
     public static IQueryable<BonakMarket.Core.Content.Topics.Topic> Topics(SmartDbContext db, Customer customer, int store) =>

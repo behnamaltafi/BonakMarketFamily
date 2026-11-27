@@ -342,6 +342,7 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
 
     public async Task<bool> ApplyCouponAsync(string code, CancellationToken ct)
     {
+        if (request.IsGuestCart && !await CanDisplayPriceAsync()) return false;
         var current = await cart.GetCartAsync(request.Customer, ShoppingCartType.ShoppingCart, request.StoreId);
         var (applied, _) = await calculations.ApplyDiscountCouponAsync(current, code);
         await db.SaveChangesAsync(ct);

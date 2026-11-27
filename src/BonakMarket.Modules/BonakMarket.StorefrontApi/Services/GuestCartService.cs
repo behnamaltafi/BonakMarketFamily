@@ -109,10 +109,9 @@ public sealed class GuestCartService(SmartDbContext db, ICustomerService custome
 
         // Delete only this store/cart, never wishlist or account financial data.
         if (sourceRows.Length > 0)
-        {
             db.ShoppingCartItems.RemoveRange(sourceRows);
+        if (sourceRows.Length > 0 || !string.Equals(customerCoupon, request.Customer.GenericAttributes.DiscountCouponCode, StringComparison.Ordinal))
             request.Customer.GenericAttributes.Set<string>("BonakMarket.Storefront.CheckoutDraft.v1", null, request.StoreId);
-        }
         token.MergedToCustomerId = request.Customer.Id;
         token.MergedOnUtc = token.RevokedOnUtc = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);

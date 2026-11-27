@@ -39,8 +39,8 @@ public sealed class GuestCartCleanupTask(SmartDbContext db, GuestCartSqlLock loc
                 await using var tx = await db.Database.BeginTransactionAsync(cancelToken);
                 var token = await db.Set<GuestCartToken>().FirstOrDefaultAsync(t => t.TokenHash == hash && t.ExpiresOnUtc <= now, cancelToken);
                 if (token == null) continue;
-                var customer = await db.Customers.IncludeCustomerRoles().FirstOrDefaultAsync(c => c.Id == token.CustomerId, cancelToken);
-                if (GuestCartPolicy.IsGuest(customer))
+                var customer = await db.Customers.IgnoreQueryFilters().IncludeCustomerRoles().FirstOrDefaultAsync(c => c.Id == token.CustomerId, cancelToken);
+                if (GuestCartPolicy.IsDedicatedGuestAccount(customer))
                     await db.ShoppingCartItems.Where(x => x.CustomerId == token.CustomerId && x.StoreId == token.StoreId &&
                         x.ShoppingCartTypeId == (int)ShoppingCartType.ShoppingCart).ExecuteDeleteAsync(cancelToken);
                 db.Set<GuestCartToken>().Remove(token);

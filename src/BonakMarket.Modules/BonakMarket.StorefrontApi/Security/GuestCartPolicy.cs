@@ -20,9 +20,14 @@ internal static class GuestCartPolicy
     internal static readonly object MergeAllowed = new();
     public static bool Enabled(IConfiguration config) => config?.GetValue("StorefrontApi:EnableGuestCart", true) ?? true;
     public static int ExpirationDays(IConfiguration config) => Math.Clamp(config?.GetValue("StorefrontApi:GuestCartExpirationDays", 30) ?? 30, 1, 90);
-    public static bool IsGuest(Customer customer) => customer != null && customer.Id > 0 &&
-        customer.Active && !customer.Deleted && !customer.IsSystemAccount && !customer.IsBot() &&
-        customer.IsGuest() && !customer.IsRegistered();
+    // Never let a previously anonymous token become a credential for an upgraded,
+    // disabled-registered-role or otherwise privileged customer record.
+    public static bool IsGuest(Customer customer) => IsDedicatedGuestAccount(customer) &&
+        customer.Active && !customer.Deleted && customer.IsGuest();
+    public static bool IsDedicatedGuestAccount(Customer customer) => customer != null && customer.Id > 0 &&
+        !customer.IsSystemAccount && !customer.IsBot() && customer.Username == null && customer.Email == null &&
+        customer.IsGuest(false) && !customer.IsRegistered(false) &&
+        customer.GetRoleNames(false).All(x => string.Equals(x, SystemCustomerRoleNames.Guests, StringComparison.OrdinalIgnoreCase));
     public static string Generate() => WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
     public static string Hash(string token)
     {

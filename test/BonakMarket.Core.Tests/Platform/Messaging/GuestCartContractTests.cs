@@ -44,6 +44,21 @@ public sealed class GuestCartContractTests
     }
 
     [Test]
+    public void GuestTokenCannotRepresentAnUpgradedOrPrivilegedCustomer()
+    {
+        var guest = new Customer { Id = 123, Active = true };
+        guest.CustomerRoleMappings.Add(new CustomerRoleMapping
+        { CustomerRole = new CustomerRole { Active = true, SystemName = SystemCustomerRoleNames.Guests } });
+        Assert.That(GuestCartPolicy.IsGuest(guest), Is.True);
+        guest.Email = "registered@example.invalid";
+        Assert.That(GuestCartPolicy.IsGuest(guest), Is.False);
+        guest.Email = null;
+        guest.CustomerRoleMappings.Add(new CustomerRoleMapping
+        { CustomerRole = new CustomerRole { Active = false, SystemName = SystemCustomerRoleNames.Registered } });
+        Assert.That(GuestCartPolicy.IsGuest(guest), Is.False);
+    }
+
+    [Test]
     public void GuestAccessIsLimitedToExplicitCartMethods()
     {
         var methods = typeof(CartController).GetMethods().Where(m => m.IsDefined(typeof(AllowGuestCartAttribute), true)).Select(m => m.Name);

@@ -111,6 +111,8 @@ public sealed class GuestCartMiddleware(RequestDelegate next)
     {
         http.Response.StatusCode = status;
         http.Response.Headers.CacheControl = "no-store";
+        if (status == 401)
+            http.Response.Headers.WWWAuthenticate = code == "authentication_required" ? "Bearer" : "GuestCart";
         var problem = new ProblemDetails { Status = status, Title = code };
         problem.Extensions["code"] = code;
         problem.Extensions["traceId"] = System.Diagnostics.Activity.Current?.Id ?? http.TraceIdentifier;

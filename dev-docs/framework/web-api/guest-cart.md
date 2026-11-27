@@ -15,7 +15,7 @@ fixed expiry, and a merge receipt. Never log either credential. SQL Server is re
 4. Existing /cart, /cart/items (GET/POST/PUT/DELETE as applicable), /cart/total and /cart/coupon accept
    X-Guest-Cart-Token without Authorization. Public catalog also accepts the optional guest token to
    use the same pricing context. No token means local empty-cart UI, not a server cart; GET /cart without
-   either credential is 401. Never create a new cart just because of a network error.
+   either credential is 401. Guest coupon application requires native price visibility. Handle guest-token 401 separately from Bearer refresh. Never create a new cart just because of a network error.
 5. Each mutation returns CartStateDto. cartType is "guest" or "customer". Guest checkout blockers include
    authentication_required. Native display-price permissions remain authoritative. Do not infer hidden prices.
 6. Complete existing OTP login. Keep the guest token until POST /api/storefront/v1/cart/merge succeeds.

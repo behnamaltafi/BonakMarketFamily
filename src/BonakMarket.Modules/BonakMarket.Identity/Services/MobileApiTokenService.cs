@@ -13,7 +13,7 @@ using BonakMarket.Identity.Domain;
 namespace BonakMarket.Identity.Services;
 
 /// <summary>JWT access tokens with SQL-backed, single-use refresh rotation.</summary>
-internal sealed class MobileApiTokenService : IMobileApiTokenService
+internal sealed class MobileApiTokenService : IMobileApiTokenService, ICustomerSessionRevoker
 {
     private const string Issuer = "BonakMarket";
     private const string Audience = "BonakMarket.CustomerApi";
@@ -169,6 +169,24 @@ internal sealed class MobileApiTokenService : IMobileApiTokenService
         var utc = DateTime.UtcNow;
         return await _db.Set<MobileApiSession>().Where(x => x.SessionId == sid &&
             x.CustomerId == customer.Id && x.RevokedOnUtc == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.RevokedOnUtc, utc), ct) == 1;
+    }
+
+    public async Task<bool> RevokeRefreshAsync(string refreshToken, CancellationToken ct)
+    {
+        if (!IsEnabled || string.IsNullOrEmpty(refreshToken) || refreshToken.Length > 128)
+            return false;
+        var pieces = refreshToken.Split('.');
+        if (pieces.Length != 2 || !Guid.TryParseExact(pieces[0], "N", out var sid) || pieces[1].Length != 43)
+            return false;
+        var session = await _db.Set<MobileApiSession>().AsNoTracking().SingleOrDefaultAsync(x => x.SessionId == sid, ct);
+        if (await CheckSessionAsync(session, ct) == null) return false;
+        var presented = Hash(pieces[1]);
+        // A previous/consumed credential must not revoke a newer session through logout.
+        if (!Matches(session.RefreshHash, presented)) return false;
+        var utc = DateTime.UtcNow;
+        return await _db.Set<MobileApiSession>()
+            .Where(x => x.Id == session.Id && x.RefreshHash == presented && x.RevokedOnUtc == null && x.ExpiresOnUtc > utc)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.RevokedOnUtc, utc), ct) == 1;
     }
 

@@ -12,15 +12,9 @@ public class SmsCodeRequest
     public string Phone { get; set; } = string.Empty;
 }
 
-/// <summary>Submits a single-use verification code.</summary>
-public sealed class SmsCodeVerificationRequest : SmsCodeRequest
+public sealed class CustomerLogoutRequest
 {
-    /// <summary>Gets or sets the six-digit SMS code.</summary>
-    [Required, RegularExpression("^[0-9]{6}$")]
-    public string Code { get; set; } = string.Empty;
-
-    /// <summary>Opt in to mobile tokens without changing the existing web login response.</summary>
-    public bool IssueTokens { get; set; }
+    [StringLength(128)] public string? RefreshToken { get; set; }
 }
 
 public sealed class MobileRefreshRequest

@@ -1,10 +1,8 @@
 using System.Net.Http.Headers;
-using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using BonakMarket.Core.Identity;
 using BonakMarket.Identity.Models;
 using BonakMarket.Identity.Services;
@@ -12,71 +10,51 @@ using BonakMarket.Identity.Security;
 
 namespace BonakMarket.Identity.Controllers;
 
-/// <summary>Authentication session, refresh and sign-out.</summary>
-[ApiController]
+/// <summary>Token rotation and current-session revocation; never signs in or out of MVC.</summary>
+[ApiController, AllowAnonymous, IgnoreAntiforgeryToken]
 [ApiExplorerSettings(GroupName = "identity")]
 [Route("api/identity/v1/auth")]
-[AutoValidateAntiforgeryToken]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class AuthApiController : CustomerAccountApiController
+public sealed class AuthApiController(IMobileApiTokenService tokens, ICustomerSessionRevoker revoker) : CustomerAccountApiController
 {
-    private readonly ISmsOtpLoginService _otp;
-
-    public AuthApiController(ISmsOtpLoginService otp, SignInManager<Customer> signInManager,
-        UserManager<Customer> userManager, IAntiforgery antiforgery)
-        : base(signInManager, userManager, antiforgery)
-    {
-        _otp = otp;
-    }
-
-    /// <summary>Gets feature availability, the current session and a CSRF request token.</summary>
-    [HttpGet("session"), HttpGet("~/api/sms-login/session"), AllowAnonymous]
-    [ProducesResponseType(typeof(IdentitySessionResponse), 200)]
-    public async Task<IActionResult> Session(CancellationToken ct)
-    {
-        bool enabled = await _otp.IsEnabledAsync();
-        var customer = await GetCustomerAsync();
-        if (Request.Headers.ContainsKey("Authorization") && customer is null)
-            return Unauthorized();
-
-        var mobile = Request.Path.StartsWithSegments("/api/identity/v1") && Request.Headers.ContainsKey("Authorization");
-        var tokens = mobile ? null : _antiforgery.GetAndStoreTokens(HttpContext);
-        var profileRequired = customer is not null && await _otp.IsProfileIncompleteAsync(customer.Id, ct);
-        return Ok(new IdentitySessionResponse(
-            enabled, customer is not null,
-            profileRequired,
-            customer is not null ? await _otp.GetVerifiedPhoneAsync(customer.Id, ct) : null,
-            tokens?.RequestToken, tokens?.HeaderName, profileRequired ? new[] { "guildId" } : Array.Empty<string>()));
-    }
-
-    /// <summary>Rotates a mobile refresh credential. Does not use the web cookie.</summary>
-    [HttpPost("refresh"), HttpPost("~/api/sms-login/refresh"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [HttpPost("refresh")]
     [ProducesResponseType(typeof(IdentityTokenResponse), 200)]
     public async Task<IActionResult> Refresh([FromBody] MobileRefreshRequest request, CancellationToken ct)
     {
         if (!IdentityTransportPolicy.IsAllowed(Request))
-            return Unauthorized();
-        var service = HttpContext.RequestServices.GetService<IMobileApiTokenService>();
-        var pair = service?.IsEnabled == true ? await service.RefreshAsync(request.RefreshToken, ct) : null;
-        return pair == null ? Unauthorized() : Ok(new IdentityTokenResponse(pair.AccessToken, pair.RefreshToken, pair.ExpiresIn, "Bearer"));
+            return BadRequest(new IdentityCodeResponse("https_required"));
+        var pair = tokens.IsEnabled ? await tokens.RefreshAsync(request.RefreshToken, ct) : null;
+        return pair == null ? Unauthorized(new IdentityCodeResponse("invalid_refresh_token"))
+            : Ok(new IdentityTokenResponse(pair.AccessToken, pair.RefreshToken, pair.ExpiresIn, "Bearer"));
     }
 
-    [HttpPost("logout"), HttpPost("~/api/sms-login/logout"), AllowAnonymous, IgnoreAntiforgeryToken]
+    /// <summary>Revokes the current session via a valid access token, or current refresh token with no Authorization header.</summary>
+    [HttpPost("logout")]
     [ProducesResponseType(204)]
-    public async Task<IActionResult> Logout(CancellationToken ct)
+    public async Task<IActionResult> Logout([FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] CustomerLogoutRequest input, CancellationToken ct)
     {
-        var (_, error) = await RequireAccountAsync();
-        if (error is not null) return error;
+        if (!IdentityTransportPolicy.IsAllowed(Request))
+            return BadRequest(new IdentityCodeResponse("https_required"));
         if (Request.Headers.ContainsKey("Authorization"))
         {
-            var tokens = HttpContext.RequestServices.GetService<IMobileApiTokenService>();
+            if (!string.IsNullOrEmpty(input?.RefreshToken))
+                return BadRequest(new IdentityCodeResponse("ambiguous_logout_credentials"));
+            var (_, error) = await RequireAccountAsync();
+            if (error != null) return error;
             if (!AuthenticationHeaderValue.TryParse(Request.Headers.Authorization.ToString(), out var header) ||
-                tokens == null || !await tokens.RevokeAsync(header.Parameter, ct))
-                return Unauthorized();
+                !header.Scheme.Equals("Bearer", StringComparison.OrdinalIgnoreCase) ||
+                !await tokens.RevokeAsync(header.Parameter, ct))
+                return Unauthorized(new IdentityCodeResponse("invalid_access_token"));
         }
         else
         {
-            await _signInManager.SignOutAsync();
+            if (string.IsNullOrWhiteSpace(input?.RefreshToken))
+            {
+                Response.Headers.WWWAuthenticate = "Bearer";
+                return Unauthorized(new IdentityCodeResponse("authentication_required"));
+            }
+            if (!await revoker.RevokeRefreshAsync(input.RefreshToken, ct))
+                return Unauthorized(new IdentityCodeResponse("invalid_refresh_token"));
         }
         return NoContent();
     }

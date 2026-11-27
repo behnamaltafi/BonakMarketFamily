@@ -34,7 +34,9 @@ internal sealed class Startup : StarterBase
         if (appContext.IsInstalled)
             services.PostConfigure<CookieAuthenticationOptions>(IdentityConstants.ApplicationScheme, VerifiedPhoneCookie.Configure);
         services.AddScoped<SmsOtpLoginService>();
-        services.AddScoped<IMobileApiTokenService, MobileApiTokenService>();
+        services.AddScoped<MobileApiTokenService>();
+        services.AddScoped<IMobileApiTokenService>(sp => sp.GetRequiredService<MobileApiTokenService>());
+        services.AddScoped<ICustomerSessionRevoker>(sp => sp.GetRequiredService<MobileApiTokenService>());
         services.AddScoped<CustomerProfileService>();
         services.AddScoped<CustomerAddressService>();
         services.AddScoped<IStorefrontSmsProfileService>(sp => sp.GetRequiredService<CustomerProfileService>());

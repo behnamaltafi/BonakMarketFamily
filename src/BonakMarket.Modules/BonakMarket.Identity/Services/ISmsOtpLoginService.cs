@@ -11,6 +11,9 @@ public interface ISmsOtpLoginService
 {
     /// <summary>Checks whether SMS and OTP login are enabled.</summary>
     Task<bool> IsEnabledAsync();
+    Task<BonakMarket.Identity.Configuration.CustomerIdentitySettings> GetOtpSettingsAsync();
+    Task<string> RequestMobileChallengeAsync(string canonicalPhone, CancellationToken ct);
+    Task<Customer?> ConfirmMobileLoginAsync(string ticket, string code, CancellationToken ct);
 
     /// <summary>Gets the authenticated account's verified mobile number.</summary>
     Task<string?> GetVerifiedPhoneAsync(int customerId, CancellationToken ct = default);

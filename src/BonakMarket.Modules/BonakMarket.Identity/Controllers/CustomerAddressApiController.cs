@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using BonakMarket.Core.Identity;
 using BonakMarket.Identity.Models;
@@ -8,11 +6,10 @@ using BonakMarket.Identity.Services;
 
 namespace BonakMarket.Identity.Controllers;
 
-[ApiController, ApiExplorerSettings(GroupName = "identity")]
+[ApiController, ApiExplorerSettings(GroupName = "identity"), IgnoreAntiforgeryToken]
 [Route("api/identity/v1/me/addresses")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class CustomerAddressApiController(CustomerAddressService addresses, SignInManager<Customer> signIn,
-    UserManager<Customer> users, IAntiforgery antiforgery) : CustomerAccountApiController(signIn, users, antiforgery)
+public sealed class CustomerAddressApiController(CustomerAddressService addresses) : CustomerAccountApiController
 {
     [HttpGet, AllowAnonymous]
     [ProducesResponseType(typeof(AddressPage), 200)]
@@ -24,12 +21,6 @@ public sealed class CustomerAddressApiController(CustomerAddressService addresse
         return Ok(await addresses.ListAsync(customer, page, pageSize, ct));
     }
 
-    [HttpGet("~/api/sms-login/profile/addresses"), AllowAnonymous]
-    public async Task<IActionResult> LegacyList(CancellationToken ct)
-    {
-        var (customer, error) = await RequireAccountAsync();
-        return error ?? Ok(await addresses.LegacyListAsync(customer, ct));
-    }
 
     [HttpGet("settings"), AllowAnonymous]
     [ProducesResponseType(typeof(CustomerAddressSettings), 200)]

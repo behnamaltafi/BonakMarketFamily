@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using BonakMarket.Core.Identity;
 using BonakMarket.Identity.Models;
@@ -12,15 +10,13 @@ namespace BonakMarket.Identity.Controllers;
 [ApiController]
 [ApiExplorerSettings(GroupName = "identity")]
 [Route("api/identity/v1/me/security/phone")]
-[AutoValidateAntiforgeryToken]
+[IgnoreAntiforgeryToken]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class AccountSecurityApiController : CustomerAccountApiController
 {
     private readonly ISmsOtpLoginService _otp;
 
-    public AccountSecurityApiController(ISmsOtpLoginService otp, SignInManager<Customer> signInManager,
-        UserManager<Customer> userManager, IAntiforgery antiforgery)
-        : base(signInManager, userManager, antiforgery)
+    public AccountSecurityApiController(ISmsOtpLoginService otp)
     {
         _otp = otp;
     }
@@ -46,7 +42,7 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
     }
 
     /// <summary>Requests a phone binding for the currently signed-in account only.</summary>
-    [HttpPost("request"), HttpPost("~/api/sms-login/enroll/request"), HttpPost("~/api/sms-login/profile/phone/request"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [HttpPost("request"), AllowAnonymous, IgnoreAntiforgeryToken]
     [ProducesResponseType(typeof(IdentityCodeResponse), 200)]
     public async Task<IActionResult> RequestEnrollment([FromBody] PhoneChangeRequest request, CancellationToken ct)
     {
@@ -72,7 +68,7 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
     }
 
     /// <summary>Confirms a phone binding without accepting a client-supplied customer ID.</summary>
-    [HttpPost("verify"), HttpPost("~/api/sms-login/enroll/verify"), HttpPost("~/api/sms-login/profile/phone/verify"), AllowAnonymous, IgnoreAntiforgeryToken]
+    [HttpPost("verify"), AllowAnonymous, IgnoreAntiforgeryToken]
     [ProducesResponseType(typeof(PhoneChangeResponse), 200)]
     public async Task<IActionResult> ConfirmEnrollment([FromBody] PhoneChangeVerificationRequest request, CancellationToken ct)
     {
@@ -93,7 +89,7 @@ public sealed class AccountSecurityApiController : CustomerAccountApiController
             return BadRequest(new IdentityCodeResponse("invalid_code"));
         }
 
-        await _signInManager.SignOutAsync();
+        // Phone change revokes all customer API sessions in the OTP service.
         return Ok(new PhoneChangeResponse("phone_verified", true));
     }
 }

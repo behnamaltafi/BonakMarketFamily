@@ -145,17 +145,19 @@ public sealed class CatalogFacade(
             filter.Sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc)
         {
             // Do not reveal catalog prices for products whose prices are intentionally unavailable.
-            var priced = source.Where(x => !x.CallForPrice && !x.CustomerEntersPrice).Select(x => new { Product = x,
-                Price = x.SpecialPrice.HasValue &&
+            // Price bounds exclude those rows, but sorting alone preserves them at the end.
+            var priced = source.Select(x => new { Product = x,
+                Price = x.CallForPrice || x.CustomerEntersPrice ? (decimal?)null :
+                    (x.SpecialPrice.HasValue &&
                     (!x.SpecialPriceStartDateTimeUtc.HasValue || x.SpecialPriceStartDateTimeUtc.Value <= now) &&
                     (!x.SpecialPriceEndDateTimeUtc.HasValue || x.SpecialPriceEndDateTimeUtc.Value >= now)
-                    ? x.SpecialPrice.Value : x.Price });
-            if (filter.MinPrice.HasValue) priced = priced.Where(x => x.Price >= filter.MinPrice.Value);
-            if (filter.MaxPrice.HasValue) priced = priced.Where(x => x.Price <= filter.MaxPrice.Value);
+                    ? x.SpecialPrice.Value : x.Price) });
+            if (filter.MinPrice.HasValue) priced = priced.Where(x => x.Price.HasValue && x.Price.Value >= filter.MinPrice.Value);
+            if (filter.MaxPrice.HasValue) priced = priced.Where(x => x.Price.HasValue && x.Price.Value <= filter.MaxPrice.Value);
             if (filter.Sort == CatalogSort.PriceAsc)
-                return priced.OrderBy(x => x.Price).ThenBy(x => x.Product.Id).Select(x => x.Product);
+                return priced.OrderBy(x => !x.Price.HasValue).ThenBy(x => x.Price).ThenBy(x => x.Product.Id).Select(x => x.Product);
             if (filter.Sort == CatalogSort.PriceDesc)
-                return priced.OrderByDescending(x => x.Price).ThenBy(x => x.Product.Id).Select(x => x.Product);
+                return priced.OrderBy(x => !x.Price.HasValue).ThenByDescending(x => x.Price).ThenBy(x => x.Product.Id).Select(x => x.Product);
             source = priced.Select(x => x.Product);
         }
 

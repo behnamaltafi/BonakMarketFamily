@@ -35,10 +35,11 @@ internal static class StorefrontScope
     }
     public static IQueryable<Category> Categories(SmartDbContext db, Customer customer, int store)
     {
-        var visible = Visible(db.Set<Category>(), db, customer, store).Where(x => x.Published && !x.Deleted);
+        var all = db.Set<Category>();
+        var visible = Visible(all, db, customer, store).Where(x => x.Published && !x.Deleted);
         // The native TreePath uses slash-delimited ancestor IDs; exclude detached and hidden-parent branches.
         return visible.Where(c => (!c.ParentId.HasValue || visible.Any(p => p.Id == c.ParentId)) &&
-            !db.Set<Category>().Any(a => a.Id != c.Id && a.TreePath != "" &&
+            !all.Any(a => a.Id != c.Id && a.TreePath != null && a.TreePath != "" &&
                 c.TreePath.StartsWith(a.TreePath) && !visible.Any(v => v.Id == a.Id)));
     }
     public static IQueryable<Manufacturer> Brands(SmartDbContext db, Customer customer, int store) =>

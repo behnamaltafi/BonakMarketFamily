@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.Mvc;
 using NUnit.Framework;
 using BonakMarket.Core.Catalog.Search;
 using BonakMarket.Core.Catalog.Products;
+using BonakMarket.Core.Catalog.Attributes;
+using BonakMarket.Core.Localization;
+using BonakMarket.Core.Search;
 using BonakMarket.StorefrontApi.Controllers;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
@@ -184,5 +187,62 @@ public class StorefrontSearchContractTests
     {
         Assert.That(typeof(InstantSearchProductDto).GetProperties().Select(x => x.Name),
             Is.EquivalentTo(new[] { "Id", "Name", "Sku", "MediaFileId", "ImageUrl" }));
+    }
+
+    [TestCase("شير كم‌چرب", "شیر کم چرب", SearchMode.ExactMatch, true)]
+    [TestCase("شير کم", "شیر کم‌چرب", SearchMode.StartsWith, true)]
+    [TestCase("کم چرب", "شیر کم‌چرب", SearchMode.Contains, true)]
+    [TestCase("کم چرب", "شیر کم‌چرب", SearchMode.ExactMatch, false)]
+    public void PersianSimpleSearchNormalizesStoredAndInputText(string term, string name, SearchMode mode, bool expected)
+    {
+        var rows = new[] { new Product { Id = 1, Name = name } }.AsQueryable();
+        var result = CatalogText.ApplyNormalizedSearch(rows, Array.Empty<LocalizedProperty>().AsQueryable(),
+            term, new[] { "name" }, mode, 1);
+        Assert.That(result.Any(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void PersianSearchUsesOnlyCurrentLanguageAndConfiguredFields()
+    {
+        var rows = new[] { new Product { Id = 1, Name = "milk" }, new Product { Id = 2, Name = "water" } }.AsQueryable();
+        var translations = new[]
+        {
+            new LocalizedProperty { EntityId = 1, LanguageId = 2, LocaleKeyGroup = nameof(Product), LocaleKey = "Name", LocaleValue = "شير" },
+            new LocalizedProperty { EntityId = 2, LanguageId = 3, LocaleKeyGroup = nameof(Product), LocaleKey = "Name", LocaleValue = "شیر" },
+            new LocalizedProperty { EntityId = 2, LanguageId = 2, LocaleKeyGroup = nameof(Product), LocaleKey = "ShortDescription", LocaleValue = "شیر" }
+        }.AsQueryable();
+        Assert.That(CatalogText.ApplyNormalizedSearch(rows, translations, "شیر", new[] { "name" }, SearchMode.Contains, 2)
+            .Select(x => x.Id), Is.EqualTo(new[] { 1 }));
+        Assert.That(CatalogText.UseNormalizedSearch("شیر"), Is.True);
+        Assert.That(CatalogText.UseNormalizedSearch("شیر + کم"), Is.False);
+        Assert.That(CatalogText.UseNormalizedSearch("rice"), Is.False);
+    }
+
+    [Test]
+    public void InactiveVariantStockDoesNotMakeAProductSellable()
+    {
+        var inactive = new Product { Id = 1, ManageInventoryMethodId = (int)ManageInventoryMethod.ManageStockByAttributes };
+        inactive.ProductVariantAttributeCombinations.Add(new ProductVariantAttributeCombination { IsActive = false, StockQuantity = 10 });
+        var active = new Product { Id = 2, ManageInventoryMethodId = (int)ManageInventoryMethod.ManageStockByAttributes };
+        active.ProductVariantAttributeCombinations.Add(new ProductVariantAttributeCombination { IsActive = true, StockQuantity = 1 });
+        var products = new[] { inactive, active }.AsQueryable();
+        Assert.That(CatalogFacade.ApplyStockFilter(products, true).Select(x => x.Id), Is.EqualTo(new[] { 2 }));
+        Assert.That(CatalogFacade.ApplyStockFilter(products, false).Select(x => x.Id), Is.EqualTo(new[] { 1 }));
+    }
+
+    [TestCase(CatalogSort.PriceAsc)]
+    [TestCase(CatalogSort.PriceDesc)]
+    public void PriceSortRetainsUnpricedProductsWithoutExposingTheirPrices(CatalogSort sort)
+    {
+        var products = new[]
+        {
+            new Product { Id = 1, Price = 10, CallForPrice = true },
+            new Product { Id = 2, Price = 100 },
+            new Product { Id = 3, Price = 50, CustomerEntersPrice = true }
+        }.AsQueryable();
+        Assert.That(CatalogFacade.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { Sort = sort }, DateTime.UtcNow)
+            .Select(x => x.Id), Is.EqualTo(new[] { 2, 1, 3 }));
+        Assert.That(CatalogFacade.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { MaxPrice = 200 }, DateTime.UtcNow)
+            .Select(x => x.Id), Is.EqualTo(new[] { 2 }));
     }
 }

@@ -45,7 +45,7 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
         {
             case "products":
                 operation.Summary = "List and search products";
-                operation.Description = "Optional search text (max 200 characters), 1-based page (1–10000), pageSize (1–100). Filters: categoryId, brandId, minPrice, maxPrice, inStock and hasDiscount. For nonblank searches, omitted inStock follows admin availability settings; true selects sellable products, false selects unavailable products. Price filters and sorting use catalog base-currency prices before customer-specific pricing/tax. Price/discount filtering and price sorting require price-display permission.";
+                operation.Description = "Optional search text (max 200 characters), 1-based page (1–10000), pageSize (1–100). Filters: categoryId, brandId, minPrice, maxPrice, inStock and hasDiscount. For nonblank searches, omitted inStock follows admin availability settings; true selects sellable products, false selects unavailable products. Price filters and sorting use catalog base-currency prices before customer-specific pricing/tax. Price/discount filtering and price sorting require price-display permission. List prices are indicative unit prices at pricingQuantity (the minimum supported order quantity). Use quote for the selected configuration.";
                 break;
             case "products/suggestions":
                 operation.Summary = "Instant search suggestions";
@@ -53,7 +53,31 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
                 break;
             case "products/facets":
                 operation.Summary = "Available product filters";
-                operation.Description = "Returns total matching products and category/brand counts for the same filters as the product list. Counts are conjunctive and use direct category mappings; lists may be truncated. Send search, categoryId, brandId, minPrice, maxPrice, inStock and hasDiscount as needed. No paging, sorting or price projection. Price/discount filters require price-display permission. Price bounds are supplied by the client in the returned base currency.";
+                operation.Description = "Returns total matching products and category/brand counts for the same filters as the product list. Counts are conjunctive and use direct category mappings; lists may be truncated. Send search, categoryId, brandId, minPrice, maxPrice, inStock and hasDiscount as needed. No paging, sorting or price projection. Price/discount filters require price-display permission. Includes availability counts and nullable priceRange (base currency, only when permitted). Counts and bounds respect all supplied filters; clear a filter to see its alternatives.";
+                break;
+            case "products/{id}":
+                operation.Summary = "Product details and purchase options";
+                operation.Description = "Includes variants, specifications, images, quantity rules and purchase capabilities. The list price is indicative; use quote for quantity/variant-specific price and validation.";
+                break;
+            case "products/{id}/quote":
+                operation.Summary = "Calculate and validate a product selection";
+                operation.Description = "Read-only quote for quantity and selected variant values. HTTP 200 can contain isValid=false and warnings; it never changes the cart or reserves stock. The cart remains authoritative.";
+                break;
+            case "categories":
+                operation.Summary = "List visible categories";
+                operation.Description = "Use parentId=0 for root categories, a positive parentId for direct children, or omit parentId for a flat paginated list. Includes localized name, image, hasChildren and showOnHomePage; use showOnHomePage to filter.";
+                break;
+            case "categories/{id}":
+                operation.Summary = "Get a visible category";
+                operation.Description = "Same item contract as the category list. Returns 404 for missing or inaccessible categories.";
+                break;
+            case "brands":
+                operation.Summary = "List visible brands";
+                operation.Description = "Localized name search, pagination and administrator display order. Includes nullable imageUrl.";
+                break;
+            case "brands/{id}":
+                operation.Summary = "Get a visible brand";
+                operation.Description = "Same item contract as the brand list. Returns 404 for missing or inaccessible brands.";
                 break;
         }
         // Use the route template and verb (not overloaded CLR method names).
@@ -70,7 +94,7 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
         AddResponse(operation, "401", "Missing or invalid required customer identity / token (ProblemDetails).");
         AddResponse(operation, "403", "Native permission or account/store context denied (ProblemDetails).");
         AddResponse(operation, "503", "Store unavailable (ProblemDetails).");
-        if (section == "products" && route.StartsWith("products/{") ||
+        if ((section is "products" or "categories" or "brands") && route.StartsWith(section + "/{") ||
             section == "orders" && route != "orders" ||
             section == "cart" && route.StartsWith("cart/items/"))
             AddResponse(operation, "404", "Requested resource not found.");

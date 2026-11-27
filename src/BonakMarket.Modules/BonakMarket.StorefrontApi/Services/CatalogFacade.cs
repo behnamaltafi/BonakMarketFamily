@@ -36,6 +36,55 @@ public sealed class CatalogFacade(
         return NativePaging.Map(page, items);
     }
 
+    internal static (bool Enabled, int MinimumTermLength, int Limit) InstantSearchPolicy(
+        InstantSearchRequest filter, SearchSettings settings)
+    {
+        var limit = Math.Min(filter.Limit ?? 16, Math.Clamp(settings.InstantSearchNumberOfProducts, 0, 16));
+        return (settings.InstantSearchEnabled && limit > 0, Math.Max(1, settings.InstantSearchTermMinLength), limit);
+    }
+
+    public async Task<InstantSearchDto> InstantSearchAsync(InstantSearchRequest filter, SearchSettings settings, CancellationToken ct)
+    {
+        var term = filter.Search?.Trim() ?? string.Empty;
+        var (enabled, minimum, limit) = InstantSearchPolicy(filter, settings);
+        if (!enabled || term.Length < minimum)
+            return new(term, enabled, minimum, limit, false, Array.Empty<InstantSearchProductDto>());
+
+        // Keep the same scoped SQL search as the paginated catalog. Do not count every match
+        // or trust potentially stale index hits for public suggestions.
+        var query = new CatalogSearchQuery(settings.GetSearchFields(true).ToArray(), term, settings.SearchMode)
+            .OriginatesFrom(CatalogSearchQuery.KnownOrigins.InstantSearch)
+            .VisibleOnly(request.Customer).HasStoreId(request.StoreId)
+            .WithLanguage(work.WorkingLanguage).WithCurrency(work.WorkingCurrency)
+            .BuildFacetMap(false).SortBy(ProductSortingEnum.Relevance);
+        if (!settings.IncludeNotAvailable)
+            query.AvailableOnly(true);
+
+        var source = search.PrepareQuery(query,
+            StorefrontScope.Products(db, request.Customer, request.StoreId, forSearch: true).AsNoTracking());
+        var products = await source.Take(limit + 1).ToListAsync(ct);
+        var hasMore = products.Count > limit;
+        if (hasMore) products.RemoveAt(limit);
+
+        if (products.Count == 0)
+            return new(term, enabled, minimum, limit, false, Array.Empty<InstantSearchProductDto>());
+
+        var ids = products.Select(x => x.Id).ToArray();
+        // Load translated names in a single batch. Fallback to the product name.
+        var localizedNames = await db.LocalizedProperties.AsNoTracking()
+            .Where(x => ids.Contains(x.EntityId) && x.LanguageId == work.WorkingLanguage.Id &&
+                x.LocaleKeyGroup == nameof(Product) && x.LocaleKey == nameof(Product.Name))
+            .Select(x => new { x.EntityId, x.LocaleValue }).ToListAsync(ct);
+        var names = localizedNames.GroupBy(x => x.EntityId)
+            .ToDictionary(x => x.Key, x => x.Select(y => y.LocaleValue).FirstOrDefault(y => !string.IsNullOrWhiteSpace(y)));
+
+        var mapped = await MapAsync(products, false, includeImages: settings.ShowProductImagesInInstantSearch);
+        var items = mapped.Select(x => new InstantSearchProductDto(x.Id,
+            names.TryGetValue(x.Id, out var name) && !string.IsNullOrWhiteSpace(name) ? name : x.Name,
+            x.Sku, x.MediaFileId, x.ImageUrl)).ToArray();
+        return new(term, enabled, minimum, limit, hasMore, items);
+    }
+
     private async Task<IQueryable<Product>> SearchSourceAsync(ProductSearchRequest filter, CancellationToken ct)
     {
         var term = filter.Search?.Trim();
@@ -240,18 +289,22 @@ public sealed class CatalogFacade(
                 x.ProductVariantAttributeValues.OrderBy(v => v.DisplayOrder).Select(v => new VariantValueDto(v.Id, v.Name)).ToList())).ToList();
     }
 
-    private async Task<List<ProductDto>> MapAsync(IList<Product> products, bool includePrice, bool forListing = true)
+    private async Task<List<ProductDto>> MapAsync(IList<Product> products, bool includePrice, bool forListing = true, bool includeImages = true)
     {
         var allowed = includePrice && await CanDisplayPriceAsync();
         var batch = new ProductBatchContext(products, db, components, stores.CurrentStore, request.Customer,
             includeHidden: false, loadMainMediaOnly: true);
         var options = allowed ? prices.CreateDefaultOptions(forListing, request.Customer, batchContext: batch) : null;
         var ids = products.Select(x => x.Id).ToArray();
-        var pictures = await db.Set<ProductMediaFile>().AsNoTracking()
-            .Where(x => ids.Contains(x.ProductId) && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
-            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id)
-            .Select(x => new { x.ProductId, x.MediaFileId }).ToListAsync();
-        var lookup = pictures.GroupBy(x => x.ProductId).ToDictionary(x => x.Key, x => x.First().MediaFileId);
+        var lookup = new Dictionary<int, int>();
+        if (includeImages && ids.Length > 0)
+        {
+            var pictures = await db.Set<ProductMediaFile>().AsNoTracking()
+                .Where(x => ids.Contains(x.ProductId) && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
+                .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id)
+                .Select(x => new { x.ProductId, x.MediaFileId }).ToListAsync();
+            lookup = pictures.GroupBy(x => x.ProductId).ToDictionary(x => x.Key, x => x.First().MediaFileId);
+        }
         var items = new List<ProductDto>(products.Count);
         foreach (var product in products)
         {

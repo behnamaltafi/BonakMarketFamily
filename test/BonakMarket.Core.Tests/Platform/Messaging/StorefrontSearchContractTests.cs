@@ -1,0 +1,71 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Reflection;
+using Microsoft.AspNetCore.Mvc;
+using NUnit.Framework;
+using BonakMarket.Core.Catalog.Search;
+using BonakMarket.StorefrontApi.Controllers;
+using BonakMarket.StorefrontApi.Models;
+using BonakMarket.StorefrontApi.Security;
+using BonakMarket.StorefrontApi.Services;
+
+namespace BonakMarket.Core.Tests.Platform.Messaging;
+
+[TestFixture]
+public class StorefrontSearchContractTests
+{
+    [TestCase(null, null, true)]
+    [TestCase("rice", 1, true)]
+    [TestCase("rice", 16, true)]
+    [TestCase("rice", 0, false)]
+    [TestCase("rice", 17, false)]
+    public void ValidatesInstantSearchRequest(string search, int? limit, bool expected)
+    {
+        var request = new InstantSearchRequest { Search = search, Limit = limit };
+        Assert.That(Validator.TryValidateObject(request, new ValidationContext(request),
+            new List<ValidationResult>(), true), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void RejectsOverlongTerm()
+    {
+        var request = new InstantSearchRequest { Search = new string('x', 201) };
+        Assert.That(Validator.TryValidateObject(request, new ValidationContext(request),
+            new List<ValidationResult>(), true), Is.False);
+    }
+
+    [TestCase(true, 10, null, 10, true)]
+    [TestCase(true, 10, 3, 3, true)]
+    [TestCase(true, 10, 16, 10, true)]
+    [TestCase(true, 100, null, 16, true)]
+    [TestCase(true, 0, null, 0, false)]
+    [TestCase(false, 10, null, 10, false)]
+    public void HonorsAdminLimitAndEnabledFlag(bool enabled, int configured, int? requested, int expectedLimit, bool expectedEnabled)
+    {
+        var result = CatalogFacade.InstantSearchPolicy(new InstantSearchRequest { Limit = requested },
+            new SearchSettings { InstantSearchEnabled = enabled, InstantSearchNumberOfProducts = configured,
+                InstantSearchTermMinLength = 3 });
+        Assert.That(result.Limit, Is.EqualTo(expectedLimit));
+        Assert.That(result.Enabled, Is.EqualTo(expectedEnabled));
+        Assert.That(result.MinimumTermLength, Is.EqualTo(3));
+    }
+
+    [TestCase(nameof(CatalogController.Search), "~/api/storefront/v1/search")]
+    [TestCase(nameof(CatalogController.InstantSearch), "~/api/storefront/v1/search/instant")]
+    [TestCase(nameof(CatalogController.Facets), "~/api/storefront/v1/search/facets")]
+    public void SearchRoutesArePublicCatalogGets(string methodName, string route)
+    {
+        var action = typeof(CatalogController).GetMethod(methodName);
+        Assert.That(action.IsDefined(typeof(PublicCatalogAttribute), true), Is.True);
+        Assert.That(action.GetCustomAttributes<HttpGetAttribute>().Select(a => a.Template), Does.Contain(route));
+    }
+
+    [Test]
+    public void InstantProductContractDoesNotExposePrice()
+    {
+        Assert.That(typeof(InstantSearchProductDto).GetProperties().Select(x => x.Name),
+            Is.EquivalentTo(new[] { "Id", "Name", "Sku", "MediaFileId", "ImageUrl" }));
+    }
+}

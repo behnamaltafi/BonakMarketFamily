@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using BonakMarket.Core.Catalog.Search;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
 using BonakMarket.StorefrontApi.Services;
@@ -9,7 +10,8 @@ namespace BonakMarket.StorefrontApi.Controllers;
 [StorefrontPermission(StorefrontPermissions.Catalog)]
 public sealed class CatalogController(CatalogFacade catalog) : StorefrontController
 {
-    [HttpGet, PublicCatalog]
+    /// <summary>Search the visible catalog with filters and pagination. Both routes share the same contract.</summary>
+    [HttpGet, HttpGet("~/api/storefront/v1/search"), PublicCatalog]
     public async Task<ActionResult<PageDto<ProductDto>>> Search([FromQuery] ProductSearchRequest filter, CancellationToken ct)
     {
         if ((filter.MinPrice.HasValue || filter.MaxPrice.HasValue || filter.HasDiscount.HasValue ||
@@ -18,7 +20,13 @@ public sealed class CatalogController(CatalogFacade catalog) : StorefrontControl
         return Ok(await catalog.SearchAsync(filter, ct));
     }
 
-    [HttpGet("facets"), PublicCatalog]
+    /// <summary>Lightweight suggestions for the current search term. No price calculation or full result count.</summary>
+    [HttpGet("~/api/storefront/v1/search/instant"), PublicCatalog]
+    public async Task<ActionResult<InstantSearchDto>> InstantSearch([FromQuery] InstantSearchRequest filter,
+        [FromServices] SearchSettings settings, CancellationToken ct)
+        => Ok(await catalog.InstantSearchAsync(filter, settings, ct));
+
+    [HttpGet("facets"), HttpGet("~/api/storefront/v1/search/facets"), PublicCatalog]
     public async Task<ActionResult<CatalogFacetsDto>> Facets([FromQuery] ProductSearchRequest filter, CancellationToken ct)
     {
         if ((filter.MinPrice.HasValue || filter.MaxPrice.HasValue || filter.HasDiscount.HasValue ||

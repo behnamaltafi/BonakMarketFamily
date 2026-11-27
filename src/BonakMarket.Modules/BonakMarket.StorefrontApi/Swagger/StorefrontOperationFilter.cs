@@ -26,6 +26,7 @@ internal sealed class StorefrontOperationFilter(IOptions<AntiforgeryOptions> ant
         operation.Tags = new List<OpenApiTag> { new() { Name = tag ?? (section switch
         {
             "products" => "Products",
+            "search" => "Search",
             "categories" => "Categories",
             "brands" => "Brands",
             "cart" => "Cart",

@@ -4,23 +4,20 @@ using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Checkout.Payment;
 using BonakMarket.Core.Checkout.Shipping;
 using BonakMarket.Core.Common;
-using BonakMarket.Core.Common.Services;
-using BonakMarket.Core.Data;
 using BonakMarket.Core.Identity;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-internal sealed class CheckoutOptions(SmartDbContext db, StorefrontRequestContext request, IAddressService addresses,
+public sealed class CheckoutOptions(StorefrontRequestContext request, CheckoutAddressChecks addressChecks,
     IShippingService shipping, IPaymentService payments)
 {
-    private readonly CheckoutAddressChecks _addressChecks = new(db, request, addresses);
 
     internal async Task<List<CheckoutShippingOptionDto>?> QuoteShipping(ShoppingCart cart, int addressId, CancellationToken ct)
     {
-        var address = await _addressChecks.OwnedAddress(addressId, ct);
-        if (address == null || !await _addressChecks.ValidAddress(address, true)) return null;
+        var address = await addressChecks.OwnedAddress(addressId, ct);
+        if (address == null || !await addressChecks.ValidAddress(address, true)) return null;
         var quote = await shipping.CreateShippingOptionRequestAsync(cart, address, request.StoreId);
         var result = await shipping.GetShippingOptionsAsync(quote);
         if (result.ShippingOptions.Count == 0) return null;

@@ -17,7 +17,7 @@ using BonakMarket.StorefrontApi.Security;
 namespace BonakMarket.StorefrontApi.Services;
 
 // Read and project the native cart; do not introduce a second cart engine.
-internal sealed class CartStateReader(SmartDbContext db, IShoppingCartService cart, IOrderCalculationService calculations,
+public sealed class CartStateReader(SmartDbContext db, IShoppingCartService cart, IOrderCalculationService calculations,
     IProductAttributeMaterializer attributes, StorefrontRequestContext request, IWorkContext work,
     IGiftCardService gifts, IPermissionService permissions, IMediaService media, IShoppingCartValidator validator)
 {

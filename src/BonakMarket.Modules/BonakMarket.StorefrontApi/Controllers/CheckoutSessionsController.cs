@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using BonakMarket.Core.Checkout.Attributes;
 using BonakMarket.Core.Checkout.Cart.Events;
-using BonakMarket.Core.Checkout.Orders.Handlers;
 using BonakMarket.Core.Stores;
 using BonakMarket.Events;
 using Microsoft.AspNetCore.Mvc;
@@ -34,17 +33,12 @@ namespace BonakMarket.StorefrontApi.Controllers;
 [StorefrontPermission(Permissions.Cart.AccessShoppingCart)]
 [StorefrontPermission(Permissions.Catalog.DisplayPrice)]
 public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequestContext request,
-    CartFacade cartFacade, IShoppingCartService carts, IShippingService shipping, IPaymentService payments,
-    IAddressService addresses, IDistributedLockProvider locks, IConfiguration configuration,
+    CartFacade cartFacade, IShoppingCartService carts, IShippingService shipping, IConfiguration configuration,
     IOrderCalculationService calculations, IOrderProcessingService processing, IStoreContext stores,
-    ICheckoutFactory checkoutFactory, ICheckoutAttributeMaterializer checkoutAttributes,
-    ShoppingCartSettings cartSettings, ICurrencyService currencies, IEventPublisher events, ILogger<CheckoutSessionsController> logger) : StorefrontController
+    ICurrencyService currencies, IEventPublisher events, ILogger<CheckoutSessionsController> logger,
+    CheckoutDraftStore drafts, CheckoutSessionState sessionState, CheckoutOptions checkoutOptions,
+    CheckoutAddressChecks addressChecks, OfflineCheckoutEligibility offlineEligibility) : StorefrontController
 {
-    private readonly CheckoutDraftStore _drafts = new(db, request, locks);
-    private readonly CheckoutSessionState _sessionState = new(db, request, addresses);
-    private readonly CheckoutOptions _options = new(db, request, addresses, shipping, payments);
-    private CheckoutAddressChecks AddressChecks => _sessionState.AddressChecks;
-    private readonly OfflineCheckoutEligibility _offlineEligibility = new(request, cartSettings, checkoutFactory, checkoutAttributes, payments);
     private const int RevisionConflict = 409;
     private const string AttemptKey = "BonakMarket.Storefront.OrderAttempt.v1";
     private bool OfflineEnabled => configuration.GetValue<bool>("StorefrontApi:EnableOfflineCheckout") && db.DataProvider.ProviderType == DbSystemType.SqlServer;
@@ -54,7 +48,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     [HttpPost]
     public async Task<ActionResult<CheckoutSessionDto>> Start(CancellationToken ct)
     {
-        await using var handle = await _drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
+        await using var handle = await drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
         await request.Customer.GenericAttributes.ReloadAsync();
         var state = await cartFacade.StateAsync(ct);
         if (!state.Checkout.CanStart)
@@ -66,13 +60,13 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         }
 
         var native = await NativeCart();
-        var draft = _drafts.Read();
-        if (draft == null || draft.ExpiresAt <= DateTime.UtcNow || !await AddressChecks.AddressesCurrent(draft, ct) ||
+        var draft = drafts.Read();
+        if (draft == null || draft.ExpiresAt <= DateTime.UtcNow || !await addressChecks.AddressesCurrent(draft, ct) ||
             (draft.PreparedCartFingerprint == null ? !draft.IsCurrent(state.Revision, DateTime.UtcNow) :
-                draft.PreparedCartFingerprint != await _sessionState.RawCartFingerprint(ct) || !_sessionState.NativeSelectionsMatch(draft)))
+                draft.PreparedCartFingerprint != await sessionState.RawCartFingerprint(ct) || !sessionState.NativeSelectionsMatch(draft)))
         {
             draft = CheckoutDraft.Create(state.Revision, DateTime.UtcNow);
-            await _drafts.SaveAsync(draft, ct);
+            await drafts.SaveAsync(draft, ct);
         }
 
         return Ok(await ToDto(draft, state, native, ct));
@@ -81,7 +75,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     [HttpGet("current")]
     public async Task<ActionResult<CheckoutSessionDto>> Current(CancellationToken ct)
     {
-        var draft = _drafts.Read();
+        var draft = drafts.Read();
         if (draft == null) return Error(404, "checkout_session_not_found");
         return Ok(await ToDto(draft, await cartFacade.StateAsync(ct), await NativeCart(), ct));
     }
@@ -89,7 +83,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<CheckoutSessionDto>> Get(Guid id, CancellationToken ct)
     {
-        var draft = _drafts.Read();
+        var draft = drafts.Read();
         if (draft == null || draft.Id != id) return Error(404, "checkout_session_not_found");
         return Ok(await ToDto(draft, await cartFacade.StateAsync(ct), await NativeCart(), ct));
     }
@@ -97,7 +91,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     [HttpPut("{id:guid}/addresses")]
     public async Task<ActionResult<CheckoutSessionDto>> SetAddresses(Guid id, [FromBody] CheckoutAddressesRequest input, CancellationToken ct)
     {
-        await using var handle = await _drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
+        await using var handle = await drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
         await request.Customer.GenericAttributes.ReloadAsync();
         var loaded = await LoadCurrent(id, input.Revision, ct);
         if (loaded.Error != null) return loaded.Error;
@@ -107,15 +101,15 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         if (needsBilling != input.BillingAddressId.HasValue || native.IsShippingRequired != input.ShippingAddressId.HasValue)
             return Error(422, "checkout_addresses_required");
 
-        var billing = input.BillingAddressId.HasValue ? await AddressChecks.OwnedAddress(input.BillingAddressId.Value, ct) : null;
-        var delivery = input.ShippingAddressId.HasValue ? await AddressChecks.OwnedAddress(input.ShippingAddressId.Value, ct) : null;
+        var billing = input.BillingAddressId.HasValue ? await addressChecks.OwnedAddress(input.BillingAddressId.Value, ct) : null;
+        var delivery = input.ShippingAddressId.HasValue ? await addressChecks.OwnedAddress(input.ShippingAddressId.Value, ct) : null;
         if ((input.BillingAddressId.HasValue && billing == null) || (input.ShippingAddressId.HasValue && delivery == null))
             return Error(404, "address_not_found");
-        if ((billing != null && !await AddressChecks.ValidAddress(billing, false)) || (delivery != null && !await AddressChecks.ValidAddress(delivery, true)))
+        if ((billing != null && !await addressChecks.ValidAddress(billing, false)) || (delivery != null && !await addressChecks.ValidAddress(delivery, true)))
             return Error(422, "invalid_checkout_address");
 
         var next = draft.WithAddresses(billing?.Id, delivery?.Id, CheckoutAddressChecks.AddressFingerprint(billing), CheckoutAddressChecks.AddressFingerprint(delivery)).Advance();
-        await _drafts.SaveAsync(next, ct);
+        await drafts.SaveAsync(next, ct);
         return Ok(await ToDto(next, loaded.Cart!, native, ct));
     }
 
@@ -128,7 +122,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         var native = loaded.Native!;
         if (!native.IsShippingRequired) return Ok(Array.Empty<CheckoutShippingOptionDto>());
         if (!CheckoutSessionState.AddressesComplete(draft, native)) return Error(422, "checkout_addresses_required");
-        var options = await _options.QuoteShipping(native, draft.ShippingAddressId!.Value, ct);
+        var options = await checkoutOptions.QuoteShipping(native, draft.ShippingAddressId!.Value, ct);
         if (options == null) return Error(422, "shipping_unavailable");
         return Ok(options);
     }
@@ -136,7 +130,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     [HttpPut("{id:guid}/shipping-method")]
     public async Task<ActionResult<CheckoutSessionDto>> SetShipping(Guid id, [FromBody] CheckoutShippingSelectionRequest input, CancellationToken ct)
     {
-        await using var handle = await _drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
+        await using var handle = await drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
         await request.Customer.GenericAttributes.ReloadAsync();
         var loaded = await LoadCurrent(id, input.Revision, ct);
         if (loaded.Error != null) return loaded.Error;
@@ -144,7 +138,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         var native = loaded.Native!;
         if (!native.IsShippingRequired) return Error(422, "shipping_not_required");
         if (!CheckoutSessionState.AddressesComplete(draft, native)) return Error(422, "checkout_addresses_required");
-        var options = await _options.QuoteShipping(native, draft.ShippingAddressId!.Value, ct);
+        var options = await checkoutOptions.QuoteShipping(native, draft.ShippingAddressId!.Value, ct);
         var matches = options?.Where(x => x.Id == input.ShippingMethodId &&
             string.Equals(x.Provider, input.Provider, StringComparison.OrdinalIgnoreCase)).ToList();
         if (matches?.Count != 1) return Error(422, "shipping_option_unavailable");
@@ -152,7 +146,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         if (input.ObservedRate != option.Rate) return Error(409, "shipping_rate_changed");
 
         var next = draft.WithShipping(option).Advance();
-        await _drafts.SaveAsync(next, ct);
+        await drafts.SaveAsync(next, ct);
         return Ok(await ToDto(next, loaded.Cart!, native, ct));
     }
 
@@ -162,13 +156,13 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         var loaded = await LoadCurrent(id, null, ct);
         if (loaded.Error != null) return loaded.Error;
         if (!CheckoutSessionState.ShippingComplete(loaded.Draft!, loaded.Native!)) return Error(422, "checkout_shipping_required");
-        return Ok(await _options.AvailablePaymentMethods(loaded.Native!));
+        return Ok(await checkoutOptions.AvailablePaymentMethods(loaded.Native!));
     }
 
     [HttpPut("{id:guid}/payment-method")]
     public async Task<ActionResult<CheckoutSessionDto>> SetPayment(Guid id, [FromBody] CheckoutPaymentSelectionRequest input, CancellationToken ct)
     {
-        await using var handle = await _drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
+        await using var handle = await drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
         await request.Customer.GenericAttributes.ReloadAsync();
         var loaded = await LoadCurrent(id, input.Revision, ct);
         if (loaded.Error != null) return loaded.Error;
@@ -178,17 +172,17 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         if (!native.Requirements.HasFlag(CheckoutRequirements.Payment)) return Error(422, "payment_not_required");
         if (native.IsShippingRequired)
         {
-            var offered = await _options.QuoteShipping(native, draft.ShippingAddressId!.Value, ct);
+            var offered = await checkoutOptions.QuoteShipping(native, draft.ShippingAddressId!.Value, ct);
             if (offered == null || !offered.Any(x => x.Id == draft.Shipping!.Id &&
                 string.Equals(x.Provider, draft.Shipping.Provider, StringComparison.OrdinalIgnoreCase) &&
                 x.Rate == draft.Shipping.Rate))
                 return Error(409, "shipping_rate_changed");
         }
-        var available = await _options.AvailablePaymentMethods(native);
+        var available = await checkoutOptions.AvailablePaymentMethods(native);
         var method = available.FirstOrDefault(x => string.Equals(x.SystemName, input.SystemName, StringComparison.OrdinalIgnoreCase));
         if (method == null) return Error(422, "payment_method_unavailable");
         var next = (draft with { Payment = method }).Advance();
-        await _drafts.SaveAsync(next, ct);
+        await drafts.SaveAsync(next, ct);
         return Ok(await ToDto(next, loaded.Cart!, native, ct));
     }
 
@@ -198,9 +192,9 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     public async Task<ActionResult<CheckoutReviewPreparedDto>> PrepareReview(Guid id, [FromBody] PrepareCheckoutReviewRequest input, CancellationToken ct)
     {
         if (!OfflineEnabled) return Error(409, "native_checkout_disabled");
-        await using var handle = await _drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
+        await using var handle = await drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
         await request.Customer.GenericAttributes.ReloadAsync();
-        var draft = _drafts.Read();
+        var draft = drafts.Read();
         if (draft == null || draft.Id != id) return Error(404, "checkout_session_not_found");
         if (draft.Revision != input.Revision || draft.ExpiresAt <= DateTime.UtcNow)
             return Error(409, "stale_checkout_revision");
@@ -211,12 +205,12 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         var native = loaded.Native!;
         if (!CheckoutSessionState.ShippingComplete(draft, native) || draft.Payment == null)
             return Error(422, "checkout_selection_required");
-        if (!await _offlineEligibility.SupportsAsync(native, draft)) return Error(409, "checkout_requires_browser");
+        if (!await offlineEligibility.SupportsAsync(native, draft)) return Error(409, "checkout_requires_browser");
         var previous = await ReadAttempt(ct);
         if (previous != null && previous.Status == "started" && !await OrderExists(previous.SessionId, ct))
             return Error(409, "checkout_attempt_requires_reconciliation");
-        var billing = draft.BillingAddressId.HasValue ? await AddressChecks.OwnedAddress(draft.BillingAddressId.Value, ct) : null;
-        var delivery = draft.ShippingAddressId.HasValue ? await AddressChecks.OwnedAddress(draft.ShippingAddressId.Value, ct) : null;
+        var billing = draft.BillingAddressId.HasValue ? await addressChecks.OwnedAddress(draft.BillingAddressId.Value, ct) : null;
+        var delivery = draft.ShippingAddressId.HasValue ? await addressChecks.OwnedAddress(draft.ShippingAddressId.Value, ct) : null;
         ShippingOption? selected = null;
         if (native.IsShippingRequired)
         {
@@ -236,8 +230,8 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         ga.OfferedShippingOptions = selected == null ? null : new List<ShippingOption> { selected };
         ga.SelectedPaymentMethod = draft.Payment.SystemName;
         ga.CheckoutOrderData = null;
-        var next = (draft with { PreparedCartFingerprint = await _sessionState.RawCartFingerprint(ct) }).Advance();
-        await _drafts.SaveAsync(next, ct);
+        var next = (draft with { PreparedCartFingerprint = await sessionState.RawCartFingerprint(ct) }).Advance();
+        await drafts.SaveAsync(next, ct);
         return Ok(new CheckoutReviewPreparedDto(next.Id, next.Revision));
     }
 
@@ -265,7 +259,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         if (!input.AcceptTerms || input.ExpectedOrderTotal is null || input.ExpectedOrderTotal < 0)
             return Error(422, "checkout_confirmation_required");
         var parsedKey = Guid.Parse(key);
-        await using var handle = await _drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
+        await using var handle = await drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
 
         var existing = await ReadAttempt(ct);
         if (existing?.SessionId == id)
@@ -345,12 +339,12 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Abandon(Guid id, CancellationToken ct)
     {
-        await using var handle = await _drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
+        await using var handle = await drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
         await request.Customer.GenericAttributes.ReloadAsync();
-        var draft = _drafts.Read();
+        var draft = drafts.Read();
         if (draft?.Id != id) return Error(404, "checkout_session_not_found");
         // Does not remove a durable attempt or overwrite native selections.
-        await _drafts.ClearAsync(ct);
+        await drafts.ClearAsync(ct);
         return NoContent();
     }
 
@@ -381,18 +375,18 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
 
     private async Task<ReviewResult> GetReview(Guid id, int? revision, CancellationToken ct)
     {
-        var draft = _drafts.Read();
+        var draft = drafts.Read();
         if (draft == null || draft.Id != id) return new(Error: Error(404, "checkout_session_not_found"));
         if (draft.ExpiresAt <= DateTime.UtcNow || revision.HasValue && revision != draft.Revision)
             return new(Error: Error(409, "stale_checkout_revision"));
-        if (draft.PreparedCartFingerprint == null || !_sessionState.NativeSelectionsMatch(draft) ||
-            draft.PreparedCartFingerprint != await _sessionState.RawCartFingerprint(ct) || !await AddressChecks.AddressesCurrent(draft, ct))
+        if (draft.PreparedCartFingerprint == null || !sessionState.NativeSelectionsMatch(draft) ||
+            draft.PreparedCartFingerprint != await sessionState.RawCartFingerprint(ct) || !await addressChecks.AddressesCurrent(draft, ct))
             return new(Error: Error(409, "checkout_review_stale"));
         var native = await NativeCart();
-        if (!await _offlineEligibility.SupportsAsync(native, draft)) return new(Error: Error(409, "checkout_requires_browser"));
+        if (!await offlineEligibility.SupportsAsync(native, draft)) return new(Error: Error(409, "checkout_requires_browser"));
         if (native.IsShippingRequired)
         {
-            var offered = await _options.QuoteShipping(native, draft.ShippingAddressId!.Value, ct);
+            var offered = await checkoutOptions.QuoteShipping(native, draft.ShippingAddressId!.Value, ct);
             if (offered?.Count(x => x.Id == draft.Shipping!.Id &&
                 string.Equals(x.Provider, draft.Shipping.Provider, StringComparison.OrdinalIgnoreCase) &&
                 x.Rate == draft.Shipping.Rate) != 1) return new(Error: Error(409, "shipping_rate_changed"));
@@ -421,7 +415,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
 
     private async Task<LoadResult> LoadCurrent(Guid id, int? expectedRevision, CancellationToken ct)
     {
-        var draft = _drafts.Read();
+        var draft = drafts.Read();
         if (draft == null || draft.Id != id) return new(Error: Error(404, "checkout_session_not_found"));
         if (draft.ExpiresAt <= DateTime.UtcNow) return new(Error: Error(409, "checkout_session_expired"));
         if (draft.PreparedCartFingerprint != null) return new(Error: Error(409, "checkout_review_prepared_restart_to_edit"));
@@ -430,10 +424,10 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         var state = await cartFacade.StateAsync(ct);
         if (!draft.IsCurrent(state.Revision, DateTime.UtcNow)) return new(Error: Error(409, "checkout_cart_changed"));
         if (!state.Checkout.CanStart) return new(Error: Error(422, "checkout_not_ready"));
-        if (!await AddressChecks.AddressesCurrent(draft, ct)) return new(Error: Error(409, "checkout_address_changed"));
+        if (!await addressChecks.AddressesCurrent(draft, ct)) return new(Error: Error(409, "checkout_address_changed"));
         return new(draft, state, await NativeCart());
     }
 
     private Task<CheckoutSessionDto> ToDto(CheckoutDraft draft, CartStateDto state, ShoppingCart native, CancellationToken ct) =>
-        _sessionState.ToDto(draft, state, native, ct, () => Url.RouteUrl("Checkout") ?? Url.Content("~/checkout") ?? "/checkout");
+        sessionState.ToDto(draft, state, native, ct, () => Url.RouteUrl("Checkout") ?? Url.Content("~/checkout") ?? "/checkout");
 }

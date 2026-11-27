@@ -27,7 +27,14 @@ internal sealed class Startup : StarterBase
         services.AddScoped<CatalogFacade>();
         services.AddScoped<CatalogQueries>();
         services.AddScoped<OrderQueries>();
+        services.AddScoped<CartStateReader>();
+        services.AddScoped<CartAdjustments>();
         services.AddScoped<CartFacade>();
+        services.AddScoped<CheckoutDraftStore>();
+        services.AddScoped<CheckoutAddressChecks>();
+        services.AddScoped<CheckoutSessionState>();
+        services.AddScoped<CheckoutOptions>();
+        services.AddScoped<OfflineCheckoutEligibility>();
         services.AddScoped<GuestCartService>();
         services.AddScoped<GuestCartSqlLock>();
         services.AddTransient<IDbContextConfigurationSource<SmartDbContext>, GuestCartModelConfigurer>();

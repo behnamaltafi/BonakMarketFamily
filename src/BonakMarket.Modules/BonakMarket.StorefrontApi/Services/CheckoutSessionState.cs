@@ -13,10 +13,8 @@ using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-internal sealed class CheckoutSessionState(SmartDbContext db, StorefrontRequestContext request, IAddressService addresses)
+public sealed class CheckoutSessionState(SmartDbContext db, StorefrontRequestContext request, CheckoutAddressChecks addressChecks)
 {
-    private readonly CheckoutAddressChecks _addressChecks = new(db, request, addresses);
-    internal CheckoutAddressChecks AddressChecks => _addressChecks;
 
     internal async Task<string> RawCartFingerprint(CancellationToken ct)
     {
@@ -57,7 +55,7 @@ internal sealed class CheckoutSessionState(SmartDbContext db, StorefrontRequestC
             ? !string.Equals(draft.CartRevision, state.Revision, StringComparison.Ordinal)
             : draft.PreparedCartFingerprint != await RawCartFingerprint(ct) || !NativeSelectionsMatch(draft))
             blockers.Add("checkout_cart_changed");
-        if (!await _addressChecks.AddressesCurrent(draft, ct)) blockers.Add("checkout_address_changed");
+        if (!await addressChecks.AddressesCurrent(draft, ct)) blockers.Add("checkout_address_changed");
         var status = expired ? "expired" : blockers.Count > 0 ? "stale" : "inProgress";
         var completed = new List<string>();
         var needsBilling = native.Requirements.HasFlag(CheckoutRequirements.BillingAddress);

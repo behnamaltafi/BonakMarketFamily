@@ -17,7 +17,7 @@ using BonakMarket.StorefrontApi.Security;
 namespace BonakMarket.StorefrontApi.Services;
 
 // Apply discounts, gift cards and rewards through the existing native cart services and attributes.
-internal sealed class CartAdjustments(SmartDbContext db, IShoppingCartService cart, IOrderCalculationService calculations,
+public sealed class CartAdjustments(SmartDbContext db, IShoppingCartService cart, IOrderCalculationService calculations,
     StorefrontRequestContext request, ShoppingCartSettings settings, RewardPointsSettings rewards,
     IGiftCardService gifts, IDistributedLockProvider locks, IPermissionService permissions)
 {

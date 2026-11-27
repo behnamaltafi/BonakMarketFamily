@@ -10,7 +10,7 @@ using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-internal sealed class OfflineCheckoutEligibility(StorefrontRequestContext request, ShoppingCartSettings cartSettings,
+public sealed class OfflineCheckoutEligibility(StorefrontRequestContext request, ShoppingCartSettings cartSettings,
     ICheckoutFactory checkoutFactory, ICheckoutAttributeMaterializer checkoutAttributes, IPaymentService payments)
 {
     internal async Task<bool> SupportsAsync(ShoppingCart native, CheckoutDraft draft)

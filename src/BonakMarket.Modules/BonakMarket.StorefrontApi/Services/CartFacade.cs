@@ -1,15 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core;
 using BonakMarket.Core.Identity;
-using BonakMarket.Core.Checkout.GiftCards;
-using BonakMarket.Threading;
 using BonakMarket.Core.Catalog.Attributes;
 using BonakMarket.Core.Catalog.Products;
-using BonakMarket.Core.Checkout.Tax;
-using BonakMarket.Core.Content.Media;
-using BonakMarket.Core.Security;
 using BonakMarket.Core.Checkout.Cart;
-using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Data;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
@@ -17,24 +11,20 @@ using BonakMarket.StorefrontApi.Security;
 namespace BonakMarket.StorefrontApi.Services;
 
 // An application adapter, not a second cart engine. All cart writes go through the native service.
-public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOrderCalculationService calculations,
+public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart,
     IProductAttributeMaterializer attributes, StorefrontRequestContext request, IWorkContext work,
-    ShoppingCartSettings settings, RewardPointsSettings rewards, IGiftCardService gifts, IDistributedLockProvider locks,
-    IPermissionService permissions, IMediaService media, IShoppingCartValidator validator)
+    ShoppingCartSettings settings, CartStateReader reader, CartAdjustments adjustments)
 {
-    private readonly CartStateReader _reader = new(db, cart, calculations, attributes, request, work, gifts,
-        permissions, media, validator);
-    private readonly CartAdjustments _adjustments = new(db, cart, calculations, request, settings, rewards, gifts, locks, permissions);
 
-    public Task<bool> CanDisplayPriceAsync() => _reader.CanDisplayPriceAsync();
+    public Task<bool> CanDisplayPriceAsync() => reader.CanDisplayPriceAsync();
 
     public Task<CartStateDto> StateAsync(CancellationToken ct, IReadOnlyList<string> operationWarnings = null) =>
-        _reader.StateAsync(ct, operationWarnings);
+        reader.StateAsync(ct, operationWarnings);
 
     public Task<WishlistStateDto> WishlistStateAsync(CancellationToken ct, IReadOnlyList<string> operationWarnings = null) =>
-        _reader.WishlistStateAsync(ct, operationWarnings);
+        reader.WishlistStateAsync(ct, operationWarnings);
 
-    public Task<List<CartItemDto>> ItemsAsync(ShoppingCartType type = ShoppingCartType.ShoppingCart) => _reader.ItemsAsync(type);
+    public Task<List<CartItemDto>> ItemsAsync(ShoppingCartType type = ShoppingCartType.ShoppingCart) => reader.ItemsAsync(type);
 
     public async Task<CartChange> AddAsync(AddCartItem input, CancellationToken ct, ShoppingCartType type = ShoppingCartType.ShoppingCart)
     {
@@ -102,19 +92,19 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
         return new(200);
     }
 
-    public Task<bool> SetRewardPointsAsync(bool use, CancellationToken ct) => _adjustments.SetRewardPointsAsync(use, ct);
+    public Task<bool> SetRewardPointsAsync(bool use, CancellationToken ct) => adjustments.SetRewardPointsAsync(use, ct);
 
-    public Task<CartTotalDto> TotalAsync() => _reader.TotalAsync();
+    public Task<CartTotalDto> TotalAsync() => reader.TotalAsync();
 
-    public Task<bool> ApplyGiftCardAsync(string code, CancellationToken ct) => _adjustments.ApplyGiftCardAsync(code, ct);
+    public Task<bool> ApplyGiftCardAsync(string code, CancellationToken ct) => adjustments.ApplyGiftCardAsync(code, ct);
 
-    public Task<bool> RemoveGiftCardAsync(int id, CancellationToken ct) => _adjustments.RemoveGiftCardAsync(id, ct);
+    public Task<bool> RemoveGiftCardAsync(int id, CancellationToken ct) => adjustments.RemoveGiftCardAsync(id, ct);
 
-    public Task ClearGiftCardsAsync(CancellationToken ct) => _adjustments.ClearGiftCardsAsync(ct);
+    public Task ClearGiftCardsAsync(CancellationToken ct) => adjustments.ClearGiftCardsAsync(ct);
 
-    public Task<bool> ApplyCouponAsync(string code, CancellationToken ct) => _adjustments.ApplyCouponAsync(code, ct);
+    public Task<bool> ApplyCouponAsync(string code, CancellationToken ct) => adjustments.ApplyCouponAsync(code, ct);
 
-    public Task RemoveCouponAsync(CancellationToken ct) => _adjustments.RemoveCouponAsync(ct);
+    public Task RemoveCouponAsync(CancellationToken ct) => adjustments.RemoveCouponAsync(ct);
 }
 
 public sealed record CartChange(int Status, string Code = null, List<string> Warnings = null, List<CartItemDto> Items = null);

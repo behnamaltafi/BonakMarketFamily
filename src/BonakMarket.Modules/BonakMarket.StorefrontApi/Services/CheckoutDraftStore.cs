@@ -8,7 +8,7 @@ using BonakMarket.Threading;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-internal sealed class CheckoutDraftStore(SmartDbContext db, StorefrontRequestContext request, IDistributedLockProvider locks)
+public sealed class CheckoutDraftStore(SmartDbContext db, StorefrontRequestContext request, IDistributedLockProvider locks)
 {
     private const string DraftKey = "BonakMarket.Storefront.CheckoutDraft.v1";
 

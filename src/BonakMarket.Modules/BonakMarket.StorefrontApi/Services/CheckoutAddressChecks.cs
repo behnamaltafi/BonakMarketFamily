@@ -8,7 +8,7 @@ using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-internal sealed class CheckoutAddressChecks(SmartDbContext db, StorefrontRequestContext request, IAddressService addresses)
+public sealed class CheckoutAddressChecks(SmartDbContext db, StorefrontRequestContext request, IAddressService addresses)
 {
     internal Task<Address?> OwnedAddress(int id, CancellationToken ct) =>
         db.Customers.AsNoTracking().Where(x => x.Id == request.Customer.Id).SelectMany(x => x.Addresses)

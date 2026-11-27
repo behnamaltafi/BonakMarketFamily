@@ -55,14 +55,44 @@ public class StorefrontSearchContractTests
         Assert.That(result.MinimumTermLength, Is.EqualTo(3));
     }
 
-    [TestCase(nameof(CatalogController.Search), "~/api/storefront/v1/search")]
-    [TestCase(nameof(CatalogController.InstantSearch), "~/api/storefront/v1/search/instant")]
-    [TestCase(nameof(CatalogController.Facets), "~/api/storefront/v1/search/facets")]
+    [TestCase(nameof(CatalogController.Search), null)]
+    [TestCase(nameof(CatalogController.InstantSearch), "suggestions")]
+    [TestCase(nameof(CatalogController.Facets), "facets")]
     public void SearchRoutesArePublicCatalogGets(string methodName, string route)
     {
         var action = typeof(CatalogController).GetMethod(methodName);
         Assert.That(action.IsDefined(typeof(PublicCatalogAttribute), true), Is.True);
-        Assert.That(action.GetCustomAttributes<HttpGetAttribute>().Select(a => a.Template), Does.Contain(route));
+        Assert.That(typeof(CatalogController).GetCustomAttribute<RouteAttribute>().Template, Is.EqualTo("api/storefront/v1/products"));
+        Assert.That(action.GetCustomAttributes<HttpGetAttribute>().Select(a => a.Template).ToArray(), Is.EqualTo(new[] { route }));
+    }
+
+    [Test]
+    public void FacetsRequestContainsOnlySharedFilters()
+    {
+        Assert.That(typeof(ProductFacetsRequest).GetProperties().Select(x => x.Name), Is.EquivalentTo(
+            new[] { "Search", "CategoryId", "BrandId", "MinPrice", "MaxPrice", "InStock", "HasDiscount" }));
+        var filter = new ProductFacetsRequest { Search = "rice", CategoryId = 2, BrandId = 3,
+            MinPrice = 10, MaxPrice = 20, InStock = false, HasDiscount = true };
+        var mapped = filter.ToSearchRequest();
+        Assert.That(mapped.Search, Is.EqualTo(filter.Search));
+        Assert.That(mapped.CategoryId, Is.EqualTo(filter.CategoryId));
+        Assert.That(mapped.BrandId, Is.EqualTo(filter.BrandId));
+        Assert.That(mapped.MinPrice, Is.EqualTo(filter.MinPrice));
+        Assert.That(mapped.MaxPrice, Is.EqualTo(filter.MaxPrice));
+        Assert.That(mapped.InStock, Is.EqualTo(filter.InStock));
+        Assert.That(mapped.HasDiscount, Is.EqualTo(filter.HasDiscount));
+        Assert.That(mapped.IncludePrice, Is.False);
+        Assert.That(mapped.Sort, Is.EqualTo(CatalogSort.Initial));
+    }
+
+    [TestCase(-1, 20, false)]
+    [TestCase(20, 10, false)]
+    [TestCase(10, 20, true)]
+    public void FacetsValidatesPriceRange(int min, int max, bool expected)
+    {
+        var filter = new ProductFacetsRequest { MinPrice = min, MaxPrice = max };
+        Assert.That(Validator.TryValidateObject(filter, new ValidationContext(filter),
+            new List<ValidationResult>(), true), Is.EqualTo(expected));
     }
 
     [TestCase(null, true)]

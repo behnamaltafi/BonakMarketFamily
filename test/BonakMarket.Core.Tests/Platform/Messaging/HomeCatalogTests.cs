@@ -82,7 +82,7 @@ public class HomeCatalogTests
     public void HomepageOrderUsesNativeOrderAndStableId()
     {
         var products = new[] { new Product { Id = 3, HomePageDisplayOrder = 1 }, new Product { Id = 2, HomePageDisplayOrder = 2 }, new Product { Id = 1, HomePageDisplayOrder = 1 } }.AsQueryable();
-        var ordered = CatalogFacade.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { ShowOnHomePage = true }, Now);
+        var ordered = ProductCatalogQueries.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { ShowOnHomePage = true }, Now);
         Assert.That(ordered.Select(x => x.Id), Is.EqualTo(new[] { 1, 3, 2 }));
     }
 

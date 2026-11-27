@@ -29,7 +29,7 @@ internal static class ProductSelection
         var unsupported = UnsupportedCode(product);
         if (unsupported != null) return new(409, unsupported);
         choices ??= [];
-        if (choices.Count > 30 || choices.Any(x => x == null) ||
+        if (choices.Count > StorefrontLimits.MaxVariantChoices || choices.Any(x => x == null) ||
             choices.Select(x => (x.VariantAttributeId, x.ValueId)).Distinct().Count() != choices.Count)
             return new(400, "invalid_variants");
 

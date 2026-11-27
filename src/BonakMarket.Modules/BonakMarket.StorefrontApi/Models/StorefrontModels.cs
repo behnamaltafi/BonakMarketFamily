@@ -33,8 +33,8 @@ public sealed record QuantityUnitDto(int Id, string Name, string? NamePlural);
 /// <summary>Search-as-you-type inputs. Empty or too-short terms return no suggestions.</summary>
 public sealed class InstantSearchRequest
 {
-    [StringLength(200)] public string? Search { get; set; }
-    [Range(1, 16)] public int? Limit { get; set; }
+    [StringLength(StorefrontLimits.MaxSearchLength)] public string? Search { get; set; }
+    [Range(1, StorefrontLimits.MaxSuggestions)] public int? Limit { get; set; }
 }
 
 public sealed record InstantSearchProductDto(int Id, string Name, string? Sku, int? MediaFileId, string? ImageUrl);
@@ -128,12 +128,12 @@ public sealed record PriceDto(int ProductId, string CurrencyCode, decimal FinalP
 public sealed class AddCartItem
 {
     [Range(1, int.MaxValue)] public int ProductId { get; set; }
-    [Range(1, 1000)] public int Quantity { get; set; } = 1;
-    [MaxLength(30)] public List<VariantChoice> Variants { get; set; } = new();
+    [Range(1, StorefrontLimits.MaxQuantity)] public int Quantity { get; set; } = 1;
+    [MaxLength(StorefrontLimits.MaxVariantChoices)] public List<VariantChoice> Variants { get; set; } = new();
 }
 public sealed class UpdateCartItem : IValidatableObject
 {
-    [Range(1, 1000)] public int? Quantity { get; set; }
+    [Range(1, StorefrontLimits.MaxQuantity)] public int? Quantity { get; set; }
     public bool? Active { get; set; }
     public IEnumerable<ValidationResult> Validate(ValidationContext context)
     {
@@ -149,14 +149,14 @@ public record PageDto<T>(IReadOnlyList<T> Items, int Page, int PageSize, int Tot
 }
 public class PageRequest
 {
-    [Range(1, 10000)] public int Page { get; set; } = 1;
-    [Range(1, 100)] public int PageSize { get; set; } = 20;
+    [Range(1, StorefrontLimits.MaxPage)] public int Page { get; set; } = 1;
+    [Range(1, StorefrontLimits.MaxPageSize)] public int PageSize { get; set; } = 20;
 }
 public enum CatalogSort { Initial, NameAsc, NameDesc, PriceAsc, PriceDesc, Newest, BestSellers }
 #nullable enable
 public class ProductFilterRequest : PageRequest, IValidatableObject
 {
-    [StringLength(200)] public string? Search { get; set; }
+    [StringLength(StorefrontLimits.MaxSearchLength)] public string? Search { get; set; }
     [Range(1, int.MaxValue)] public int? CategoryId { get; set; }
     [Range(1, int.MaxValue)] public int? BrandId { get; set; }
     public decimal? MinPrice { get; set; }
@@ -185,7 +185,7 @@ public sealed class ProductSearchRequest : ProductFilterRequest
 /// <summary>Product filters only; facets do not depend on pagination, sorting or price projection.</summary>
 public sealed class ProductFacetsRequest : IValidatableObject
 {
-    [StringLength(200)] public string? Search { get; set; }
+    [StringLength(StorefrontLimits.MaxSearchLength)] public string? Search { get; set; }
     [Range(1, int.MaxValue)] public int? CategoryId { get; set; }
     [Range(1, int.MaxValue)] public int? BrandId { get; set; }
     public decimal? MinPrice { get; set; }
@@ -206,13 +206,13 @@ public sealed class ProductFacetsRequest : IValidatableObject
 }
 public sealed class CategorySearchRequest : PageRequest
 {
-    [StringLength(200)] public string? Search { get; set; }
+    [StringLength(StorefrontLimits.MaxSearchLength)] public string? Search { get; set; }
     [Range(0, int.MaxValue)] public int? ParentId { get; set; }
     public bool? ShowOnHomePage { get; set; }
 }
 public sealed class BrandSearchRequest : PageRequest
 {
-    [StringLength(200)] public string? Search { get; set; }
+    [StringLength(StorefrontLimits.MaxSearchLength)] public string? Search { get; set; }
 }
 #nullable restore
 public sealed class OrderSearchRequest : PageRequest

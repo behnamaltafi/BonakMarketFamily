@@ -80,7 +80,7 @@ public sealed class CartController(CartFacade cart, GuestCartService guests) : S
     public async Task<ActionResult<CartTransferDto>> ToWishlist(int id, CancellationToken ct)
     {
         var result = await cart.TransferAsync(id, ShoppingCartType.ShoppingCart, ct);
-        if (result.Status != 200) return await Failure(result);
+        if (result.Status != 200) return await CartProblemResponse.FailureAsync(result, cart);
         return Ok(new CartTransferDto(await cart.StateAsync(ct), await cart.WishlistStateAsync(ct)));
     }
 
@@ -107,13 +107,7 @@ public sealed class CartController(CartFacade cart, GuestCartService guests) : S
     private async Task<ActionResult<CartStateDto>> Result(CartChange result, CancellationToken ct)
     {
         if (result.Status == 200) return Ok(await cart.StateAsync(ct, result.Warnings));
-        return await Failure(result);
+        return await CartProblemResponse.FailureAsync(result, cart);
     }
 
-    private async Task<ObjectResult> Failure(CartChange result)
-    {
-        var problem = new ProblemDetails { Status = result.Status, Title = result.Code };
-        if (result.Warnings?.Count > 0 && await cart.CanDisplayPriceAsync()) problem.Extensions["warnings"] = result.Warnings;
-        return new ObjectResult(problem) { StatusCode = result.Status, ContentTypes = { "application/problem+json" } };
-    }
 }

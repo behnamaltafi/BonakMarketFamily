@@ -16,6 +16,7 @@ using BonakMarket.StorefrontApi.Controllers;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Security;
 using BonakMarket.StorefrontApi.Services;
+using BonakMarket.StorefrontApi.Queries;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 
@@ -106,7 +107,7 @@ public class StorefrontSearchContractTests
     public async Task ShortOrDisabledSearchReturnsEmptyWithoutQueryingDatabase(string term, bool enabled)
     {
         // All dependencies are deliberately null: a rejected/disabled search must not touch them.
-        var facade = new CatalogFacade(null, null, null, null, null, null, null, null, null, null, null, null);
+        var facade = new CatalogFacade(null, null, null, null, null, null, null, null, null);
         var result = await facade.InstantSearchAsync(new InstantSearchRequest { Search = term },
             new SearchSettings { InstantSearchEnabled = enabled, InstantSearchTermMinLength = 2 },
             CancellationToken.None);
@@ -120,7 +121,7 @@ public class StorefrontSearchContractTests
     public void UsesOnlyNativeConfiguredSearchFields()
     {
         var settings = new SearchSettings { SearchFields = new List<string> { "sku", "category", "name", "sku" } };
-        Assert.That(CatalogFacade.SearchFields(settings), Is.EquivalentTo(new[] { "name", "sku" }));
+        Assert.That(ProductCatalogQueries.SearchFields(settings), Is.EquivalentTo(new[] { "name", "sku" }));
     }
 
     [TestCase("rice", false, null, true)]
@@ -131,7 +132,7 @@ public class StorefrontSearchContractTests
     public void AvailabilityDefaultsAndOverridesAreConsistent(string term, bool includeUnavailable,
         bool? requested, bool? expected)
     {
-        Assert.That(CatalogFacade.EffectiveStockFilter(new ProductSearchRequest { Search = term, InStock = requested },
+        Assert.That(ProductCatalogQueries.EffectiveStockFilter(new ProductSearchRequest { Search = term, InStock = requested },
             new SearchSettings { IncludeNotAvailable = includeUnavailable }), Is.EqualTo(expected));
     }
 
@@ -146,9 +147,9 @@ public class StorefrontSearchContractTests
                 StockQuantity = 2, BackorderModeId = (int)BackorderMode.NoBackorders },
             new Product { Id = 3, ManageInventoryMethodId = (int)ManageInventoryMethod.DontManageStock }
         }.AsQueryable();
-        Assert.That(CatalogFacade.ApplyStockFilter(products, false).Select(x => x.Id), Is.EqualTo(new[] { 1 }));
-        Assert.That(CatalogFacade.ApplyStockFilter(products, true).Select(x => x.Id), Is.EqualTo(new[] { 2, 3 }));
-        Assert.That(CatalogFacade.ApplyStockFilter(products, null).Count(), Is.EqualTo(3));
+        Assert.That(ProductCatalogQueries.ApplyStockFilter(products, false).Select(x => x.Id), Is.EqualTo(new[] { 1 }));
+        Assert.That(ProductCatalogQueries.ApplyStockFilter(products, true).Select(x => x.Id), Is.EqualTo(new[] { 2, 3 }));
+        Assert.That(ProductCatalogQueries.ApplyStockFilter(products, null).Count(), Is.EqualTo(3));
     }
 
     [Test]
@@ -162,7 +163,7 @@ public class StorefrontSearchContractTests
             new Product { Id = 3, Price = 100, SpecialPrice = 50, SpecialPriceStartDateTimeUtc = now.AddDays(1) }
         }.AsQueryable();
         var filter = new ProductSearchRequest { MinPrice = 50, MaxPrice = 50, Sort = CatalogSort.PriceDesc };
-        Assert.That(CatalogFacade.ApplyCatalogPriceAndSort(products, filter, now).Select(x => x.Id),
+        Assert.That(ProductCatalogQueries.ApplyCatalogPriceAndSort(products, filter, now).Select(x => x.Id),
             Is.EqualTo(new[] { 1, 2 }));
     }
 
@@ -179,7 +180,7 @@ public class StorefrontSearchContractTests
             new Product { Id = 1, Name = "same", Price = 10 },
             new Product { Id = 2, Name = "same", Price = 10 }
         }.AsQueryable();
-        Assert.That(CatalogFacade.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { Sort = sort },
+        Assert.That(ProductCatalogQueries.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { Sort = sort },
             DateTime.UtcNow).Select(x => x.Id), Is.EqualTo(new[] { 1, 2, 3 }));
     }
 
@@ -227,8 +228,8 @@ public class StorefrontSearchContractTests
         var active = new Product { Id = 2, ManageInventoryMethodId = (int)ManageInventoryMethod.ManageStockByAttributes };
         active.ProductVariantAttributeCombinations.Add(new ProductVariantAttributeCombination { IsActive = true, StockQuantity = 1 });
         var products = new[] { inactive, active }.AsQueryable();
-        Assert.That(CatalogFacade.ApplyStockFilter(products, true).Select(x => x.Id), Is.EqualTo(new[] { 2 }));
-        Assert.That(CatalogFacade.ApplyStockFilter(products, false).Select(x => x.Id), Is.EqualTo(new[] { 1 }));
+        Assert.That(ProductCatalogQueries.ApplyStockFilter(products, true).Select(x => x.Id), Is.EqualTo(new[] { 2 }));
+        Assert.That(ProductCatalogQueries.ApplyStockFilter(products, false).Select(x => x.Id), Is.EqualTo(new[] { 1 }));
     }
 
     [TestCase(CatalogSort.PriceAsc)]
@@ -241,9 +242,9 @@ public class StorefrontSearchContractTests
             new Product { Id = 2, Price = 100 },
             new Product { Id = 3, Price = 50, CustomerEntersPrice = true }
         }.AsQueryable();
-        Assert.That(CatalogFacade.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { Sort = sort }, DateTime.UtcNow)
+        Assert.That(ProductCatalogQueries.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { Sort = sort }, DateTime.UtcNow)
             .Select(x => x.Id), Is.EqualTo(new[] { 2, 1, 3 }));
-        Assert.That(CatalogFacade.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { MaxPrice = 200 }, DateTime.UtcNow)
+        Assert.That(ProductCatalogQueries.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { MaxPrice = 200 }, DateTime.UtcNow)
             .Select(x => x.Id), Is.EqualTo(new[] { 2 }));
     }
 }

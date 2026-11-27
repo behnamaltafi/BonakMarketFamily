@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Autofac;
 using BonakMarket.Core;
 using BonakMarket.Core.Catalog.Products;
 using BonakMarket.Core.Catalog.Categories;
@@ -12,62 +10,51 @@ using BonakMarket.Core.Common;
 using BonakMarket.Core.Catalog.Pricing;
 using BonakMarket.Core.Checkout.Cart;
 using BonakMarket.Core.Checkout.Orders;
-using BonakMarket.Core.Configuration;
-using BonakMarket.StorefrontApi.Configuration;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Security;
-using BonakMarket.Core.Stores;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-public sealed class CatalogFacade(
-    SmartDbContext db, ICatalogSearchService search, IPriceCalculationService prices,
-    IMediaService media, IPermissionService permissions, IWorkContext work,
-    IStoreContext stores, IComponentContext components, CatalogSettings catalogSettings, StorefrontRequestContext request,
-    IProductAttributeMaterializer attributes, IShoppingCartValidator validator, IConfiguration configuration = null, ISettingFactory settingFactory = null)
+public sealed class CatalogFacade(SmartDbContext db, IPriceCalculationService prices,
+    IMediaService media, IPermissionService permissions, StorefrontRequestContext request,
+    IProductAttributeMaterializer attributes, IShoppingCartValidator validator,
+    ProductCatalogQueries queries, ProductCatalogMapper mapper)
 {
-    private Task<WholesaleCardSettings> LoadWholesaleSettingsAsync() => settingFactory == null
-        ? Task.FromResult(new WholesaleCardSettings())
-        : settingFactory.LoadSettingsAsync<WholesaleCardSettings>(0);
 
-    public Task<bool> CanDisplayPriceAsync() => permissions.AuthorizeAsync(Permissions.Catalog.DisplayPrice, request.Customer);
+    public Task<bool> CanDisplayPriceAsync() => mapper.CanDisplayPriceAsync();
 
     public async Task<PageDto<ProductDto>> SearchAsync(ProductSearchRequest filter, CancellationToken ct, SearchSettings settings = null)
     {
-        var source = await SearchSourceAsync(filter, ct, settings);
+        var source = await queries.SearchSourceAsync(filter, ct, settings);
         if (filter.Sort == CatalogSort.BestSellers)
         {
             var orders = CatalogPurchaseRanking.EligibleOrders(db.Set<Order>().AsNoTracking(), request.StoreId,
                 DateTime.UtcNow.AddDays(-90));
             source = CatalogPurchaseRanking.BestSellers(source, CatalogPurchaseRanking.Items(db.Set<OrderItem>().AsNoTracking(), orders));
         }
-        var page = await source.ToPagedList(filter.Page - 1, filter.PageSize).LoadAsync(cancelToken: ct);
-        var items = await MapAsync(page.ToList(), filter.IncludePrice, ct: ct);
-        return NativePaging.Map(page, items);
+        return await source.PageAsync(filter, items => mapper.MapAsync(items, filter.IncludePrice, ct: ct), ct);
     }
 
     public async Task<PageDto<ProductDto>> FrequentlyPurchasedAsync(ProductFilterRequest filter, CancellationToken ct, SearchSettings settings = null)
     {
         var orders = CatalogPurchaseRanking.EligibleOrders(StorefrontScope.Orders(db, request.Customer, request.StoreId)
             .AsNoTracking(), request.StoreId, DateTime.UtcNow.AddDays(-365));
-        var products = await SearchSourceAsync(filter, ct, settings);
+        var products = await queries.SearchSourceAsync(filter, ct, settings);
         var source = CatalogPurchaseRanking.FrequentlyPurchased(products,
             CatalogPurchaseRanking.Items(db.Set<OrderItem>().AsNoTracking(), orders));
-        var page = await source.ToPagedList(filter.Page - 1, filter.PageSize).LoadAsync(cancelToken: ct);
-        var items = await MapAsync(page.ToList(), filter.IncludePrice, ct: ct);
-        return NativePaging.Map(page, items);
+        return await source.PageAsync(filter, items => mapper.MapAsync(items, filter.IncludePrice, ct: ct), ct);
     }
 
     internal static (bool Enabled, int MinimumTermLength, int Limit) InstantSearchPolicy(
         InstantSearchRequest filter, SearchSettings settings)
     {
-        var limit = Math.Min(filter.Limit ?? 16, Math.Clamp(settings.InstantSearchNumberOfProducts, 0, 16));
-        return (settings.InstantSearchEnabled && limit > 0, Math.Clamp(settings.InstantSearchTermMinLength, 1, 200), limit);
+        var limit = Math.Min(filter.Limit ?? StorefrontLimits.MaxSuggestions, Math.Clamp(settings.InstantSearchNumberOfProducts, 0, StorefrontLimits.MaxSuggestions));
+        return (settings.InstantSearchEnabled && limit > 0, Math.Clamp(settings.InstantSearchTermMinLength, 1, StorefrontLimits.MaxSearchLength), limit);
     }
 
     public async Task<InstantSearchDto> InstantSearchAsync(InstantSearchRequest filter, SearchSettings settings, CancellationToken ct)
@@ -78,7 +65,7 @@ public sealed class CatalogFacade(
             return new(term, enabled, minimum, limit, false, Array.Empty<InstantSearchProductDto>());
 
         // Use exactly the same term, search settings, visibility and availability as the full results.
-        var source = await SearchSourceAsync(new ProductSearchRequest { Search = term }, ct, settings);
+        var source = await queries.SearchSourceAsync(new ProductSearchRequest { Search = term }, ct, settings);
         var products = await source.Take(limit + 1).ToListAsync(ct);
         var hasMore = products.Count > limit;
         if (hasMore) products.RemoveAt(limit);
@@ -86,191 +73,23 @@ public sealed class CatalogFacade(
         if (products.Count == 0)
             return new(term, enabled, minimum, limit, false, Array.Empty<InstantSearchProductDto>());
 
-        var mapped = await MapAsync(products, false, includeImages: settings.ShowProductImagesInInstantSearch,
+        var mapped = await mapper.MapAsync(products, false, includeImages: settings.ShowProductImagesInInstantSearch,
             imageSize: 120, ct: ct, includePurchaseInfo: false);
         var items = mapped.Select(x => new InstantSearchProductDto(x.Id, x.Name,
             x.Sku, x.MediaFileId, x.ImageUrl)).ToArray();
         return new(term, enabled, minimum, limit, hasMore, items);
     }
 
-    // Only these three term fields are supported by the native LINQ visitor.
-    // Use the same configured fields in all three search endpoints.
-    internal static string[] SearchFields(SearchSettings settings) =>
-        settings.GetSearchFields(false).Where(x => x == CatalogSearchQuery.KnownFilters.Name ||
-            x == CatalogSearchQuery.KnownFilters.Sku || x == CatalogSearchQuery.KnownFilters.ShortDescription)
-            .Distinct().ToArray();
-
-    internal static bool? EffectiveStockFilter(ProductFilterRequest filter, SearchSettings settings) =>
-        filter.InStock ?? (!string.IsNullOrWhiteSpace(filter.Search) && !settings.IncludeNotAvailable ? true : (bool?)null);
-
-    internal static IQueryable<Product> ApplyStockFilter(IQueryable<Product> source, bool? inStock)
-    {
-        if (!inStock.HasValue) return source;
-        // The current native AvailableOnly(false) visitor also selects available products.
-        // Use its sellability predicate for both values, without changing the Core visitor.
-        return source.Where(x => (
-            x.ManageInventoryMethodId == (int)ManageInventoryMethod.DontManageStock ||
-            (x.ManageInventoryMethodId == (int)ManageInventoryMethod.ManageStock &&
-                (x.StockQuantity > 0 || x.BackorderModeId != (int)BackorderMode.NoBackorders)) ||
-            (x.ManageInventoryMethodId == (int)ManageInventoryMethod.ManageStockByAttributes &&
-                x.ProductVariantAttributeCombinations.Any(v => v.IsActive && (v.StockQuantity > 0 || v.AllowOutOfStockOrders)))
-            ) == inStock.Value);
-    }
-
-    private async Task<IQueryable<Product>> SearchSourceAsync(ProductFilterRequest filter, CancellationToken ct, SearchSettings settings)
-    {
-        settings ??= new SearchSettings();
-        var term = filter.Search?.Trim();
-        var hasTerm = !string.IsNullOrEmpty(term);
-        var normalized = CatalogText.UseNormalizedSearch(term);
-        var query = hasTerm && !normalized
-            ? new CatalogSearchQuery(SearchFields(settings), term, settings.SearchMode)
-            : new CatalogSearchQuery();
-        if (hasTerm) query.OriginatesFrom(CatalogSearchQuery.KnownOrigins.Search);
-        query.VisibleOnly(request.Customer).HasStoreId(request.StoreId)
-            .WithLanguage(work.WorkingLanguage).WithCurrency(work.WorkingCurrency);
-        IQueryable<Product> scoped = StorefrontScope.Products(db, request.Customer, request.StoreId, forSearch: hasTerm).AsNoTracking();
-        if (normalized)
-            scoped = CatalogText.ApplyNormalizedSearch(scoped, db.LocalizedProperties.AsNoTracking(), term,
-                SearchFields(settings), settings.SearchMode, work.WorkingLanguage.Id);
-        if (filter.CategoryId.HasValue)
-        {
-            var visible = StorefrontScope.Categories(db, request.Customer, request.StoreId).AsNoTracking();
-            var category = await visible.FirstOrDefaultAsync(x => x.Id == filter.CategoryId.Value, ct);
-            if (category == null) return db.Set<Product>().AsNoTracking().Where(x => false);
-            var ids = catalogSettings.ShowProductsFromSubcategories && !string.IsNullOrEmpty(category.TreePath)
-                ? visible.Where(x => x.TreePath.StartsWith(category.TreePath)).Select(x => x.Id)
-                : visible.Where(x => x.Id == category.Id).Select(x => x.Id);
-            scoped = scoped.Where(p => p.ProductCategories.Any(c => !c.IsSystemMapping && ids.Contains(c.CategoryId)));
-            if (catalogSettings.ShowProductsFromSubcategories && !string.IsNullOrEmpty(category.TreePath))
-                query.WithCategoryTreePath(category.TreePath, null);
-            else query.WithCategoryIds(null, category.Id);
-        }
-        if (filter.BrandId.HasValue)
-        {
-            if (!await StorefrontScope.Brands(db, request.Customer, request.StoreId).AnyAsync(x => x.Id == filter.BrandId.Value, ct))
-                return db.Set<Product>().AsNoTracking().Where(x => false);
-            query.WithManufacturerIds(null, filter.BrandId.Value);
-        }
-        if (filter.HasDiscount.HasValue) query.HasDiscount(filter.HasDiscount.Value);
-        if (filter.ShowOnHomePage.HasValue) query.HomePageProductsOnly(filter.ShowOnHomePage.Value);
-        if (hasTerm && (filter is not ProductSearchRequest sorted || sorted.Sort == CatalogSort.Initial))
-            query.SortBy(ProductSortingEnum.Relevance);
-
-        // Native LINQ search with a strictly scoped base query. Unlike an external index,
-        // the result count cannot contain stale/unpublished or cross-store product IDs.
-        var source = search.PrepareQuery(query, scoped);
-        source = ApplyStockFilter(source, EffectiveStockFilter(filter, settings));
-        return ApplyCatalogPriceAndSort(source, filter, DateTime.UtcNow);
-    }
-
-    internal static IQueryable<Product> ApplyCatalogPriceAndSort(IQueryable<Product> source, ProductFilterRequest filter, DateTime now)
-    {
-        var sort = (filter as ProductSearchRequest)?.Sort ?? CatalogSort.Initial;
-        // Catalog price (base currency, before customer-specific taxes/discounts), not a checkout quote.
-        // Keep decimal precision and use a single timestamp for the range and price order.
-        if (filter.MinPrice.HasValue || filter.MaxPrice.HasValue ||
-            sort is CatalogSort.PriceAsc or CatalogSort.PriceDesc)
-        {
-            // Do not reveal catalog prices for products whose prices are intentionally unavailable.
-            // Price bounds exclude those rows, but sorting alone preserves them at the end.
-            var priced = source.Select(x => new { Product = x,
-                Price = x.CallForPrice || x.CustomerEntersPrice ? (decimal?)null :
-                    (x.SpecialPrice.HasValue &&
-                    (!x.SpecialPriceStartDateTimeUtc.HasValue || x.SpecialPriceStartDateTimeUtc.Value <= now) &&
-                    (!x.SpecialPriceEndDateTimeUtc.HasValue || x.SpecialPriceEndDateTimeUtc.Value >= now)
-                    ? x.SpecialPrice.Value : x.Price) });
-            if (filter.MinPrice.HasValue) priced = priced.Where(x => x.Price.HasValue && x.Price.Value >= filter.MinPrice.Value);
-            if (filter.MaxPrice.HasValue) priced = priced.Where(x => x.Price.HasValue && x.Price.Value <= filter.MaxPrice.Value);
-            if (sort == CatalogSort.PriceAsc)
-                return priced.OrderBy(x => !x.Price.HasValue).ThenBy(x => x.Price).ThenBy(x => x.Product.Id).Select(x => x.Product);
-            if (sort == CatalogSort.PriceDesc)
-                return priced.OrderBy(x => !x.Price.HasValue).ThenByDescending(x => x.Price).ThenBy(x => x.Product.Id).Select(x => x.Product);
-            source = priced.Select(x => x.Product);
-        }
-
-        // Stable tie-breaking prevents duplicates/skipped products between pages with equal sort values.
-        return sort switch
-        {
-            CatalogSort.NameAsc => source.OrderBy(x => x.Name).ThenBy(x => x.Id),
-            CatalogSort.NameDesc => source.OrderByDescending(x => x.Name).ThenBy(x => x.Id),
-            CatalogSort.Newest => source.OrderByDescending(x => x.CreatedOnUtc).ThenBy(x => x.Id),
-            CatalogSort.Initial when filter.ShowOnHomePage == true => source.OrderBy(x => x.HomePageDisplayOrder).ThenBy(x => x.Id),
-            _ => source
-        };
-    }
-
-    // Conjunctive facets: same visible result set and filters as the list, independent of page.
-    // Counts are direct product mappings, not a recursive sum of descendants.
-    public async Task<CatalogFacetsDto> FacetsAsync(ProductFacetsRequest filter, CancellationToken ct, SearchSettings settings = null,
-        string priceCurrencyCode = null)
-    {
-        const int limit = 50;
-        var products = (await SearchSourceAsync(filter.ToSearchRequest(), ct, settings)).Select(x => x.Id).Distinct();
-        var visibleCategories = StorefrontScope.Categories(db, request.Customer, request.StoreId);
-        var visibleBrands = StorefrontScope.Brands(db, request.Customer, request.StoreId);
-        var categoryCounts = db.Set<ProductCategory>().AsNoTracking()
-            .Where(x => products.Contains(x.ProductId) && !x.IsSystemMapping)
-            .Select(x => new { Id = x.CategoryId, x.ProductId }).Distinct()
-            .GroupBy(x => x.Id).Select(g => new { Id = g.Key, Count = g.Count() });
-        var brandCounts = db.Set<ProductManufacturer>().AsNoTracking()
-            .Where(x => products.Contains(x.ProductId))
-            .Select(x => new { Id = x.ManufacturerId, x.ProductId }).Distinct()
-            .GroupBy(x => x.Id).Select(g => new { Id = g.Key, Count = g.Count() });
-        var categories = await (from count in categoryCounts
-            join category in visibleCategories on count.Id equals category.Id
-            orderby count.Count descending, category.Id
-            select new CatalogFacetValueDto(category.Id, category.Name, count.Count))
-            .Take(limit + 1).ToListAsync(ct);
-        var brands = await (from count in brandCounts
-            join brand in visibleBrands on count.Id equals brand.Id
-            orderby count.Count descending, brand.Id
-            select new CatalogFacetValueDto(brand.Id, brand.Name, count.Count))
-            .Take(limit + 1).ToListAsync(ct);
-        var categoryItems = categories.Take(limit).ToArray();
-        var brandItems = brands.Take(limit).ToArray();
-        var categoryIds = categoryItems.Select(x => x.Id).ToArray();
-        var brandIds = brandItems.Select(x => x.Id).ToArray();
-        var languageId = work.WorkingLanguage.Id;
-        var translations = await db.LocalizedProperties.AsNoTracking()
-            .Where(x => x.LanguageId == languageId && x.LocaleKey == "Name" &&
-                ((x.LocaleKeyGroup == nameof(Category) && categoryIds.Contains(x.EntityId)) ||
-                 (x.LocaleKeyGroup == nameof(Manufacturer) && brandIds.Contains(x.EntityId))))
-            .OrderBy(x => x.Id).Select(x => new { x.LocaleKeyGroup, x.EntityId, x.LocaleValue }).ToListAsync(ct);
-        var labels = translations.GroupBy(x => (x.LocaleKeyGroup, x.EntityId))
-            .ToDictionary(x => x.Key, x => x.Select(y => y.LocaleValue).FirstOrDefault(y => !string.IsNullOrWhiteSpace(y)));
-        CatalogFacetValueDto Localize(CatalogFacetValueDto item, string entity) =>
-            labels.TryGetValue((entity, item.Id), out var label) && !string.IsNullOrWhiteSpace(label)
-                ? item with { Name = label } : item;
-        var matched = db.Set<Product>().AsNoTracking().Where(x => products.Contains(x.Id));
-        var total = await matched.CountAsync(ct);
-        var inStock = await ApplyStockFilter(matched, true).CountAsync(ct);
-        CatalogPriceRangeDto range = null;
-        if (priceCurrencyCode != null && total > 0)
-        {
-            var now = DateTime.UtcNow;
-            var pricesQuery = matched.Where(x => !x.CallForPrice && !x.CustomerEntersPrice)
-                .Select(x => x.SpecialPrice.HasValue &&
-                    (!x.SpecialPriceStartDateTimeUtc.HasValue || x.SpecialPriceStartDateTimeUtc.Value <= now) &&
-                    (!x.SpecialPriceEndDateTimeUtc.HasValue || x.SpecialPriceEndDateTimeUtc.Value >= now)
-                    ? x.SpecialPrice.Value : x.Price);
-            range = await pricesQuery.GroupBy(x => 1)
-                .Select(g => new CatalogPriceRangeDto(g.Min(), g.Max(), priceCurrencyCode)).FirstOrDefaultAsync(ct);
-        }
-        return new(total, categoryItems.Select(x => Localize(x, nameof(Category))).ToArray(),
-            brandItems.Select(x => Localize(x, nameof(Manufacturer))).ToArray(), categories.Count > limit, brands.Count > limit)
-        {
-            Availability = new(inStock, total - inStock),
-            PriceRange = range
-        };
-    }
+    public Task<CatalogFacetsDto> FacetsAsync(ProductFacetsRequest filter, CancellationToken ct,
+        SearchSettings settings = null, string priceCurrencyCode = null) =>
+        queries.FacetsAsync(filter, ct, settings, priceCurrencyCode);
 
     public async Task<ProductDto> FindAsync(int id, CancellationToken ct)
     {
         var product = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
             .AsNoTracking().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (product == null) return null;
-        return (await MapAsync(new[] { product }, true, false))[0];
+        return (await mapper.MapAsync(new[] { product }, true, false, ct: ct))[0];
     }
 
     public async Task<ProductDetailDto> DetailAsync(int id, CancellationToken ct)
@@ -281,8 +100,8 @@ public sealed class CatalogFacade(
             .AsSplitQuery().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (product == null) return null;
 
-        var wholesaleSettings = await LoadWholesaleSettingsAsync();
-        var summary = (await MapAsync(new[] { product }, true, false, ct: ct, wholesaleSettings: wholesaleSettings))[0];
+        var wholesaleSettings = await mapper.LoadWholesaleSettingsAsync();
+        var summary = (await mapper.MapAsync(new[] { product }, true, false, ct: ct, wholesaleSettings: wholesaleSettings))[0];
         var imageIds = await db.Set<ProductMediaFile>().AsNoTracking()
             .Where(x => x.ProductId == id && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
             .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).Select(x => x.MediaFileId).ToListAsync(ct);
@@ -374,180 +193,4 @@ public sealed class CatalogFacade(
             Array.Empty<string>(), true));
     }
 
-    private async Task<List<ProductDto>> MapAsync(IList<Product> products, bool includePrice, bool forListing = true, bool includeImages = true,
-        int imageSize = 400, CancellationToken ct = default, bool includePurchaseInfo = true,
-        WholesaleCardSettings wholesaleSettings = null)
-    {
-        if (products.Count == 0) return new List<ProductDto>();
-        var priceAllowed = (includePrice || includePurchaseInfo) && await CanDisplayPriceAsync();
-        var allowed = includePrice && priceAllowed;
-        var options = allowed ? prices.CreateDefaultOptions(forListing, request.Customer, batchContext:
-            new ProductBatchContext(products, db, components, stores.CurrentStore, request.Customer,
-                includeHidden: false, loadMainMediaOnly: true)) : null;
-        var ids = products.Select(x => x.Id).ToArray();
-        wholesaleSettings ??= includePurchaseInfo || allowed ? await LoadWholesaleSettingsAsync() : new WholesaleCardSettings();
-        var packageAttributeId = wholesaleSettings.UnitsPerPackageSpecificationId;
-        var metadata = new Dictionary<int, decimal>();
-        if (includePurchaseInfo && packageAttributeId > 0)
-        {
-            var rows = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
-                .Where(x => ids.Contains(x.ProductId) && x.SpecificationAttributeOption.SpecificationAttributeId == packageAttributeId)
-                .Select(x => new { x.ProductId, Value = x.SpecificationAttributeOption.NumberValue }).ToListAsync(ct);
-            metadata = rows.GroupBy(x => x.ProductId).Where(g => g.Count() == 1)
-                .ToDictionary(g => g.Key, g => g.Single().Value);
-        }
-        var languageId = work.WorkingLanguage.Id;
-        var translations = await db.LocalizedProperties.AsNoTracking()
-            .Where(x => ids.Contains(x.EntityId) && x.LanguageId == languageId &&
-                x.LocaleKeyGroup == nameof(Product) &&
-                (x.LocaleKey == nameof(Product.Name) || x.LocaleKey == nameof(Product.ShortDescription)))
-            .OrderBy(x => x.Id).Select(x => new { x.EntityId, x.LocaleKey, x.LocaleValue }).ToListAsync(ct);
-        var translated = translations.GroupBy(x => (x.EntityId, x.LocaleKey))
-            .ToDictionary(x => x.Key, x => x.Select(y => y.LocaleValue).FirstOrDefault(y => !string.IsNullOrWhiteSpace(y)));
-        string Localized(int id, string key, string fallback) =>
-            translated.TryGetValue((id, key), out var value) && !string.IsNullOrWhiteSpace(value) ? value : fallback;
-        var lookup = new Dictionary<int, int>();
-        if (includeImages && ids.Length > 0)
-        {
-            var pictures = await db.Set<ProductMediaFile>().AsNoTracking()
-                .Where(x => ids.Contains(x.ProductId) && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
-                .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id)
-                .Select(x => new { x.ProductId, x.MediaFileId }).ToListAsync(ct);
-            lookup = pictures.GroupBy(x => x.ProductId).ToDictionary(x => x.Key, x => x.First().MediaFileId);
-        }
-        var imageUrls = await CatalogMedia.UrlsAsync(media, lookup.Values.Select(x => (int?)x), imageSize, ct);
-        var sellable = new HashSet<int>();
-        var combinationCapacity = new Dictionary<int, (int MaxStock, bool Backorder)>();
-        var variantInfo = new Dictionary<int, (bool HasVariants, bool UnsupportedRequired)>();
-        var unitLookup = new Dictionary<int, QuantityUnitDto>();
-        QuantityUnitDto defaultUnit = null;
-        var canCart = false;
-        if (includePurchaseInfo)
-        {
-            sellable = (await ApplyStockFilter(db.Set<Product>().AsNoTracking().Where(x => ids.Contains(x.Id)), true)
-                .Select(x => x.Id).ToListAsync(ct)).ToHashSet();
-            var managedIds = products.Where(x => x.ManageInventoryMethod == ManageInventoryMethod.ManageStockByAttributes)
-                .Select(x => x.Id).ToArray();
-            if (managedIds.Length > 0)
-            {
-                var combinations = await db.Set<ProductVariantAttributeCombination>().AsNoTracking()
-                    .Where(x => managedIds.Contains(x.ProductId) && x.IsActive)
-                    .Select(x => new { x.ProductId, x.StockQuantity, x.AllowOutOfStockOrders }).ToListAsync(ct);
-                combinationCapacity = combinations.GroupBy(x => x.ProductId)
-                    .ToDictionary(g => g.Key, g => (g.Max(x => x.StockQuantity), g.Any(x => x.AllowOutOfStockOrders)));
-            }
-            var variants = await db.Set<ProductVariantAttribute>().AsNoTracking().Where(x => ids.Contains(x.ProductId))
-                .Select(x => new { x.ProductId, x.IsRequired, x.AttributeControlTypeId }).ToListAsync(ct);
-            variantInfo = variants.GroupBy(x => x.ProductId).ToDictionary(g => g.Key,
-                g => (true, g.Any(x => x.IsRequired && !ProductSelection.SupportsControl((AttributeControlType)x.AttributeControlTypeId))));
-            var unitIds = products.Select(x => x.QuantityUnitId).Where(x => x > 0).Select(x => x.Value).Distinct().ToArray();
-            var units = await db.Set<QuantityUnit>().AsNoTracking().Where(x => unitIds.Contains(x.Id) || x.IsDefault)
-                .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).ToListAsync(ct);
-            var allUnitIds = units.Select(x => x.Id).ToArray();
-            var unitTranslations = await db.LocalizedProperties.AsNoTracking().Where(x => x.LanguageId == languageId &&
-                x.LocaleKeyGroup == nameof(QuantityUnit) && allUnitIds.Contains(x.EntityId) &&
-                (x.LocaleKey == nameof(QuantityUnit.Name) || x.LocaleKey == nameof(QuantityUnit.NamePlural)))
-                .OrderBy(x => x.Id).Select(x => new { x.EntityId, x.LocaleKey, x.LocaleValue }).ToListAsync(ct);
-            var labels = unitTranslations.GroupBy(x => (x.EntityId, x.LocaleKey))
-                .ToDictionary(x => x.Key, x => x.Select(y => y.LocaleValue).FirstOrDefault(y => !string.IsNullOrWhiteSpace(y)));
-            string UnitLabel(int id, string key, string fallback) =>
-                labels.TryGetValue((id, key), out var name) && !string.IsNullOrWhiteSpace(name) ? name : fallback;
-            unitLookup = units.ToDictionary(x => x.Id, x => new QuantityUnitDto(x.Id,
-                UnitLabel(x.Id, nameof(QuantityUnit.Name), x.Name), UnitLabel(x.Id, nameof(QuantityUnit.NamePlural), x.NamePlural)));
-            var defaultEntity = units.FirstOrDefault(x => x.IsDefault);
-            if (defaultEntity != null) defaultUnit = unitLookup[defaultEntity.Id];
-            canCart = (request.Customer.IsRegistered()
-                ? await permissions.AuthorizeAsync(StorefrontPermissions.Cart, request.Customer)
-                : GuestCartPolicy.Enabled(configuration) && GuestCartPolicy.IsGuest(request.Customer) &&
-                    await permissions.AuthorizeAsync(StorefrontPermissions.GuestCart, request.Customer)) &&
-                await permissions.AuthorizeAsync(Permissions.Cart.AccessShoppingCart, request.Customer);
-        }
-        var items = new List<ProductDto>(products.Count);
-        foreach (var product in products)
-        {
-            ct.ThrowIfCancellationRequested();
-            var item = new ProductDto { Id = product.Id, Name = Localized(product.Id, nameof(Product.Name), product.Name),
-                ShortDescription = Localized(product.Id, nameof(Product.ShortDescription), product.ShortDescription), Sku = product.Sku };
-            if (lookup.TryGetValue(product.Id, out var picture))
-            {
-                item.MediaFileId = picture;
-                item.ImageUrl = imageUrls.TryGetValue(picture, out var url) ? url : null;
-            }
-            if (includePurchaseInfo)
-            {
-                var quantities = QuantityRules(product);
-                var variant = variantInfo.GetValueOrDefault(product.Id);
-                var supported = ProductSelection.SupportsProduct(product) && !variant.UnsupportedRequired &&
-                    quantities.Max >= quantities.Min;
-                item.Availability = sellable.Contains(product.Id) ? "available" : "out_of_stock";
-                item.MinimumQuantity = quantities.Min;
-                item.MaximumQuantity = quantities.Max;
-                item.QuantityStep = Math.Max(1, product.QuantityStep);
-                item.AllowedQuantities = quantities.Allowed;
-                item.QuantityUnit = product.QuantityUnitId is int unitId && unitLookup.TryGetValue(unitId, out var unit)
-                    ? unit : defaultUnit;
-                item.UnitsPerPackage = WholesaleCardMetadata.PackageSize(metadata.GetValueOrDefault(product.Id));
-                item.RequiresConfiguration = variant.HasVariants || !supported;
-                var capacity = combinationCapacity.GetValueOrDefault(product.Id);
-                var minimumAvailable = product.ManageInventoryMethod switch
-                {
-                    ManageInventoryMethod.ManageStock => product.BackorderMode != BackorderMode.NoBackorders ||
-                        product.StockQuantity >= quantities.Min,
-                    ManageInventoryMethod.ManageStockByAttributes => capacity.Backorder || capacity.MaxStock >= quantities.Min,
-                    _ => true
-                };
-                item.CanAddToCart = canCart && supported && sellable.Contains(product.Id) && minimumAvailable;
-                item.HasDiscount = priceAllowed ? product.HasDiscountsApplied : null;
-                item.IsPreOrder = product.AvailableForPreOrder;
-            }
-            if (allowed && !product.CallForPrice && !product.CustomerEntersPrice &&
-                item.MinimumQuantity > 0 && item.MinimumQuantity <= item.MaximumQuantity)
-                item.Price = await Price(product, item.MinimumQuantity, options);
-            // A grouped or configurable product may be priced using another child/variant unit.
-            // Do not infer the per-item price until that sale unit is unambiguous.
-            if (!item.RequiresConfiguration && product.ProductType == ProductType.SimpleProduct && item.Price?.RetailPrice is decimal retailPrice &&
-                WholesaleCardMetadata.ConsumerPricePerItem(retailPrice, item.UnitsPerPackage, item.QuantityUnit?.Id,
-                    wholesaleSettings.PackageQuantityUnitId) is decimal consumerPrice)
-            {
-                item.ConsumerPrice = consumerPrice;
-                item.ConsumerPriceCurrencyCode = item.Price.CurrencyCode;
-            }
-            items.Add(item);
-        }
-        return items;
-    }
-
-    internal static (int Min, int Max, int[] Allowed) QuantityRules(Product product)
-    {
-        var raw = product.ParseAllowedQuantities();
-        var min = Math.Max(1, raw.Length > 0 ? raw[0] : product.OrderMinimumQuantity);
-        var max = Math.Min(1000, Math.Max(min, raw.Length > 0 ? raw[^1] : product.OrderMaximumQuantity));
-        var allowed = raw.Where(q => q >= min && q <= max).Distinct().ToArray();
-        // If there are explicit values, the first valid value is the actual minimum purchase.
-        if (raw.Length > 0)
-        {
-            if (allowed.Length == 0) return (min, 0, allowed);
-            min = allowed[0];
-            max = allowed[^1];
-        }
-        return (min, max, allowed);
-    }
-
-    private async Task<PriceDto> Price(Product product, int quantity, PriceCalculationOptions options)
-    {
-        var result = await prices.CalculatePriceAsync(new PriceCalculationContext(product, quantity, options));
-        return new PriceDto(product.Id, result.FinalPrice.Currency.CurrencyCode, result.FinalPrice.Amount,
-            result.RegularPrice?.Amount, result.DiscountAmount.Amount)
-        {
-            PricingQuantity = quantity,
-            RetailPrice = result.RetailPrice?.Amount,
-            TaxInclusive = options.TaxInclusive,
-            SavingPercentage = result.Saving.HasSaving ? Math.Round((decimal)result.Saving.SavingPercent, 2) : null,
-            SavingAmount = result.Saving.HasSaving ? result.Saving.SavingAmount?.Amount : null,
-            SavingReference = result.Saving.HasSaving ? (result.RegularPrice.HasValue ? "regular_price" : "retail_price") : null
-        };
-    }
-
-    private static PageDto<ProductDto> Empty(PageRequest page) =>
-        new(Array.Empty<ProductDto>(), page.Page, page.PageSize, 0, 0);
 }

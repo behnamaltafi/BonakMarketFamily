@@ -23,6 +23,20 @@ public class WholesaleCardAdminTests
     }
 
     [Test]
+    public void ConventionalAdminControllerDoesNotOptIntoNativeApiExplorer()
+    {
+        // The native ApiControllerModelConvention uses attribute presence (not IgnoreApi)
+        // to opt a controller into ApiExplorer. Conventional admin routes must never opt in.
+        var controller = typeof(StorefrontApiAdminController);
+        Assert.That(controller.IsDefined(typeof(ApiExplorerSettingsAttribute), inherit: true), Is.False);
+        Assert.That(controller.IsDefined(typeof(RouteAttribute), inherit: true), Is.False);
+        Assert.That(typeof(StorefrontController).IsDefined(typeof(ApiExplorerSettingsAttribute), inherit: true), Is.True);
+
+        foreach (var action in controller.GetMethods().Where(x => x.Name == "Configure"))
+            Assert.That(action.IsDefined(typeof(ApiExplorerSettingsAttribute), inherit: true), Is.False);
+    }
+
+    [Test]
     public void AdminActionsUseGlobalNativeSettingsAndAntiforgery()
     {
         var actions = typeof(StorefrontApiAdminController).GetMethods().Where(x => x.Name == "Configure").ToArray();

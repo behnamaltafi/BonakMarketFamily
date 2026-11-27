@@ -12,8 +12,9 @@ using BonakMarket.Web.Modelling.Settings;
 
 namespace BonakMarket.StorefrontApi.Controllers;
 
+// Native WebApi ApiControllerModelConvention opts in any controller with ApiExplorerSettings,
+// even IgnoreApi=true. Keep this conventional MVC admin controller unannotated.
 [Permission("configuration.setting")]
-[ApiExplorerSettings(IgnoreApi = true)]
 public sealed class StorefrontApiAdminController(SmartDbContext db) : AdminController
 {
     [HttpGet, LoadSetting(false)]

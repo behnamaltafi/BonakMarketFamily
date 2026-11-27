@@ -14,7 +14,6 @@ public sealed class ProductDetailDto : ProductDto
     public ProductPurchaseRulesDto PurchaseRules { get; set; } = null!;
     public ProductCapabilitiesDto AllowedActions { get; set; } = null!;
     public bool RequiresShipping { get; set; }
-    public bool IsPreOrder { get; set; }
     public int ReviewCount { get; set; }
     public decimal? AverageRating { get; set; }
 }

@@ -23,4 +23,8 @@ public sealed record CatalogFacetsDto(int MatchingProducts, IReadOnlyList<Catalo
 {
     public bool CanFilterPrice { get; init; }
     public string? PriceFilterCurrencyCode { get; init; }
+    public CatalogPriceRangeDto? PriceRange { get; init; }
+    public CatalogAvailabilityDto Availability { get; init; } = new(0, 0);
 }
+public sealed record CatalogPriceRangeDto(decimal Min, decimal Max, string CurrencyCode);
+public sealed record CatalogAvailabilityDto(int InStock, int OutOfStock);

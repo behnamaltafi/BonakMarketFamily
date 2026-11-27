@@ -22,8 +22,13 @@ public sealed class CartController(CartFacade cart, GuestCartService guests) : S
     [HttpPost("merge"), MergeGuestCart]
     public async Task<ActionResult<CartStateDto>> Merge(CancellationToken ct)
     {
-        var result = await guests.MergeAsync(GuestCartPolicy.ReadHash(Request), ct);
-        if (result.Status == 200) return Ok(await cart.StateAsync(ct));
+        var hash = HttpContext.Items.TryGetValue(GuestCartPolicy.MergeAllowed, out var value) ? value as string : null;
+        var result = await guests.MergeAsync(hash, ct);
+        if (result.Status == 200)
+        {
+            var state = await cart.StateAsync(ct);
+            return Ok(result.Warning == null ? state : state with { Warnings = state.Warnings.Append(result.Warning).Distinct().ToArray() });
+        }
         var problem = new ProblemDetails { Status = result.Status, Title = result.Code };
         if (result.Conflicts?.Count > 0) problem.Extensions["conflicts"] = result.Conflicts;
         return new ObjectResult(problem) { StatusCode = result.Status, ContentTypes = { "application/problem+json" } };

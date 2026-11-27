@@ -16,6 +16,8 @@ public sealed class MergeGuestCartAttribute : Attribute { }
 internal static class GuestCartPolicy
 {
     public const string Header = "X-Guest-Cart-Token";
+    internal static readonly object CreationAllowed = new();
+    internal static readonly object MergeAllowed = new();
     public static bool Enabled(IConfiguration config) => config?.GetValue("StorefrontApi:EnableGuestCart", true) ?? true;
     public static int ExpirationDays(IConfiguration config) => Math.Clamp(config?.GetValue("StorefrontApi:GuestCartExpirationDays", 30) ?? 30, 1, 90);
     public static bool IsGuest(Customer customer) => customer != null && customer.Id > 0 &&

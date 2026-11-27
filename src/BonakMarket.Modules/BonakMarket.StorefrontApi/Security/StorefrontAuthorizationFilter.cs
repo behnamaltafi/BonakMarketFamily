@@ -40,6 +40,7 @@ public sealed class StorefrontAuthorizationFilter(
         var isPublic = action.MethodInfo.IsDefined(typeof(PublicCatalogAttribute), true);
         var guestAction = action.MethodInfo.IsDefined(typeof(AllowGuestCartAttribute), true);
         var guestCreate = action.MethodInfo.IsDefined(typeof(CreateGuestCartAttribute), true);
+        var guestMerge = action.MethodInfo.IsDefined(typeof(MergeGuestCartAttribute), true);
         var bearer = http.Request.Headers.ContainsKey("Authorization");
         Customer identity = null;
         // Keep the same secure-by-default transport policy as Identity without a module assembly dependency.
@@ -58,6 +59,10 @@ public sealed class StorefrontAuthorizationFilter(
         { Deny(context, 401, guestAction ? "guest_cart_token_required" : "authentication_required"); return; }
         if (guestCreate && identity != null)
         { Deny(context, 409, "guest_cart_creation_requires_anonymous"); return; }
+        // If routing/middleware metadata was not applied, fail closed instead of bypassing rate limits or locks.
+        if (guestCreate && !http.Items.ContainsKey(GuestCartPolicy.CreationAllowed) ||
+            guestMerge && !http.Items.ContainsKey(GuestCartPolicy.MergeAllowed))
+        { Deny(context, 403, "guest_cart_context_required"); return; }
         if (identity == null && (guestAction || guestCreate) && !GuestCartPolicy.Enabled(configuration))
         { Deny(context, 403, "guest_cart_disabled"); return; }
         var customer = work.CurrentCustomer;

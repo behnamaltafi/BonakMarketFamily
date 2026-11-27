@@ -17,9 +17,9 @@ internal sealed class GuestCartDeletionConsumer(SmartDbContext db) : IConsumer
 {
     public void HandleEvent(GuestCustomerDeletingEvent message)
     {
-        var now = DateTime.UtcNow;
-        message.Query = message.Query.Where(c => !db.Set<GuestCartToken>().Any(t => t.CustomerId == c.Id &&
-            t.ExpiresOnUtc > now && t.RevokedOnUtc == null));
+        // Protect even expired/merged rows until the locked cleanup task removes the token.
+        // Otherwise a native cleanup could delete an empty cart during an in-flight request.
+        message.Query = message.Query.Where(c => !db.Set<GuestCartToken>().Any(t => t.CustomerId == c.Id));
     }
 }
 

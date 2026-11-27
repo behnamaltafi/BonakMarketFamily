@@ -12,7 +12,7 @@ using BonakMarket.StorefrontApi.Security;
 namespace BonakMarket.StorefrontApi.Services;
 
 public sealed class GuestCartService(SmartDbContext db, ICustomerService customers, IShoppingCartService native,
-    ICurrencyService currencies, StorefrontRequestContext request, IConfiguration config)
+    ICurrencyService currencies, StorefrontRequestContext request, IConfiguration config, CartFacade cart)
 {
     public async Task<GuestCartCreatedDto> CreateAsync(CancellationToken ct)
     {
@@ -42,7 +42,7 @@ public sealed class GuestCartService(SmartDbContext db, ICustomerService custome
         if (token.MergedToCustomerId == request.Customer.Id && token.MergedOnUtc.HasValue)
         {
             await tx.CommitAsync(ct);
-            return new(200);
+            return new(200, Warning: token.MergeWarning);
         }
         if (token.RevokedOnUtc.HasValue || token.MergedOnUtc.HasValue) return new(401, "invalid_guest_cart_token");
         var source = await db.Customers.IncludeCustomerRoles().FirstOrDefaultAsync(x => x.Id == token.CustomerId, ct);
@@ -52,6 +52,15 @@ public sealed class GuestCartService(SmartDbContext db, ICustomerService custome
         var sourceCart = await native.GetCartAsync(source, ShoppingCartType.ShoppingCart, request.StoreId, activeOnly: null);
         var roots = sourceCart.Items.OrderBy(x => x.Item.Id).ToArray();
         var sourceRows = roots.SelectMany(x => new[] { x.Item }.Concat(x.ChildItems.Select(y => y.Item))).ToArray();
+        // Native organization skips orphan children. Never consume the token while leaving rows behind.
+        var allRows = await db.ShoppingCartItems.Where(x => x.CustomerId == source.Id && x.StoreId == request.StoreId &&
+            x.ShoppingCartTypeId == (int)ShoppingCartType.ShoppingCart).Select(x => new { x.Id, x.ProductId }).ToListAsync(ct);
+        var organizedIds = sourceRows.Select(x => x.Id).ToHashSet();
+        var orphans = allRows.Where(x => !organizedIds.Contains(x.Id))
+            .Select(x => new GuestCartConflictDto(x.Id, x.ProductId, "cart_item_requires_resolution")).ToArray();
+        if (orphans.Length != 0) return new(409, "guest_cart_merge_conflict", orphans);
+        var guestCoupon = source.GenericAttributes.DiscountCouponCode;
+        var customerCoupon = request.Customer.GenericAttributes.DiscountCouponCode;
         var sourceIds = sourceRows.Select(x => x.ProductId).Distinct().ToArray();
         var visible = await StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true)
             .Where(x => sourceIds.Contains(x.Id)).Select(x => x.Id).ToListAsync(ct);
@@ -61,7 +70,7 @@ public sealed class GuestCartService(SmartDbContext db, ICustomerService custome
             // CopyAsync cannot preserve inactive selections. Do not silently activate them.
             if (!root.Active || root.ChildItems.Any(x => !x.Active))
                 conflicts.Add(new(root.Item.Id, root.Item.ProductId, "inactive_item_requires_resolution"));
-            else if (!visible.Contains(root.Item.ProductId) || root.ChildItems.Any(x => !visible.Contains(x.Item.ProductId)))
+            else if (root.Item.Product == null || !visible.Contains(root.Item.ProductId) || root.ChildItems.Any(x => x.Item.Product == null || !visible.Contains(x.Item.ProductId)))
                 conflicts.Add(new(root.Item.Id, root.Item.ProductId, "product_unavailable"));
         }
         if (conflicts.Count > 0) return new(409, "guest_cart_merge_conflict", conflicts);
@@ -84,7 +93,21 @@ public sealed class GuestCartService(SmartDbContext db, ICustomerService custome
             }
         }
 
-        // Only this store and cart; never wishlist, coupons or reward/gift-card data.
+        // Native writes may reset checkout selections. Keep the customer's coupon; only reapply
+        // the guest coupon when there is no customer coupon, and validate it under the registered identity.
+        request.Customer.GenericAttributes.DiscountCouponCode = customerCoupon;
+        if (!string.IsNullOrEmpty(guestCoupon) && !string.Equals(guestCoupon, customerCoupon, StringComparison.OrdinalIgnoreCase))
+        {
+            if (!string.IsNullOrEmpty(customerCoupon))
+                token.MergeWarning = "guest_coupon_conflict";
+            else if (!await cart.ApplyCouponAsync(guestCoupon, ct))
+            {
+                request.Customer.GenericAttributes.DiscountCouponCode = null;
+                token.MergeWarning = "guest_coupon_not_applicable";
+            }
+        }
+
+        // Delete only this store/cart, never wishlist or account financial data.
         if (sourceRows.Length > 0)
         {
             db.ShoppingCartItems.RemoveRange(sourceRows);
@@ -94,7 +117,7 @@ public sealed class GuestCartService(SmartDbContext db, ICustomerService custome
         token.MergedOnUtc = token.RevokedOnUtc = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
-        return new(200);
+        return new(200, Warning: token.MergeWarning);
     }
 }
-public sealed record GuestCartMergeResult(int Status, string Code = null, IReadOnlyList<GuestCartConflictDto> Conflicts = null);
+public sealed record GuestCartMergeResult(int Status, string Code = null, IReadOnlyList<GuestCartConflictDto> Conflicts = null, string Warning = null);

@@ -56,6 +56,7 @@ public sealed class GuestCartMiddleware(RequestDelegate next)
                 http.Response.Headers["Retry-After"] = "60";
                 await Deny(http, 429, "guest_cart_rate_limited"); return;
             }
+            http.Items[GuestCartPolicy.CreationAllowed] = true;
             await next(http); return;
         }
         if (merge && verified == null) { await Deny(http, 401, "authentication_required"); return; }
@@ -88,6 +89,7 @@ public sealed class GuestCartMiddleware(RequestDelegate next)
         }
         await using var customerHandle = customerLease;
         await using var guestHandle = guestLease;
+        if (merge) http.Items[GuestCartPolicy.MergeAllowed] = hash;
         if (wantsGuest)
         {
             var db = http.RequestServices.GetRequiredService<SmartDbContext>();

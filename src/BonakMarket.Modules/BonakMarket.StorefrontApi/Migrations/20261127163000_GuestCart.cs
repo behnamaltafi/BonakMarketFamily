@@ -18,7 +18,8 @@ internal sealed class GuestCartMigration : Migration
             .WithColumn("ExpiresOnUtc").AsDateTime2().NotNullable()
             .WithColumn("MergedToCustomerId").AsInt32().Nullable()
             .WithColumn("MergedOnUtc").AsDateTime2().Nullable()
-            .WithColumn("RevokedOnUtc").AsDateTime2().Nullable();
+            .WithColumn("RevokedOnUtc").AsDateTime2().Nullable()
+            .WithColumn("MergeWarning").AsString(64).Nullable();
         Create.Index("IX_StorefrontGuestCartToken_Hash").OnTable("StorefrontGuestCartToken")
             .OnColumn("TokenHash").Ascending().WithOptions().Unique();
         Create.Index("IX_StorefrontGuestCartToken_Customer").OnTable("StorefrontGuestCartToken")

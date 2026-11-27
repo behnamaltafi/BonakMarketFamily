@@ -20,4 +20,5 @@ public sealed class GuestCartToken : BaseEntity
     public int? MergedToCustomerId { get; set; }
     public DateTime? MergedOnUtc { get; set; }
     public DateTime? RevokedOnUtc { get; set; }
+    [MaxLength(64)] public string MergeWarning { get; set; }
 }

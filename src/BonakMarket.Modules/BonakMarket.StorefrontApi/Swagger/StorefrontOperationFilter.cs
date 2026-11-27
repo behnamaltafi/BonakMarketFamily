@@ -88,7 +88,27 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
             Requirement("Bearer")
         };
         if (context.MethodInfo.IsDefined(typeof(PublicCatalogAttribute), true))
+        {
             operation.Security.Add(new OpenApiSecurityRequirement());
+            operation.Security.Add(Requirement("GuestCartToken"));
+        }
+        if (context.MethodInfo.IsDefined(typeof(AllowGuestCartAttribute), true))
+            operation.Security.Add(Requirement("GuestCartToken"));
+        if (context.MethodInfo.IsDefined(typeof(CreateGuestCartAttribute), true))
+        {
+            operation.Security.Clear();
+            operation.Summary = "Create an anonymous cart";
+            operation.Description = "Call once before adding the first item. Omit both credentials; store guestCartToken securely.";
+            AddResponse(operation, "429", "Guest creation rate limit exceeded.");
+        }
+        if (context.MethodInfo.IsDefined(typeof(MergeGuestCartAttribute), true))
+        {
+            var both = Requirement("Bearer");
+            foreach (var entry in Requirement("GuestCartToken")) both.Add(entry.Key, entry.Value);
+            operation.Security = new List<OpenApiSecurityRequirement> { both };
+            operation.Summary = "Merge the guest cart after login";
+            operation.Description = "Send both tokens. Atomic transfer; retry safely with the same two tokens. A conflict preserves both carts.";
+        }
 
         AddResponse(operation, "400", "Invalid request or HTTPS requirement (ProblemDetails).");
         AddResponse(operation, "401", "Missing or invalid required customer identity / token (ProblemDetails).");
@@ -145,7 +165,8 @@ internal sealed class StorefrontOperationFilter : IOperationFilter
                         ["traceId"] = new() { Type = "string" },
                         ["errors"] = new() { Type = "object", AdditionalProperties = new OpenApiSchema
                             { Type = "array", Items = new OpenApiSchema { Type = "string" } } },
-                        ["warnings"] = new() { Type = "array", Items = new OpenApiSchema { Type = "string" } }
+                        ["warnings"] = new() { Type = "array", Items = new OpenApiSchema { Type = "string" } },
+                        ["conflicts"] = new() { Type = "array", Items = new OpenApiSchema { Type = "object", Properties = new Dictionary<string, OpenApiSchema> { ["itemId"] = new() { Type = "integer" }, ["productId"] = new() { Type = "integer" }, ["code"] = new() { Type = "string" } } } }
                     }
                 }
             };

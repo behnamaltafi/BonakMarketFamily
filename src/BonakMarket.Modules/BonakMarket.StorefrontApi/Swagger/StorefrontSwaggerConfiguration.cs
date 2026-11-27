@@ -32,7 +32,7 @@ public static class StorefrontSwaggerConfiguration
             o.SwaggerDoc(DocumentName, new OpenApiInfo
             {
                 Title = DocumentTitle, Version = "v1",
-                Description = "Customer-facing commerce API. Get a JWT access token from the Identity API (/docs/identity) and send it as Bearer authentication for customer operations. Catalog allows guest access subject to native permissions. Omit Authorization entirely for guest requests. Native browser cookies are not customer API credentials."
+                Description = "Customer-facing commerce API. Get a JWT access token from the Identity API (/docs/identity) and send it as Bearer authentication for customer operations. Catalog allows anonymous access. Guest cart operations use X-Guest-Cart-Token; omit Authorization unless merging after login. Native browser cookies are not customer API credentials."
             });
             var previous = o.SwaggerGeneratorOptions.DocInclusionPredicate;
             o.DocInclusionPredicate((name, api) => Includes(name, api, previous));

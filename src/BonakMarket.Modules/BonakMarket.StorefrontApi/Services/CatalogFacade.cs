@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Autofac;
 using BonakMarket.Core;
 using BonakMarket.Core.Catalog.Products;
@@ -25,7 +26,7 @@ public sealed class CatalogFacade(
     SmartDbContext db, ICatalogSearchService search, IPriceCalculationService prices,
     IMediaService media, IPermissionService permissions, IWorkContext work,
     IStoreContext stores, IComponentContext components, CatalogSettings catalogSettings, StorefrontRequestContext request,
-    IProductAttributeMaterializer attributes, IShoppingCartValidator validator)
+    IProductAttributeMaterializer attributes, IShoppingCartValidator validator, IConfiguration configuration = null)
 {
     public Task<bool> CanDisplayPriceAsync() => permissions.AuthorizeAsync(Permissions.Catalog.DisplayPrice, request.Customer);
 
@@ -412,8 +413,10 @@ public sealed class CatalogFacade(
                 UnitLabel(x.Id, nameof(QuantityUnit.Name), x.Name), UnitLabel(x.Id, nameof(QuantityUnit.NamePlural), x.NamePlural)));
             var defaultEntity = units.FirstOrDefault(x => x.IsDefault);
             if (defaultEntity != null) defaultUnit = unitLookup[defaultEntity.Id];
-            canCart = request.Customer.IsRegistered() &&
-                await permissions.AuthorizeAsync(StorefrontPermissions.Cart, request.Customer) &&
+            canCart = (request.Customer.IsRegistered()
+                ? await permissions.AuthorizeAsync(StorefrontPermissions.Cart, request.Customer)
+                : GuestCartPolicy.Enabled(configuration) && GuestCartPolicy.IsGuest(request.Customer) &&
+                    await permissions.AuthorizeAsync(StorefrontPermissions.GuestCart, request.Customer)) &&
                 await permissions.AuthorizeAsync(Permissions.Cart.AccessShoppingCart, request.Customer);
         }
         var items = new List<ProductDto>(products.Count);

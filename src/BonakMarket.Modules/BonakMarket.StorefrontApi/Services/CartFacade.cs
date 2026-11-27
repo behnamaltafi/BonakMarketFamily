@@ -31,7 +31,8 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
         var warnings = new List<string>(snapshot.CanPrice ? operationWarnings ?? Array.Empty<string>() : Array.Empty<string>());
         var blockers = new List<string>();
         if (!active.HasItems) blockers.Add("cart_empty");
-        if (!await permissions.AuthorizeAsync(StorefrontPermissions.Checkout, request.Customer))
+        if (request.IsGuestCart) blockers.Add("authentication_required");
+        else if (!await permissions.AuthorizeAsync(StorefrontPermissions.Checkout, request.Customer))
             blockers.Add("checkout_access_denied");
         if (await CustomerGuildPolicy.RequiresGuildAsync(db, request.Customer, ct))
             blockers.Add("profile_guild_required");
@@ -86,7 +87,8 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
             total?.Total?.Amount, null);
         var state = new CartStateDto("", lines, summary, request.Customer.GenericAttributes.DiscountCouponCode,
             cards, request.Customer.GenericAttributes.UseRewardPointsDuringCheckout,
-            new CartCheckoutDto(blockers.Count == 0, active.IsShippingRequired, blockers.Distinct().ToArray()), warnings.Distinct().ToArray());
+            new CartCheckoutDto(blockers.Count == 0, active.IsShippingRequired, blockers.Distinct().ToArray()), warnings.Distinct().ToArray())
+        { CartType = request.IsGuestCart ? "guest" : "customer" };
         return state with { Revision = Revision(snapshot.Native, state with { Warnings = Array.Empty<string>() }) };
     }
 
@@ -121,7 +123,7 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
         var urls = new Dictionary<int, string>();
         var canPrice = await CanDisplayPriceAsync();
         var target = type == ShoppingCartType.Wishlist ? ShoppingCartType.ShoppingCart : ShoppingCartType.Wishlist;
-        var canTransfer = await permissions.AuthorizeAsync(target == ShoppingCartType.Wishlist ? StorefrontPermissions.Wishlist : StorefrontPermissions.Cart, request.Customer) &&
+        var canTransfer = !request.IsGuestCart && await permissions.AuthorizeAsync(target == ShoppingCartType.Wishlist ? StorefrontPermissions.Wishlist : StorefrontPermissions.Cart, request.Customer) &&
             await permissions.AuthorizeAsync(target == ShoppingCartType.Wishlist ? Permissions.Cart.AccessWishlist : Permissions.Cart.AccessShoppingCart, request.Customer);
         var lines = new List<CartLineDto>(nodes.Count);
         foreach (var node in nodes)
@@ -340,6 +342,7 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart, IOr
 
     public async Task<bool> ApplyCouponAsync(string code, CancellationToken ct)
     {
+        if (request.IsGuestCart && !await CanDisplayPriceAsync()) return false;
         var current = await cart.GetCartAsync(request.Customer, ShoppingCartType.ShoppingCart, request.StoreId);
         var (applied, _) = await calculations.ApplyDiscountCouponAsync(current, code);
         await db.SaveChangesAsync(ct);

@@ -10,27 +10,49 @@ namespace BonakMarket.StorefrontApi.Controllers;
 [Route("api/storefront/v1/cart")]
 [StorefrontPermission(StorefrontPermissions.Cart)]
 [StorefrontPermission(Permissions.Cart.AccessShoppingCart)]
-public sealed class CartController(CartFacade cart) : StorefrontController
+public sealed class CartController(CartFacade cart, GuestCartService guests) : StorefrontController
 {
-    [HttpGet]
+    [HttpPost("guest"), CreateGuestCart]
+    public async Task<ActionResult<GuestCartCreatedDto>> CreateGuest(CancellationToken ct)
+    {
+        var created = await guests.CreateAsync(ct);
+        return created == null ? Error(503, "guest_cart_unavailable") : Ok(created);
+    }
+
+    [HttpPost("merge"), MergeGuestCart]
+    public async Task<ActionResult<CartStateDto>> Merge(CancellationToken ct)
+    {
+        var hash = HttpContext.Items.TryGetValue(GuestCartPolicy.MergeAllowed, out var value) ? value as string : null;
+        var result = await guests.MergeAsync(hash, ct);
+        if (result.Status == 200)
+        {
+            var state = await cart.StateAsync(ct);
+            return Ok(result.Warning == null ? state : state with { Warnings = state.Warnings.Append(result.Warning).Distinct().ToArray() });
+        }
+        var problem = new ProblemDetails { Status = result.Status, Title = result.Code };
+        if (result.Conflicts?.Count > 0) problem.Extensions["conflicts"] = result.Conflicts;
+        return new ObjectResult(problem) { StatusCode = result.Status, ContentTypes = { "application/problem+json" } };
+    }
+
+    [HttpGet, AllowGuestCart]
     public async Task<ActionResult<CartStateDto>> Get(CancellationToken ct) => Ok(await cart.StateAsync(ct));
 
-    [HttpGet("items")]
+    [HttpGet("items"), AllowGuestCart]
     public async Task<ActionResult<List<CartItemDto>>> Items() => Ok(await cart.ItemsAsync());
 
-    [HttpPost("items")]
+    [HttpPost("items"), AllowGuestCart]
     public async Task<ActionResult<CartStateDto>> Add([FromBody] AddCartItem request, CancellationToken ct) =>
         await Result(await cart.AddAsync(request, ct), ct);
 
-    [HttpPut("items/{id:int}")]
+    [HttpPut("items/{id:int}"), AllowGuestCart]
     public async Task<ActionResult<CartStateDto>> Update(int id, [FromBody] UpdateCartItem request, CancellationToken ct) =>
         await Result(await cart.UpdateAsync(id, request.Quantity, ct, active: request.Active), ct);
 
-    [HttpDelete("items/{id:int}")]
+    [HttpDelete("items/{id:int}"), AllowGuestCart]
     public async Task<ActionResult<CartStateDto>> Delete(int id, CancellationToken ct) =>
         await Result(await cart.DeleteAsync(id, ct), ct);
 
-    [HttpGet("total")]
+    [HttpGet("total"), AllowGuestCart]
     [StorefrontPermission(Permissions.Catalog.DisplayPrice)]
     public async Task<ActionResult<CartTotalDto>> Total(CancellationToken ct)
     {
@@ -39,13 +61,13 @@ public sealed class CartController(CartFacade cart) : StorefrontController
         return Ok(new CartTotalDto(state.Summary.EstimatedTotal, state.Summary.OrderDiscountAmount ?? 0m, state.Summary.CurrencyCode));
     }
 
-    [HttpPost("coupon")]
+    [HttpPost("coupon"), AllowGuestCart]
     [ProducesResponseType(typeof(CartStateDto), 200)]
     [ProducesResponseType(typeof(ProblemDetails), 422)]
     public async Task<ActionResult<CartStateDto>> ApplyCoupon([FromBody] CouponRequest request, CancellationToken ct) =>
         await cart.ApplyCouponAsync(request.Code, ct) ? Ok(await cart.StateAsync(ct)) : Error(422, "coupon_not_applicable");
 
-    [HttpDelete("coupon")]
+    [HttpDelete("coupon"), AllowGuestCart]
     public async Task<ActionResult<CartStateDto>> RemoveCoupon(CancellationToken ct)
     {
         await cart.RemoveCouponAsync(ct);

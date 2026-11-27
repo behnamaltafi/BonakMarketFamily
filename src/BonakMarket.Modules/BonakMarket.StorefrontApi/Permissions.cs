@@ -8,6 +8,7 @@ public static class StorefrontPermissions
     public const string Self = "storefront";
     public const string Catalog = "storefront.catalog";
     public const string Cart = "storefront.cart";
+    public const string GuestCart = "storefront.guestcart";
     public const string Orders = "storefront.orders";
     public const string Wishlist = "storefront.wishlist";
     public const string RewardPoints = "storefront.rewardpoints";
@@ -26,7 +27,7 @@ public sealed class StorefrontPermissionProvider : IPermissionProvider
 
     public IEnumerable<DefaultPermissionRecord> GetDefaultPermissions()
     {
-        yield return For(SystemCustomerRoleNames.Guests, StorefrontPermissions.Catalog);
+        yield return For(SystemCustomerRoleNames.Guests, StorefrontPermissions.Catalog, StorefrontPermissions.GuestCart);
         yield return For(SystemCustomerRoleNames.Registered, StorefrontPermissions.Catalog,
             StorefrontPermissions.Cart, StorefrontPermissions.Orders, StorefrontPermissions.Wishlist,
             StorefrontPermissions.RewardPoints, StorefrontPermissions.StockSubscriptions, StorefrontPermissions.Checkout,

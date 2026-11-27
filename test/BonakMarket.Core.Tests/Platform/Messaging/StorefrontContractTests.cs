@@ -66,11 +66,11 @@ public class StorefrontContractTests
     }
 
     [Test]
-    public void GuestRoleGetsCatalogButNoPrivateCapabilities()
+    public void GuestRoleGetsCatalogAndScopedCartButNoPrivateCapabilities()
     {
         var defaults = new StorefrontPermissionProvider().GetDefaultPermissions().ToList();
         var guests = defaults.Single(x => x.CustomerRoleSystemName == SystemCustomerRoleNames.Guests);
-        Assert.That(guests.PermissionRecords.Select(x => x.SystemName), Is.EquivalentTo(new[] { StorefrontPermissions.Catalog }));
+        Assert.That(guests.PermissionRecords.Select(x => x.SystemName), Is.EquivalentTo(new[] { StorefrontPermissions.Catalog, StorefrontPermissions.GuestCart }));
         var registered = defaults.Single(x => x.CustomerRoleSystemName == SystemCustomerRoleNames.Registered);
         foreach (var permission in new[] { StorefrontPermissions.Orders, StorefrontPermissions.Wishlist,
             StorefrontPermissions.RewardPoints, StorefrontPermissions.StockSubscriptions, StorefrontPermissions.Checkout,

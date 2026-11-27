@@ -149,7 +149,7 @@ public class SwaggerContractTests
 
         foreach (var doc in new[] { identity, storefront })
         {
-            Assert.That(doc.Components.SecuritySchemes.Keys, Is.EquivalentTo(new[] { "Bearer" }));
+            Assert.That(doc.Components.SecuritySchemes.Keys, Is.EquivalentTo(doc == identity ? new[] { "Bearer" } : new[] { "Bearer", "GuestCartToken" }));
             Assert.That(doc.SecurityRequirements, Is.Empty);
             var ids = doc.Paths.Values.SelectMany(p => p.Operations.Values).Select(o => o.OperationId).ToArray();
             Assert.That(ids.All(id => !string.IsNullOrWhiteSpace(id)), Is.True);
@@ -220,6 +220,15 @@ public class SwaggerContractTests
         Assert.That(quote.Parameters.Any(x => x.Name == "X-Test-CSRF"), Is.False);
         var cart = storefront.Paths["/api/storefront/v1/cart"].Operations[OperationType.Get];
         Assert.That(cart.Security.Any(s => s.Count == 0), Is.False);
+        Assert.That(cart.Security.Count, Is.EqualTo(2));
+        Assert.That(cart.Security.SelectMany(s => s.Keys).Select(k => k.Reference.Id), Is.EquivalentTo(new[] { "Bearer", "GuestCartToken" }));
+        var create = storefront.Paths["/api/storefront/v1/cart/guest"].Operations[OperationType.Post];
+        Assert.That(create.Security, Is.Empty);
+        Assert.That(create.Responses.ContainsKey("429"), Is.True);
+        var merge = storefront.Paths["/api/storefront/v1/cart/merge"].Operations[OperationType.Post];
+        Assert.That(merge.Security.Count, Is.EqualTo(1));
+        Assert.That(merge.Security.Single().Keys.Select(k => k.Reference.Id), Is.EquivalentTo(new[] { "Bearer", "GuestCartToken" }));
+        Assert.That(storefront.Components.Schemas["CartStateDto"].Properties.ContainsKey("cartType"), Is.True);
         Assert.That(cart.Responses["200"].Content, Is.Not.Empty);
         var coupon = storefront.Paths["/api/storefront/v1/cart/coupon"].Operations[OperationType.Post];
         Assert.That(coupon.Responses.ContainsKey("200"), Is.True);

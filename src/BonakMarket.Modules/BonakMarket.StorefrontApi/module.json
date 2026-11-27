@@ -5,7 +5,7 @@
   "SystemName": "BonakMarket.StorefrontApi",
   "FriendlyName": "Storefront API",
   "Description": "Customer-facing REST API using the native commerce services.",
-  "Version": "6.4.0",
+  "Version": "6.4.1",
   "MinAppVersion": "6.4.0",
   "Order": 4,
   "ResourceRootKey": "Plugins.StorefrontApi",

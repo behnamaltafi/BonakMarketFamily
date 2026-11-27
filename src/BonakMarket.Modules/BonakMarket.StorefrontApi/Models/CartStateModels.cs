@@ -21,7 +21,10 @@ public sealed record CartGiftCardDto(int Id, string MaskedCode, decimal? UsableA
 public sealed record CartCheckoutDto(bool CanStart, bool ShippingRequired, IReadOnlyList<string> Blockers);
 public sealed record CartStateDto(string Revision, IReadOnlyList<CartLineDto> Items, CartSummaryDto Summary,
     string? AppliedCoupon, IReadOnlyList<CartGiftCardDto> AppliedGiftCards, bool UseRewardPoints,
-    CartCheckoutDto Checkout, IReadOnlyList<string> Warnings);
+    CartCheckoutDto Checkout, IReadOnlyList<string> Warnings)
+{
+    public string CartType { get; init; } = "customer";
+}
 public sealed record WishlistStateDto(string Revision, IReadOnlyList<CartLineDto> Items, int ItemCount, int TotalQuantity,
     IReadOnlyList<string> Warnings);
 public sealed record CartTransferDto(CartStateDto Cart, WishlistStateDto Wishlist);

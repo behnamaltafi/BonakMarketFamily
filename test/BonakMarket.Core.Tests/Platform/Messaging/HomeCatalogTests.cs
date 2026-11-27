@@ -45,7 +45,7 @@ public class HomeCatalogTests
         var products = new[] { new Product { Id = 3 }, new Product { Id = 1 }, new Product { Id = 2 } }.AsQueryable();
         var eligible = CatalogPurchaseRanking.EligibleOrders(orders, 1, Now.AddDays(-90));
         var ranked = CatalogPurchaseRanking.BestSellers(products, CatalogPurchaseRanking.Items(lines, eligible));
-        Assert.That(ranked.Select(x => x.Id).ToArray(), Is.EqualTo(new[] { 2, 3, 1 }));
+        Assert.That(ranked.Select(x => x.Id).ToArray(), Is.EqualTo(new[] { 2, 3 }));
         Assert.That(ranked.Skip(1).Take(1).Single().Id, Is.EqualTo(3));
     }
 
@@ -70,12 +70,20 @@ public class HomeCatalogTests
         Assert.That(WholesaleCardMetadata.PackageSize(12.5m), Is.Null);
         Assert.That(WholesaleCardMetadata.PackageSize(0m), Is.Null);
         Assert.That(WholesaleCardMetadata.PackageSize((decimal)int.MaxValue + 1), Is.Null);
-        Assert.That(WholesaleCardMetadata.ConsumerPrice(100050m), Is.EqualTo(100050m));
-        Assert.That(WholesaleCardMetadata.ConsumerPrice(-1m), Is.Null);
-        Assert.That(WholesaleCardMetadata.CurrencyCode(" irr "), Is.EqualTo("IRR"));
-        Assert.That(WholesaleCardMetadata.CurrencyCode("toman"), Is.Null);
-        Assert.That(new PriceDto(1, "IRR", 80m, 100m, 20m).DiscountPercentage, Is.EqualTo(20m));
-        Assert.That(new PriceDto(1, "IRR", 80m, null, 0m).DiscountPercentage, Is.Null);
+        Assert.That(WholesaleCardMetadata.ConsumerPricePerItem(1200000m, 12, 4, 4), Is.EqualTo(100000m));
+        Assert.That(WholesaleCardMetadata.ConsumerPricePerItem(1200000m, 12, 3, 4), Is.Null);
+        Assert.That(WholesaleCardMetadata.ConsumerPricePerItem(1200000m, null, 4, 4), Is.Null);
+        Assert.That(WholesaleCardMetadata.ConsumerPricePerItem(1200000m, 12, 4, 0), Is.Null);
+        Assert.That(new PriceDto(1, "IRR", 80m, 100m, 20m) { SavingPercentage = 20m, SavingReference = "regular_price" }.DiscountPercentage, Is.EqualTo(20m));
+        Assert.That(new PriceDto(1, "IRR", 80m, null, 0m) { RetailPrice = 100m, SavingPercentage = 20m, SavingReference = "retail_price" }.DiscountPercentage, Is.Null);
+    }
+
+    [Test]
+    public void HomepageOrderUsesNativeOrderAndStableId()
+    {
+        var products = new[] { new Product { Id = 3, HomePageDisplayOrder = 1 }, new Product { Id = 2, HomePageDisplayOrder = 2 }, new Product { Id = 1, HomePageDisplayOrder = 1 } }.AsQueryable();
+        var ordered = CatalogFacade.ApplyCatalogPriceAndSort(products, new ProductSearchRequest { ShowOnHomePage = true }, Now);
+        Assert.That(ordered.Select(x => x.Id), Is.EqualTo(new[] { 1, 3, 2 }));
     }
 
     [Test]

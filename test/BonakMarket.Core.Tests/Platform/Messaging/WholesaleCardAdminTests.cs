@@ -19,8 +19,7 @@ public class WholesaleCardAdminTests
         var settings = new WholesaleCardSettings();
         Assert.That(settings, Is.InstanceOf<ISettings>());
         Assert.That(settings.UnitsPerPackageSpecificationId, Is.Zero);
-        Assert.That(settings.ConsumerPriceSpecificationId, Is.Zero);
-        Assert.That(settings.ConsumerPriceCurrencyCode, Is.Empty);
+        Assert.That(settings.PackageQuantityUnitId, Is.Zero);
     }
 
     [Test]

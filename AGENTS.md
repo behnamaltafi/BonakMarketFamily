@@ -26,6 +26,14 @@ already documented.
 - **Do not add eager O(n) work to constructors.** Where work was previously deferred,
   keep it deferred; justify any new up-front cost.
 
+## Native-first capability discovery (mandatory for every feature)
+
+Before writing or changing feature code, produce a short, source-backed **Native Reuse Audit** in the PR description (or implementation notes). Read the relevant `dev-docs` and inspect the actual target branch, not just the default branch, upstream docs, file names or prior chat. Trace the existing native end-to-end implementation from admin/public controllers, components and views through services, query extensions, domain entities, settings, permissions, localization, migrations, and tests. Enumerate directories or search the checked-out tree when code search is unavailable. Search synonyms (e.g. consumer/retail/MSRP/compare price, bestseller/report/homepage, wallet/credit); inspect ERP and other modules for overlapping ownership. Do not assume a capability is absent because one search failed.
+
+For every acceptance criterion record: requirement | native symbol + source path | reuse decision (reuse, thin adapter, extend, or new) | reason for any gap | verification test. Reuse native business logic, persistence, settings, pricing, validation and lifecycle as the sole source of truth. A storefront adapter may add DTOs, strict security scopes, SQL composition and transport; it must not copy calculations, create parallel tables/settings or bypass native authorization. If a native capability differs in semantics, document the exact difference and explicitly justify the smallest extension. Do not change Core, OData, other modules, schema or CI/CD for a module-scoped task without explicit approval. If discovery is incomplete, report the gap rather than claim no native feature exists or implement a speculative duplicate.
+
+Before merge, verify the audit against the final diff, check existing settings/admin UX, build and run targeted tests including relational SQL translation and actual provider integration when queries change. Record unexecuted tests and blockers; no unverified claim of successful build or deployment. Review new public contracts for frontend compatibility, units/currency, ACL, store/customer ownership, and shared paging/filtering. See `dev-docs/framework/web-api/native-reuse-audit.md` for the reusable checklist and storefront examples.
+
 ## Architecture
 
 | Project | Responsibility |

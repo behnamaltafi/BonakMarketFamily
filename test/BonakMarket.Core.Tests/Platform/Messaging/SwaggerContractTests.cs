@@ -198,7 +198,10 @@ public class SwaggerContractTests
         foreach (var property in new[] { "availability", "minimumQuantity", "maximumQuantity", "quantityStep",
             "allowedQuantities", "quantityUnit", "requiresConfiguration", "canAddToCart", "hasDiscount", "isPreOrder" })
             Assert.That(storefront.Components.Schemas["ProductDto"].Properties.Keys, Does.Contain(property));
-        Assert.That(storefront.Components.Schemas["PriceDto"].Properties.Keys, Does.Contain("pricingQuantity"));
+        foreach (var property in new[] { "pricingQuantity", "retailPrice", "savingPercentage", "savingAmount", "savingReference", "taxInclusive" })
+            Assert.That(storefront.Components.Schemas["PriceDto"].Properties.Keys, Does.Contain(property));
+        var frequent = storefront.Paths["/api/storefront/v1/me/frequently-purchased"].Operations[OperationType.Get];
+        Assert.That(frequent.Parameters.Select(x => x.Name), Is.EquivalentTo(new[] { "page", "pageSize", "search", "categoryId", "brandId", "minPrice", "maxPrice", "inStock", "hasDiscount", "showOnHomePage", "includePrice" }).IgnoreCase);
         Assert.That(storefront.Components.Schemas["CatalogFacetsDto"].Properties.Keys, Does.Contain("priceRange"));
         Assert.That(storefront.Components.Schemas["CatalogFacetsDto"].Properties.Keys, Does.Contain("availability"));
         var products = storefront.Paths["/api/storefront/v1/products"].Operations[OperationType.Get];
@@ -211,7 +214,7 @@ public class SwaggerContractTests
             Assert.That(operation.Tags.Select(x => x.Name), Is.EqualTo(new[] { "Products" }));
         Assert.That(suggestions.Parameters.Select(x => x.Name), Is.EquivalentTo(new[] { "search", "limit" }).IgnoreCase);
         Assert.That(facets.Parameters.Select(x => x.Name), Is.EquivalentTo(
-            new[] { "search", "categoryId", "brandId", "minPrice", "maxPrice", "inStock", "hasDiscount" }).IgnoreCase);
+            new[] { "search", "categoryId", "brandId", "minPrice", "maxPrice", "inStock", "hasDiscount", "showOnHomePage" }).IgnoreCase);
         Assert.That(facets.Responses.ContainsKey("404"), Is.False);
         Assert.That(suggestions.Responses.ContainsKey("404"), Is.False);
         var quote = storefront.Paths["/api/storefront/v1/products/{id}/quote"].Operations[OperationType.Post];

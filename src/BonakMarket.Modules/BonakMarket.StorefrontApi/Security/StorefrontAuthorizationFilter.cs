@@ -12,22 +12,6 @@ using BonakMarket.StorefrontApi.Domain;
 
 namespace BonakMarket.StorefrontApi.Security;
 
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
-public sealed class StorefrontPermissionAttribute(string permission) : Attribute
-{
-    public string Permission { get; } = permission;
-}
-
-[AttributeUsage(AttributeTargets.Method)]
-public sealed class PublicCatalogAttribute : Attribute { }
-
-public sealed class StorefrontRequestContext
-{
-    public Customer Customer { get; internal set; }
-    public int StoreId { get; internal set; }
-    public bool IsGuestCart { get; internal set; }
-}
-
 public sealed class StorefrontAuthorizationFilter(
     IWorkContext work, IStoreContext stores, IPermissionService permissions,
     StorefrontRequestContext request) : IAsyncAuthorizationFilter

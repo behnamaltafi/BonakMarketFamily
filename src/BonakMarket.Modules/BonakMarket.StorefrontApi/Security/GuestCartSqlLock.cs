@@ -23,7 +23,7 @@ public sealed class GuestCartSqlLock(SmartDbContext db)
             AddParameter(cmd, resource);
             var result = Convert.ToInt32(await cmd.ExecuteScalarAsync(ct));
             if (result < 0) throw new TimeoutException("Cart lock unavailable.");
-            return new Lease(db, connection, resource);
+            return new GuestCartSqlLockLease(db, connection, resource);
         }
         catch
         {
@@ -31,25 +31,11 @@ public sealed class GuestCartSqlLock(SmartDbContext db)
             throw;
         }
     }
-    private static void AddParameter(DbCommand command, string resource)
+    internal static void AddParameter(DbCommand command, string resource)
     {
         var p = command.CreateParameter();
         p.ParameterName = "@resource";
         p.Value = resource;
         command.Parameters.Add(p);
-    }
-    private sealed class Lease(SmartDbContext db, DbConnection connection, string resource) : IAsyncDisposable
-    {
-        public async ValueTask DisposeAsync()
-        {
-            try
-            {
-                await using var cmd = connection.CreateCommand();
-                cmd.CommandText = "EXEC sys.sp_releaseapplock @Resource=@resource, @LockOwner='Session';";
-                AddParameter(cmd, resource);
-                await cmd.ExecuteNonQueryAsync(CancellationToken.None);
-            }
-            finally { await db.Database.CloseConnectionAsync(); }
-        }
     }
 }

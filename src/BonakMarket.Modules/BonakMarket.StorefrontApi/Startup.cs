@@ -49,10 +49,4 @@ internal sealed class Startup : StarterBase
         builder.Configure(StarterOrdering.BeforeWorkContextMiddleware + 1, app =>
             app.UseMiddleware<GuestCartMiddleware>());
     }
-
-    private sealed class GuestCartModelConfigurer : IDbContextConfigurationSource<SmartDbContext>
-    {
-        public void Configure(IServiceProvider services, DbContextOptionsBuilder builder) =>
-            builder.UseDbFactory(factory => factory.AddModelAssembly(typeof(GuestCartToken).Assembly));
-    }
 }

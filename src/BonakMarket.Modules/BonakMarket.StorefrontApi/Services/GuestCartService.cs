@@ -119,4 +119,3 @@ public sealed class GuestCartService(SmartDbContext db, ICustomerService custome
         return new(200, Warning: token.MergeWarning);
     }
 }
-public sealed record GuestCartMergeResult(int Status, string Code = null, IReadOnlyList<GuestCartConflictDto> Conflicts = null, string Warning = null);

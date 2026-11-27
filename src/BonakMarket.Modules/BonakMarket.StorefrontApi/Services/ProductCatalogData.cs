@@ -44,7 +44,7 @@ public sealed class ProductCatalogData(SmartDbContext db, StorefrontRequestConte
         return metadata;
     }
 
-    internal async Task<PurchaseData> LoadPurchaseDataAsync(IList<Product> products, int[] ids, int languageId, CancellationToken ct)
+    internal async Task<ProductPurchaseData> LoadPurchaseDataAsync(IList<Product> products, int[] ids, int languageId, CancellationToken ct)
     {
         var sellable = (await ProductCatalogQueries.ApplyStockFilter(db.Set<Product>().AsNoTracking().Where(x => ids.Contains(x.Id)), true)
             .Select(x => x.Id).ToListAsync(ct)).ToHashSet();
@@ -87,9 +87,4 @@ public sealed class ProductCatalogData(SmartDbContext db, StorefrontRequestConte
         var defaultEntity = units.FirstOrDefault(x => x.IsDefault);
         return (unitLookup, defaultEntity != null ? unitLookup[defaultEntity.Id] : null);
     }
-
-    internal sealed record PurchaseData(HashSet<int> Sellable,
-        Dictionary<int, (int MaxStock, bool Backorder)> CombinationCapacity,
-        Dictionary<int, (bool HasVariants, bool UnsupportedRequired)> VariantInfo,
-        Dictionary<int, QuantityUnitDto> Units, QuantityUnitDto DefaultUnit, bool CanCart);
 }

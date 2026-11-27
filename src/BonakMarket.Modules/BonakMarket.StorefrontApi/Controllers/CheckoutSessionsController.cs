@@ -371,9 +371,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
         return new(id, rejected ? "rejected" : "requiresReconciliation", null, null, null, !rejected);
     }
 
-    private sealed record ReviewResult(CheckoutDraft? Draft = null, CheckoutReviewDto? Review = null, ObjectResult? Error = null);
-
-    private async Task<ReviewResult> GetReview(Guid id, int? revision, CancellationToken ct)
+    private async Task<CheckoutReviewResult> GetReview(Guid id, int? revision, CancellationToken ct)
     {
         var draft = drafts.Read();
         if (draft == null || draft.Id != id) return new(Error: Error(404, "checkout_session_not_found"));
@@ -410,10 +408,7 @@ public sealed class CheckoutSessionsController(SmartDbContext db, StorefrontRequ
             total.Total.Value.Amount, draft.PreparedCartFingerprint, true));
     }
 
-    private sealed record LoadResult(CheckoutDraft? Draft = null, CartStateDto? Cart = null,
-        ShoppingCart? Native = null, ObjectResult? Error = null);
-
-    private async Task<LoadResult> LoadCurrent(Guid id, int? expectedRevision, CancellationToken ct)
+    private async Task<CheckoutLoadResult> LoadCurrent(Guid id, int? expectedRevision, CancellationToken ct)
     {
         var draft = drafts.Read();
         if (draft == null || draft.Id != id) return new(Error: Error(404, "checkout_session_not_found"));

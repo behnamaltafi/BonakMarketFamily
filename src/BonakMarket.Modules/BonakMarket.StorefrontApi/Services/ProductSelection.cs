@@ -23,7 +23,7 @@ internal static class ProductSelection
         return null;
     }
 
-    internal static async Task<SelectionResult> CreateAsync(Product product, List<VariantChoice> choices,
+    internal static async Task<ProductSelectionResult> CreateAsync(Product product, List<VariantChoice> choices,
         IProductAttributeMaterializer attributes)
     {
         var unsupported = UnsupportedCode(product);
@@ -58,7 +58,4 @@ internal static class ProductSelection
             product.ProductVariantAttributes, product.Id, 0, getFilesFromRequest: false);
         return warnings.Count > 0 ? new(422, "invalid_variants", Warnings: warnings.ToList()) : new(200, Selection: selection);
     }
-
-    internal sealed record SelectionResult(int Status, string Code = null,
-        ProductVariantAttributeSelection Selection = null, List<string> Warnings = null);
 }

@@ -6,13 +6,6 @@ using BonakMarket.Core.Identity;
 
 namespace BonakMarket.StorefrontApi.Security;
 
-[AttributeUsage(AttributeTargets.Method)]
-public sealed class AllowGuestCartAttribute : Attribute { }
-[AttributeUsage(AttributeTargets.Method)]
-public sealed class CreateGuestCartAttribute : Attribute { }
-[AttributeUsage(AttributeTargets.Method)]
-public sealed class MergeGuestCartAttribute : Attribute { }
-
 internal static class GuestCartPolicy
 {
     public const string Header = "X-Guest-Cart-Token";

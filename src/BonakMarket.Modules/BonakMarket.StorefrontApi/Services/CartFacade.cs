@@ -106,5 +106,3 @@ public sealed class CartFacade(SmartDbContext db, IShoppingCartService cart,
 
     public Task RemoveCouponAsync(CancellationToken ct) => adjustments.RemoveCouponAsync(ct);
 }
-
-public sealed record CartChange(int Status, string Code = null, List<string> Warnings = null, List<CartItemDto> Items = null);

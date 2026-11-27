@@ -38,7 +38,7 @@ public static class IdentitySwaggerConfiguration
             o.SwaggerDoc(DocumentName, new OpenApiInfo
             {
                 Title = DocumentTitle, Version = "v1",
-                Description = "Customer sign-in, session, profile and account security. Mobile: POST auth/mobile/sms/request then auth/mobile/sms/verify; no cookie or CSRF required. Browser: GET auth/session, retain the antiforgery cookie and headerName/requestToken for auth/sms/request and verify. Obtain a fresh CSRF token after browser sign-in."
+                Description = "Unified customer sign-in for web and mobile: POST auth/sms/request then auth/sms/verify. Use Bearer access tokens for private operations; rotate via auth/refresh or revoke via auth/logout. No authentication cookies or CSRF headers."
             });
             var previous = o.SwaggerGeneratorOptions.DocInclusionPredicate;
             o.DocInclusionPredicate((name, api) => Includes(name, api, previous));

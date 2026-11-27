@@ -1,5 +1,4 @@
 using Microsoft.OpenApi.Models;
-using BonakMarket.Net;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace BonakMarket.StorefrontApi.Swagger;
@@ -17,11 +16,6 @@ internal sealed class StorefrontDocumentFilter : IDocumentFilter
         {
             Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",
             Description = "Customer access token from SMS verification or refresh. Enter the token without the Bearer prefix."
-        };
-        document.Components.SecuritySchemes["CustomerCookie"] = new OpenApiSecurityScheme
-        {
-            Type = SecuritySchemeType.ApiKey, In = ParameterLocation.Cookie, Name = CookieNames.Identity,
-            Description = "Existing native HttpOnly browser cookie; the browser sends it automatically. Swagger UI cannot set a Cookie header. Cookie mutations require the antiforgery header returned by the Identity session endpoint."
         };
     }
 }

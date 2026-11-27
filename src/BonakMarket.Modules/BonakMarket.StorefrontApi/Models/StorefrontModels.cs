@@ -20,6 +20,10 @@ public class ProductDto
     public int QuantityStep { get; set; }
     public IReadOnlyList<int> AllowedQuantities { get; set; } = [];
     public QuantityUnitDto? QuantityUnit { get; set; }
+    public int? UnitsPerPackage { get; set; }
+    // Reference consumer price per individual unit, in the explicitly configured currency.
+    public decimal? ConsumerPrice { get; set; }
+    public string? ConsumerPriceCurrencyCode { get; set; }
     public bool RequiresConfiguration { get; set; }
     public bool CanAddToCart { get; set; }
     public bool? HasDiscount { get; set; }
@@ -111,6 +115,10 @@ public sealed record PriceDto(int ProductId, string CurrencyCode, decimal FinalP
 {
     /// <summary>Number of units used to calculate the displayed unit price.</summary>
     public int PricingQuantity { get; init; } = 1;
+    /// <summary>Actual reduction from the regular price for the same priced unit; null when no reference price exists.</summary>
+    public decimal? DiscountPercentage => RegularPrice is > 0m && FinalPrice >= 0m
+        ? Math.Round(Math.Max(0m, (1m - FinalPrice / RegularPrice.Value) * 100m), 2)
+        : null;
 }
 public sealed class AddCartItem
 {
@@ -139,7 +147,7 @@ public class PageRequest
     [Range(1, 10000)] public int Page { get; set; } = 1;
     [Range(1, 100)] public int PageSize { get; set; } = 20;
 }
-public enum CatalogSort { Initial, NameAsc, NameDesc, PriceAsc, PriceDesc, Newest }
+public enum CatalogSort { Initial, NameAsc, NameDesc, PriceAsc, PriceDesc, Newest, BestSellers }
 #nullable enable
 public sealed class ProductSearchRequest : PageRequest, IValidatableObject
 {

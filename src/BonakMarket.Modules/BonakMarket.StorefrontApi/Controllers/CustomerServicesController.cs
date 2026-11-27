@@ -8,6 +8,7 @@ using BonakMarket.Core.Security;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
+using BonakMarket.StorefrontApi.Services;
 
 namespace BonakMarket.StorefrontApi.Controllers;
 
@@ -41,6 +42,13 @@ public sealed class CustomerServicesController(SmartDbContext db, StorefrontRequ
         return Ok(new CustomerSummaryDto(cart, wishlist, orders, returns, stock, points,
             await CustomerGuildPolicy.RequiresGuildAsync(db, request.Customer, ct)));
     }
+
+    /// <summary>Products frequently purchased by the authenticated customer in this store.</summary>
+    [HttpGet("frequently-purchased")]
+    [StorefrontPermission(StorefrontPermissions.Orders)]
+    [StorefrontPermission(StorefrontPermissions.Catalog)]
+    public async Task<ActionResult<PageDto<ProductDto>>> FrequentlyPurchased([FromQuery] PageRequest page,
+        [FromServices] CatalogFacade catalog, CancellationToken ct) => Ok(await catalog.FrequentlyPurchasedAsync(page, ct));
 
     [HttpGet("reviews")]
     [StorefrontPermission(StorefrontPermissions.Reviews)]

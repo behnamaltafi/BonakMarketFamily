@@ -183,7 +183,7 @@ public class SwaggerContractTests
         Assert.That(profile.Responses["422"].Content["application/problem+json"].Schema.Properties.ContainsKey("code"), Is.True);
         foreach (var path in new[] { "/bootstrap", "/pages", "/pages/{id}", "/products/facets", "/products/suggestions", "/categories", "/categories/{id}", "/brands", "/brands/{id}" })
             Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.True);
-        foreach (var path in new[] { "/me/summary", "/me/reviews" })
+        foreach (var path in new[] { "/me/summary", "/me/reviews", "/me/frequently-purchased" })
             Assert.That(storefront.Paths["/api/storefront/v1" + path].Operations[OperationType.Get].Security.Any(s => s.Count == 0), Is.False);
         foreach (var schemaName in new[] { "CategoryDto", "BrandDto" })
         {

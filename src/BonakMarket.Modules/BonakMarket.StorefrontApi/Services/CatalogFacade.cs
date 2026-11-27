@@ -11,6 +11,7 @@ using BonakMarket.Core.Catalog.Search;
 using BonakMarket.Core.Common;
 using BonakMarket.Core.Catalog.Pricing;
 using BonakMarket.Core.Checkout.Cart;
+using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Data;
@@ -33,8 +34,26 @@ public sealed class CatalogFacade(
     public async Task<PageDto<ProductDto>> SearchAsync(ProductSearchRequest filter, CancellationToken ct, SearchSettings settings = null)
     {
         var source = await SearchSourceAsync(filter, ct, settings);
+        if (filter.Sort == CatalogSort.BestSellers)
+        {
+            var orders = CatalogPurchaseRanking.EligibleOrders(db.Set<Order>().AsNoTracking(), request.StoreId,
+                DateTime.UtcNow.AddDays(-90));
+            source = CatalogPurchaseRanking.BestSellers(source, CatalogPurchaseRanking.Items(db.Set<OrderItem>().AsNoTracking(), orders));
+        }
         var page = await source.ToPagedList(filter.Page - 1, filter.PageSize).LoadAsync(cancelToken: ct);
         var items = await MapAsync(page.ToList(), filter.IncludePrice, ct: ct);
+        return NativePaging.Map(page, items);
+    }
+
+    public async Task<PageDto<ProductDto>> FrequentlyPurchasedAsync(PageRequest filter, CancellationToken ct)
+    {
+        var orders = CatalogPurchaseRanking.EligibleOrders(StorefrontScope.Orders(db, request.Customer, request.StoreId)
+            .AsNoTracking(), request.StoreId, DateTime.UtcNow.AddDays(-365));
+        var products = StorefrontScope.Products(db, request.Customer, request.StoreId).AsNoTracking();
+        var source = CatalogPurchaseRanking.FrequentlyPurchased(products,
+            CatalogPurchaseRanking.Items(db.Set<OrderItem>().AsNoTracking(), orders));
+        var page = await source.ToPagedList(filter.Page - 1, filter.PageSize).LoadAsync(cancelToken: ct);
+        var items = await MapAsync(page.ToList(), true, ct: ct);
         return NativePaging.Map(page, items);
     }
 
@@ -203,6 +222,23 @@ public sealed class CatalogFacade(
         var brandItems = brands.Take(limit).ToArray();
         var categoryIds = categoryItems.Select(x => x.Id).ToArray();
         var brandIds = brandItems.Select(x => x.Id).ToArray();
+        var packageAttributeId = configuration?.GetValue<int>("StorefrontApi:UnitsPerPackageSpecificationId") ?? 0;
+        var consumerPriceAttributeId = configuration?.GetValue<int>("StorefrontApi:ConsumerPriceSpecificationId") ?? 0;
+        var consumerCurrency = WholesaleCardMetadata.CurrencyCode(configuration?["StorefrontApi:ConsumerPriceCurrencyCode"]);
+        // Both IDs are opt-in. Avoid ambiguous configurations and never query price metadata without display permission.
+        if (packageAttributeId == consumerPriceAttributeId) packageAttributeId = consumerPriceAttributeId = 0;
+        var attributeIds = new[] { includePurchaseInfo ? packageAttributeId : 0,
+            allowed && consumerCurrency != null ? consumerPriceAttributeId : 0 }.Where(x => x > 0).ToArray();
+        var metadata = new Dictionary<(int ProductId, int AttributeId), decimal>();
+        if (attributeIds.Length > 0)
+        {
+            var rows = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
+                .Where(x => ids.Contains(x.ProductId) && attributeIds.Contains(x.SpecificationAttributeOption.SpecificationAttributeId))
+                .Select(x => new { x.ProductId, AttributeId = x.SpecificationAttributeOption.SpecificationAttributeId,
+                    Value = x.SpecificationAttributeOption.NumberValue }).ToListAsync(ct);
+            metadata = rows.GroupBy(x => (x.ProductId, x.AttributeId)).Where(g => g.Count() == 1)
+                .ToDictionary(g => g.Key, g => g.Single().Value);
+        }
         var languageId = work.WorkingLanguage.Id;
         var translations = await db.LocalizedProperties.AsNoTracking()
             .Where(x => x.LanguageId == languageId && x.LocaleKey == "Name" &&
@@ -261,8 +297,9 @@ public sealed class CatalogFacade(
         var images = imageIds.Distinct().Where(imageUrls.ContainsKey)
             .Select(id => new ProductImageDto(id, imageUrls[id])).ToList();
 
+        var consumerPriceAttributeId = configuration?.GetValue<int>("StorefrontApi:ConsumerPriceSpecificationId") ?? 0;
         var specifications = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
-            .Where(x => x.ProductId == id &&
+            .Where(x => x.ProductId == id && x.SpecificationAttributeOption.SpecificationAttributeId != consumerPriceAttributeId &&
                 (x.ShowOnProductPage ?? x.SpecificationAttributeOption.SpecificationAttribute.ShowOnProductPage))
             .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id)
             .Select(x => new ProductSpecificationDto(x.SpecificationAttributeOption.SpecificationAttributeId,
@@ -282,6 +319,8 @@ public sealed class CatalogFacade(
             ImageUrl = summary.ImageUrl, MediaFileId = summary.MediaFileId, Price = summary.Price,
             Availability = summary.Availability, MinimumQuantity = summary.MinimumQuantity, MaximumQuantity = summary.MaximumQuantity,
             QuantityStep = summary.QuantityStep, AllowedQuantities = summary.AllowedQuantities, QuantityUnit = summary.QuantityUnit,
+            UnitsPerPackage = summary.UnitsPerPackage, ConsumerPrice = summary.ConsumerPrice,
+            ConsumerPriceCurrencyCode = summary.ConsumerPriceCurrencyCode,
             RequiresConfiguration = summary.RequiresConfiguration, CanAddToCart = summary.CanAddToCart, HasDiscount = summary.HasDiscount,
             FullDescriptionHtml = product.FullDescription, ProductTypeId = product.ProductTypeId,
             Images = images, Specifications = specifications,
@@ -443,6 +482,7 @@ public sealed class CatalogFacade(
                 item.AllowedQuantities = quantities.Allowed;
                 item.QuantityUnit = product.QuantityUnitId is int unitId && unitLookup.TryGetValue(unitId, out var unit)
                     ? unit : defaultUnit;
+                item.UnitsPerPackage = WholesaleCardMetadata.PackageSize(metadata.GetValueOrDefault((product.Id, packageAttributeId)));
                 item.RequiresConfiguration = variant.HasVariants || !supported;
                 var capacity = combinationCapacity.GetValueOrDefault(product.Id);
                 var minimumAvailable = product.ManageInventoryMethod switch
@@ -459,6 +499,12 @@ public sealed class CatalogFacade(
             if (allowed && !product.CallForPrice && !product.CustomerEntersPrice &&
                 item.MinimumQuantity > 0 && item.MinimumQuantity <= item.MaximumQuantity)
                 item.Price = await Price(product, item.MinimumQuantity, options);
+            if (item.Price != null && consumerCurrency != null &&
+                WholesaleCardMetadata.ConsumerPrice(metadata.GetValueOrDefault((product.Id, consumerPriceAttributeId))) is decimal consumerPrice)
+            {
+                item.ConsumerPrice = consumerPrice;
+                item.ConsumerPriceCurrencyCode = consumerCurrency;
+            }
             items.Add(item);
         }
         return items;

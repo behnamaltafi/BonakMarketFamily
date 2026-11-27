@@ -12,6 +12,8 @@ using BonakMarket.Core.Common;
 using BonakMarket.Core.Catalog.Pricing;
 using BonakMarket.Core.Checkout.Cart;
 using BonakMarket.Core.Checkout.Orders;
+using BonakMarket.Core.Configuration;
+using BonakMarket.StorefrontApi.Configuration;
 using BonakMarket.Core.Identity;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Data;
@@ -27,8 +29,12 @@ public sealed class CatalogFacade(
     SmartDbContext db, ICatalogSearchService search, IPriceCalculationService prices,
     IMediaService media, IPermissionService permissions, IWorkContext work,
     IStoreContext stores, IComponentContext components, CatalogSettings catalogSettings, StorefrontRequestContext request,
-    IProductAttributeMaterializer attributes, IShoppingCartValidator validator, IConfiguration configuration = null)
+    IProductAttributeMaterializer attributes, IShoppingCartValidator validator, IConfiguration configuration = null, ISettingFactory settingFactory = null)
 {
+    private Task<WholesaleCardSettings> LoadWholesaleSettingsAsync() => settingFactory == null
+        ? Task.FromResult(new WholesaleCardSettings())
+        : settingFactory.LoadSettingsAsync<WholesaleCardSettings>(0);
+
     public Task<bool> CanDisplayPriceAsync() => permissions.AuthorizeAsync(Permissions.Catalog.DisplayPrice, request.Customer);
 
     public async Task<PageDto<ProductDto>> SearchAsync(ProductSearchRequest filter, CancellationToken ct, SearchSettings settings = null)
@@ -222,23 +228,6 @@ public sealed class CatalogFacade(
         var brandItems = brands.Take(limit).ToArray();
         var categoryIds = categoryItems.Select(x => x.Id).ToArray();
         var brandIds = brandItems.Select(x => x.Id).ToArray();
-        var packageAttributeId = configuration?.GetValue<int>("StorefrontApi:UnitsPerPackageSpecificationId") ?? 0;
-        var consumerPriceAttributeId = configuration?.GetValue<int>("StorefrontApi:ConsumerPriceSpecificationId") ?? 0;
-        var consumerCurrency = WholesaleCardMetadata.CurrencyCode(configuration?["StorefrontApi:ConsumerPriceCurrencyCode"]);
-        // Both IDs are opt-in. Avoid ambiguous configurations and never query price metadata without display permission.
-        if (packageAttributeId == consumerPriceAttributeId) packageAttributeId = consumerPriceAttributeId = 0;
-        var attributeIds = new[] { includePurchaseInfo ? packageAttributeId : 0,
-            allowed && consumerCurrency != null ? consumerPriceAttributeId : 0 }.Where(x => x > 0).ToArray();
-        var metadata = new Dictionary<(int ProductId, int AttributeId), decimal>();
-        if (attributeIds.Length > 0)
-        {
-            var rows = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
-                .Where(x => ids.Contains(x.ProductId) && attributeIds.Contains(x.SpecificationAttributeOption.SpecificationAttributeId))
-                .Select(x => new { x.ProductId, AttributeId = x.SpecificationAttributeOption.SpecificationAttributeId,
-                    Value = x.SpecificationAttributeOption.NumberValue }).ToListAsync(ct);
-            metadata = rows.GroupBy(x => (x.ProductId, x.AttributeId)).Where(g => g.Count() == 1)
-                .ToDictionary(g => g.Key, g => g.Single().Value);
-        }
         var languageId = work.WorkingLanguage.Id;
         var translations = await db.LocalizedProperties.AsNoTracking()
             .Where(x => x.LanguageId == languageId && x.LocaleKey == "Name" &&
@@ -289,7 +278,8 @@ public sealed class CatalogFacade(
             .AsSplitQuery().FirstOrDefaultAsync(x => x.Id == id, ct);
         if (product == null) return null;
 
-        var summary = (await MapAsync(new[] { product }, true, false, ct: ct))[0];
+        var wholesaleSettings = await LoadWholesaleSettingsAsync();
+        var summary = (await MapAsync(new[] { product }, true, false, ct: ct, wholesaleSettings: wholesaleSettings))[0];
         var imageIds = await db.Set<ProductMediaFile>().AsNoTracking()
             .Where(x => x.ProductId == id && !x.MediaFile.Deleted && !x.MediaFile.Hidden && !x.MediaFile.IsTransient)
             .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).Select(x => x.MediaFileId).ToListAsync(ct);
@@ -297,7 +287,7 @@ public sealed class CatalogFacade(
         var images = imageIds.Distinct().Where(imageUrls.ContainsKey)
             .Select(id => new ProductImageDto(id, imageUrls[id])).ToList();
 
-        var consumerPriceAttributeId = configuration?.GetValue<int>("StorefrontApi:ConsumerPriceSpecificationId") ?? 0;
+        var consumerPriceAttributeId = wholesaleSettings.ConsumerPriceSpecificationId;
         var specifications = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
             .Where(x => x.ProductId == id && x.SpecificationAttributeOption.SpecificationAttributeId != consumerPriceAttributeId &&
                 (x.ShowOnProductPage ?? x.SpecificationAttributeOption.SpecificationAttribute.ShowOnProductPage))
@@ -383,7 +373,8 @@ public sealed class CatalogFacade(
     }
 
     private async Task<List<ProductDto>> MapAsync(IList<Product> products, bool includePrice, bool forListing = true, bool includeImages = true,
-        int imageSize = 400, CancellationToken ct = default, bool includePurchaseInfo = true)
+        int imageSize = 400, CancellationToken ct = default, bool includePurchaseInfo = true,
+        WholesaleCardSettings wholesaleSettings = null)
     {
         if (products.Count == 0) return new List<ProductDto>();
         var priceAllowed = (includePrice || includePurchaseInfo) && await CanDisplayPriceAsync();
@@ -392,6 +383,24 @@ public sealed class CatalogFacade(
             new ProductBatchContext(products, db, components, stores.CurrentStore, request.Customer,
                 includeHidden: false, loadMainMediaOnly: true)) : null;
         var ids = products.Select(x => x.Id).ToArray();
+        wholesaleSettings ??= includePurchaseInfo || allowed ? await LoadWholesaleSettingsAsync() : new WholesaleCardSettings();
+        var packageAttributeId = wholesaleSettings.UnitsPerPackageSpecificationId;
+        var consumerPriceAttributeId = wholesaleSettings.ConsumerPriceSpecificationId;
+        var consumerCurrency = WholesaleCardMetadata.CurrencyCode(wholesaleSettings.ConsumerPriceCurrencyCode);
+        // Both IDs are opt-in. Avoid ambiguous configurations and never query price metadata without display permission.
+        if (packageAttributeId == consumerPriceAttributeId) packageAttributeId = consumerPriceAttributeId = 0;
+        var attributeIds = new[] { includePurchaseInfo ? packageAttributeId : 0,
+            allowed && consumerCurrency != null ? consumerPriceAttributeId : 0 }.Where(x => x > 0).ToArray();
+        var metadata = new Dictionary<(int ProductId, int AttributeId), decimal>();
+        if (attributeIds.Length > 0)
+        {
+            var rows = await db.Set<ProductSpecificationAttribute>().AsNoTracking()
+                .Where(x => ids.Contains(x.ProductId) && attributeIds.Contains(x.SpecificationAttributeOption.SpecificationAttributeId))
+                .Select(x => new { x.ProductId, AttributeId = x.SpecificationAttributeOption.SpecificationAttributeId,
+                    Value = x.SpecificationAttributeOption.NumberValue }).ToListAsync(ct);
+            metadata = rows.GroupBy(x => (x.ProductId, x.AttributeId)).Where(g => g.Count() == 1)
+                .ToDictionary(g => g.Key, g => g.Single().Value);
+        }
         var languageId = work.WorkingLanguage.Id;
         var translations = await db.LocalizedProperties.AsNoTracking()
             .Where(x => ids.Contains(x.EntityId) && x.LanguageId == languageId &&

@@ -2,10 +2,12 @@ using BonakMarket.Core.Configuration;
 
 namespace BonakMarket.StorefrontApi.Configuration;
 
-/// <summary>Global mapping of native product specifications to wholesale display metadata.</summary>
+/// <summary>Global mapping of native packaging specifications and sellable package unit.</summary>
 public sealed class WholesaleCardSettings : ISettings
 {
+    /// <summary>Numeric product specification holding the number of individual items per package.</summary>
     public int UnitsPerPackageSpecificationId { get; set; }
-    public int ConsumerPriceSpecificationId { get; set; }
-    public string ConsumerPriceCurrencyCode { get; set; } = string.Empty;
+
+    /// <summary>Native quantity unit that explicitly represents a package. Zero disables per-item derivation.</summary>
+    public int PackageQuantityUnitId { get; set; }
 }

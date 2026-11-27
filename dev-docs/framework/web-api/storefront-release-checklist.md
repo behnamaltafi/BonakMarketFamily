@@ -1,5 +1,5 @@
 # Storefront release checklist
-Branch feature/storefront-api. Source review is not a successful build or a production approval.
+Branch feature/customer-api-jwt-only. Source review is not a successful build or a production approval.
 Keep StorefrontApi:EnableOfflineCheckout false until SQL Server and native browser concurrency tests pass.
 
 ## Automated validation
@@ -12,7 +12,7 @@ On Windows use win-x64. Use SQL Server staging for provider-specific queries and
 in-memory/SQLite contract tests are not substitutes.
 
 ## Required end-to-end release checks
-- Build entire solution, Swagger route/security tests, native web login, legacy CSRF, token-only mobile OTP, refresh/logout.
+- Build entire solution, Swagger route/security tests, native web login, MVC address and phone-change CSRF, unified token-only OTP, refresh/logout (including expired access with current refresh credential).
 - Customer/store isolation and inactive/deleted customer; no price leaks to roles without DisplayPrice.
 - Product details/variant validation/quote, facets and SQL query translation, localized CMS ACL/password/widget exclusions.
 - Active/inactive cart, bundle/required product behavior, price rounding, coupon/gift/reward calculations, cart revision,
@@ -25,5 +25,6 @@ in-memory/SQLite contract tests are not substitutes.
   simultaneous native MVC checkout/cart mutation, rollback and mail/event failure. Keep disabled on failure.
 - Online payment: no headless provider integration is shipped. A chosen provider must be audited for idempotency,
   redirect/callback validation, authoritative verification and recovery before enabling. PDF remains native browser-only.
+- Customer API: no cookie fallback; Cookie-only private returns 401, public resolves guest; invalid JWT plus cookie returns 401; valid JWT overrides a different cookie; preflight allows only configured origins, never credentials; inspect removed legacy routes and external clients before release.
 - OData integration regression: authorization scheme and Swagger paths unchanged.
 - Confirm Jenkins build/deploy pipeline remains unmodified; deploy only after approval.

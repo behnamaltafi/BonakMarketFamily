@@ -25,7 +25,7 @@ Under /api/identity/v1/me/addresses:
 - PUT {id}/default: choose default (200).
 - DELETE {id}: unlink from customer (204), preserving historical orders and shared records.
 
-Use the settings response to render firstName, lastName, phoneNumber, stateProvinceId, city, address1, address2, zipPostalCode, company, salutation, title, faxNumber and isDefault. Country and email are server-assigned. The first valid address becomes default; deletion selects the oldest remaining valid candidate or clears the default. A shared/historical address cannot be edited in place (409); create a replacement instead. Non-owned ids return 404. The legacy /api/sms-login/profile/addresses endpoint still returns an array.
+Use the settings response to render firstName, lastName, phoneNumber, stateProvinceId, city, address1, address2, zipPostalCode, company, salutation, title, faxNumber and isDefault. Country and email are server-assigned. The first valid address becomes default; deletion selects the oldest remaining valid candidate or clears the default. A shared/historical address cannot be edited in place (409); create a replacement instead. Non-owned ids return 404.
 
 ## Change verified phone
 Under /api/identity/v1/me/security/phone:
@@ -35,7 +35,7 @@ Under /api/identity/v1/me/security/phone:
 4. POST verify: submit phone, code and reauthToken. The proof and code are consumed once; username changes with the verified number, old mobile sessions are revoked, and the customer must log in again.
 For initial enrollment of an unbound authenticated account, the old-phone proof is not required.
 
-Use the Identity Swagger document for actual request/response DTOs. Cookie-authenticated mutations require antiforgery protection; bearer clients authenticate with their access token over HTTPS.
+Use the Identity Swagger document for actual request/response DTOs. The customer API requires Bearer access tokens over HTTPS; MVC address and phone widgets use separate same-origin cookie + antiforgery endpoints.
 
 ## Verification
 Build BonakMarket.sln and run CustomerOnboardingContractTests, SmsApiControllerTests, StorefrontContractTests and SwaggerContractTests. Test the MVC onboarding page, admin guild creation/deactivation, first/default/removed addresses, cross-customer access, checkout with and without active guild, and phone change with old-cookie/refresh-token replay on a staging database before production deployment.

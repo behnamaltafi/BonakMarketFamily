@@ -188,6 +188,31 @@ public class SmsApiControllerTests
         Assert.That(await controller.Logout(null, default), Is.TypeOf<UnauthorizedObjectResult>());
     }
 
+    [Test]
+    public async Task Logout_with_bearer_revokes_only_verified_api_session()
+    {
+        var customer = RegisteredCustomer();
+        var work = new Mock<IWorkContext>();
+        work.SetupGet(x => x.CurrentCustomer).Returns(customer);
+        using var services = new ServiceCollection().AddSingleton(work.Object).BuildServiceProvider();
+        var http = new DefaultHttpContext { RequestServices = services };
+        http.Request.Scheme = "https";
+        http.Request.Headers.Authorization = "Bearer access";
+        http.Items[typeof(IMobileApiTokenService)] = customer;
+        var tokens = new Mock<IMobileApiTokenService>();
+        tokens.Setup(x => x.RevokeAsync("access", It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        var revoker = new Mock<ICustomerSessionRevoker>(MockBehavior.Strict);
+        var controller = new AuthApiController(tokens.Object, revoker.Object)
+        {
+            ControllerContext = new ControllerContext { HttpContext = http }
+        };
+        Assert.That(await controller.Logout(null, default), Is.TypeOf<NoContentResult>());
+        Assert.That(await controller.Logout(new CustomerLogoutRequest { RefreshToken = "other" }, default),
+            Is.TypeOf<BadRequestObjectResult>());
+        tokens.Verify(x => x.RevokeAsync("access", It.IsAny<CancellationToken>()), Times.Once);
+        Assert.That(http.Response.Headers.ContainsKey("Set-Cookie"), Is.False);
+    }
+
     [TestCase(false, false, false, 401)]
     [TestCase(true, false, false, 403)]
     [TestCase(true, true, false, 403)]

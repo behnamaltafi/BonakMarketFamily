@@ -22,6 +22,13 @@ using BonakMarket.Identity.Controllers;
 using BonakMarket.Identity.Security;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.Abstractions;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.Routing;
+using BonakMarket.Core;
+using BonakMarket.Core.Security;
+using BonakMarket.Core.Stores;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 
@@ -204,6 +211,52 @@ public class StorefrontContractTests
             return Task.CompletedTask;
         }).InvokeAsync(http);
         Assert.That(called, Is.True);
+    }
+
+    [TestCase(false, false, 401)]
+    [TestCase(false, true, 200)]
+    [TestCase(true, false, 200)]
+    [TestCase(true, true, 200)]
+    public async Task StorefrontAuthorizationRequiresVerifiedBearerForPrivateActions(bool bearer, bool publicAction, int status)
+    {
+        var customer = new Customer { Id = 123, Active = true };
+        customer.CustomerRoleMappings.Add(new CustomerRoleMapping
+        {
+            CustomerRole = new CustomerRole { Active = true, SystemName = bearer ? SystemCustomerRoleNames.Registered : SystemCustomerRoleNames.Guests }
+        });
+        var work = new Mock<IWorkContext>();
+        work.SetupGet(x => x.CurrentCustomer).Returns(customer);
+        var stores = new Mock<IStoreContext>();
+        stores.SetupGet(x => x.CurrentStore).Returns(new Store { Id = 1 });
+        var permissions = new Mock<IPermissionService>();
+        permissions.Setup(x => x.AuthorizeAsync(It.IsAny<string>(), customer, false)).ReturnsAsync(true);
+        var request = new StorefrontRequestContext();
+        var http = new DefaultHttpContext();
+        http.Request.Scheme = "https";
+        // A cookie principal alone is not evidence of authenticated API identity.
+        http.User = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.NameIdentifier, "7") }, "cookie"));
+        if (bearer)
+        {
+            http.Request.Headers.Authorization = "Bearer verified";
+            http.Items[typeof(IMobileApiTokenService)] = customer;
+        }
+        var type = publicAction ? typeof(CatalogController) : typeof(CartController);
+        var method = publicAction ? type.GetMethod(nameof(CatalogController.Search)) : type.GetMethods()
+            .First(x => x.IsDefined(typeof(HttpGetAttribute), true));
+        var action = new ControllerActionDescriptor { ControllerTypeInfo = type.GetTypeInfo(), MethodInfo = method };
+        var filterContext = new AuthorizationFilterContext(new ActionContext(http, new RouteData(), action), new List<IFilterMetadata>());
+        await new StorefrontAuthorizationFilter(work.Object, stores.Object, permissions.Object, request).OnAuthorizationAsync(filterContext);
+        if (status == 200)
+        {
+            Assert.That(filterContext.Result, Is.Null);
+            Assert.That(request.Customer, Is.SameAs(customer));
+            Assert.That(request.StoreId, Is.EqualTo(1));
+        }
+        else
+        {
+            Assert.That(((ObjectResult)filterContext.Result).StatusCode, Is.EqualTo(status));
+            Assert.That(request.Customer, Is.Null);
+        }
     }
 
     private sealed class TestAuthenticationFeature : IAuthenticateResultFeature

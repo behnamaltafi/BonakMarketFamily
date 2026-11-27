@@ -26,13 +26,36 @@ already documented.
 - **Do not add eager O(n) work to constructors.** Where work was previously deferred,
   keep it deferred; justify any new up-front cost.
 
-## Native-first capability discovery (mandatory for every feature)
+## Native-first capability discovery (mandatory for every feature and refactoring)
 
-Before writing or changing feature code, produce a short, source-backed **Native Reuse Audit** in the PR description (or implementation notes). Read the relevant `dev-docs` and inspect the actual target branch, not just the default branch, upstream docs, file names or prior chat. Trace the existing native end-to-end implementation from admin/public controllers, components and views through services, query extensions, domain entities, settings, permissions, localization, migrations, and tests. Enumerate directories or search the checked-out tree when code search is unavailable. Search synonyms (e.g. consumer/retail/MSRP/compare price, bestseller/report/homepage, wallet/credit); inspect ERP and other modules for overlapping ownership. Do not assume a capability is absent because one search failed.
+Before writing or changing feature code or refactoring an existing implementation, produce a short, source-backed **Native Reuse Audit** in the PR description (or implementation notes). Read the relevant `dev-docs` and inspect the actual target branch, not just the default branch, upstream docs, file names or prior chat. Trace the existing native end-to-end implementation from admin/public controllers, components and views through services, query extensions, domain entities, settings, permissions, localization, migrations, and tests. Enumerate directories or search the checked-out tree when code search is unavailable. Search synonyms (e.g. consumer/retail/MSRP/compare price, bestseller/report/homepage, wallet/credit); inspect ERP and other modules for overlapping ownership. Do not assume a capability is absent because one search failed.
 
 For every acceptance criterion record: requirement | native symbol + source path | reuse decision (reuse, thin adapter, extend, or new) | reason for any gap | verification test. Reuse native business logic, persistence, settings, pricing, validation and lifecycle as the sole source of truth. A storefront adapter may add DTOs, strict security scopes, SQL composition and transport; it must not copy calculations, create parallel tables/settings or bypass native authorization. If a native capability differs in semantics, document the exact difference and explicitly justify the smallest extension. Do not change Core, OData, other modules, schema or CI/CD for a module-scoped task without explicit approval. If discovery is incomplete, report the gap rather than claim no native feature exists or implement a speculative duplicate.
 
 Before merge, verify the audit against the final diff, check existing settings/admin UX, build and run targeted tests including relational SQL translation and actual provider integration when queries change. Record unexecuted tests and blockers; no unverified claim of successful build or deployment. Review new public contracts for frontend compatibility, units/currency, ACL, store/customer ownership, and shared paging/filtering. See `dev-docs/framework/web-api/native-reuse-audit.md` for the reusable checklist and storefront examples.
+
+## Simplicity and maintainability (mandatory)
+
+- Prefer KISS and YAGNI: the simplest correct, readable solution that meets today's requirements wins. Apply SOLID and DRY pragmatically, not as targets for class count, method length, or layer count.
+- Follow this decision order: discover existing capabilities, reuse the native implementation directly, use a thin adapter if required, extend an existing capability if justified, and create new functionality only when a documented gap remains. Verify the decision with build and tests.
+- Keep a single authoritative implementation for each business rule, calculation, validation, lifecycle, permission and setting. Remove duplicate behavior rather than introducing a second engine or a parallel source of truth.
+- Do not introduce interfaces by default. Create an interface only for a real substitution/extension boundary, provider contract or demonstrable testing need. Do not introduce repositories over EF Core, pass-through wrappers, factories, mediators, generic result abstractions, CQRS or extra layers merely for architectural appearance.
+- Keep controllers, services and queries cohesive. A facade is acceptable when it simplifies callers or coordinates operations; a class that only forwards parameters to a single implementation usually is not. Do not split a class solely because of its line count. Keep related logic together as private methods when that is clearer.
+- Inspect actual call sites, DI registrations, reflection/module discovery and tests before removing dead code or unused dependencies. Delete confirmed unused internal code; do not remove a published API or extension point without approval.
+- Keep module-specific changes inside the requested module, reuse existing framework DI and avoid service locators and unnecessary indirection. Do not change another module or shared infrastructure just to make a local implementation look cleaner.
+
+## Compatibility and change approval
+
+- Preserve HTTP routes, methods, authentication, authorization, status codes, request/response names and types, defaults, validation limits, pagination metadata and observable behavior during refactoring. Check actual contracts and existing consumers; a source-file move is not permission to change semantics.
+- Explicit owner approval is required before changing public API contracts or observable behavior, Core/OData or another module for a module-scoped task, database schema outside the requested scope, CI/CD or infrastructure configuration, or introducing a new framework, dependency or architectural pattern.
+- Do not simplify away tenant/store/customer ownership, ACL, input validation, concurrency control, transaction boundaries, idempotency, rate limits, secure defaults or error handling. Where native behavior is less restrictive or has different semantics, retain the necessary adapter policy and explain why.
+
+## Shared query, settings and performance rules
+
+- Use the existing native paging infrastructure (`IPagedList<T>` / `ToPagedList`) and the module's existing paging adapter; do not hand-roll count/skip/take/total-page calculations for paginated endpoints. Preserve page numbering, bounds and stable tie-breaking. Project and paginate in the database; map only the selected page.
+- Reuse existing query extensions and native filtering/sorting/search capabilities when their semantics match the requirement. Explicitly verify default filters, zero/empty input behavior, visibility, ordering and SQL translation before replacing a stricter query. Keep list/find visibility consistent for customer-facing data.
+- Reuse native settings and their existing admin UI, localization, validation and persistence. Business settings belong in the established settings system, not duplicate appsettings keys or tables. Infrastructure/secrets may use the established configuration mechanism.
+- Avoid N+1 queries, eager loading unrelated graphs, in-memory filtering/paging of large result sets and duplicate per-item calculations. Use native batch APIs or narrow set-based projections where direct native calls would create N+1 queries; justify semantic differences.
 
 ## Architecture
 
@@ -92,6 +115,12 @@ that matter most:
 - PascalCase for types and non-field members, interfaces prefixed with `I`.
 - Acronyms of two or more letters are fully capitalized, following BCL precedent
   (`IPAddress`, `HTTP`, `XML`) — not `IpAddress`.
+
+### One type per file
+
+- Every handwritten C# source file must contain one declared type at most: class, interface, record, struct, enum, delegate or attribute, including nested/private/internal types. Place each type in its own file and name the file after the type (without generic arity). Use a descriptive, non-colliding name for extracted internal types.
+- Preserve namespaces, accessibility, attributes, nullable context and public contracts when moving declarations. Partial types may span files following the existing naming convention; each partial file still contains only its own type. Keep timestamp-based migration filenames and generated/compiler-owned source conventions intact. Do not edit generated output.
+- Check changed files and the affected module for multiple declarations using syntax-aware tooling when available. Do not create additional services or abstractions merely to satisfy file separation.
 
 ### Line endings
 
@@ -208,6 +237,17 @@ Building the solution detects every module in `src/BonakMarket.Modules/`, compil
 and copies the result into `src/BonakMarket.Web/Modules/` — the directory the runtime
 loads modules from. It is build output: irrelevant during development, safe to delete at
 any time, and **never** a place to edit files.
+
+### Definition of done (every change)
+
+Before marking a task complete, review the final diff and record evidence for each applicable check:
+
+- Native Reuse Audit completed against the actual target branch; no parallel business logic or unnecessary abstraction introduced.
+- Code is readable, cohesive and consistent with existing conventions; one type per file; confirmed dead code and unused dependencies removed.
+- API contracts, settings behavior, ownership/authorization, security and concurrency preserved; no out-of-scope change.
+- Shared paging/filtering, localization and native settings reused; SQL translation and performance checked where relevant.
+- Build the affected project(s) and run relevant regression tests, including integration tests when behavior depends on an actual provider. State exact results and skipped/unexecuted checks and blockers; never claim an unverified pass. Do not merge or deploy unverified changes.
+- Document intentional exceptions and required owner approvals in the PR or implementation notes. Do not create duplicate agent-rule files: maintain repository-wide engineering rules here in `AGENTS.md`; existing more-specific instructions must not contradict these requirements.
 
 ### Nuke
 

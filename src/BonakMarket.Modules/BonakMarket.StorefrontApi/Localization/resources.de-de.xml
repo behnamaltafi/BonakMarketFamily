@@ -1,0 +1,14 @@
+<Language Name="German" IsDefault="false" IsRightToLeft="false">
+  <LocaleResource Name="Plugins.StorefrontApi.WholesaleCardTitle" AppendRootKey="false"><Value>Großhandels-Produktkarte</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.WholesaleCardIntro" AppendRootKey="false"><Value>Globale Einstellungen. Vorhandene Produktmerkmale, Mengeneinheiten und native Preise verwenden.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.UnitsPerPackageSpecificationId" AppendRootKey="false"><Value>Einheiten pro Packung</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.UnitsPerPackageSpecificationId.Hint" AppendRootKey="false"><Value>Ein Merkmal mit einem positiven ganzzahligen NumberValue je Produkt auswählen.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.PackageQuantityUnitId" AppendRootKey="false"><Value>Verkaufseinheit Packung</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.PackageQuantityUnitId.Hint" AppendRootKey="false"><Value>Der Referenzpreis je Stück wird nur bei passender Verkaufseinheit und bekannter Packungsgröße berechnet.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.NativePriceHelp" AppendRootKey="false"><Value>Vergleichspreis und Einzelhandelspreis-Label im nativen Produkteditor setzen. Kein separater Preis und keine separate Währung.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Disabled" AppendRootKey="false"><Value>Deaktiviert</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Unavailable" AppendRootKey="false"><Value>Merkmal oder Einheit nicht verfügbar</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.InvalidSpecification" AppendRootKey="false"><Value>Ein vorhandenes Produktmerkmal auswählen.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.InvalidQuantityUnit" AppendRootKey="false"><Value>Eine vorhandene Mengeneinheit auswählen.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.PackageSpecificationRequired" AppendRootKey="false"><Value>Vor Aktivierung der Packungseinheit das Packungsmerkmal auswählen.</Value></LocaleResource>
+</Language>

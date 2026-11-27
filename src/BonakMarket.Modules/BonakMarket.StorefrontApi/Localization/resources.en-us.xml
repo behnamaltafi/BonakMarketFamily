@@ -2,4 +2,16 @@
   <LocaleResource Name="Plugins.Permissions.DisplayName.Storefront" AppendRootKey="false"><Value>Storefront API</Value></LocaleResource>
   <LocaleResource Name="Plugins.FriendlyName.BonakMarket.StorefrontApi" AppendRootKey="false"><Value>Storefront API</Value></LocaleResource>
   <LocaleResource Name="Plugins.Permissions.DisplayName.Storefront.GuestCart" AppendRootKey="false"><Value>Guest shopping cart</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.WholesaleCardTitle" AppendRootKey="false"><Value>Wholesale product card</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.WholesaleCardIntro" AppendRootKey="false"><Value>Global settings. Reuse existing product specifications, quantity units and native pricing.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.UnitsPerPackageSpecificationId" AppendRootKey="false"><Value>Units per package</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.UnitsPerPackageSpecificationId.Hint" AppendRootKey="false"><Value>Select a specification with one positive whole NumberValue per product.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.PackageQuantityUnitId" AppendRootKey="false"><Value>Package sale unit</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Fields.PackageQuantityUnitId.Hint" AppendRootKey="false"><Value>Per-item reference price is derived only when the actual product sale unit matches this unit and the package size is known.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.NativePriceHelp" AppendRootKey="false"><Value>Set Compare Price and a retail price label in the native product editor. No independent consumer price or currency is stored.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Disabled" AppendRootKey="false"><Value>Disabled</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.Unavailable" AppendRootKey="false"><Value>Unavailable specification or unit</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.InvalidSpecification" AppendRootKey="false"><Value>Select an existing product specification.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.InvalidQuantityUnit" AppendRootKey="false"><Value>Select an existing quantity unit.</Value></LocaleResource>
+  <LocaleResource Name="Plugins.StorefrontApi.PackageSpecificationRequired" AppendRootKey="false"><Value>Select the package-size specification before enabling the package sale unit.</Value></LocaleResource>
 </Language>

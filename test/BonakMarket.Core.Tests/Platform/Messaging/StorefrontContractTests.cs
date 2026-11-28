@@ -136,6 +136,77 @@ public class StorefrontContractTests
         Assert.That(result.Failure.Extensions["warnings"], Is.EqualTo(new[] { "native warning" }));
     }
 
+    [TestCase(200)]
+    [TestCase(201)]
+    public void RefactoredSuccessRetainsHttpStatusAndUnwrappedResponse(int status)
+    {
+        var controller = new CheckoutSessionsController(null);
+        var respond = typeof(StorefrontController).GetMethod("Respond", BindingFlags.Instance | BindingFlags.NonPublic)
+            .MakeGenericMethod(typeof(string));
+        var result = (ActionResult<string>)respond.Invoke(controller,
+            new object[] { new StorefrontResult<string>("payload"), status });
+
+        Assert.That(result.Result, Is.InstanceOf<ObjectResult>());
+        var response = (ObjectResult)result.Result;
+        Assert.That(response.StatusCode, Is.EqualTo(status));
+        Assert.That(response.Value, Is.EqualTo("payload"));
+    }
+
+    [Test]
+    public void CheckoutStructuredFailureRetainsOriginal422ProblemDetails()
+    {
+        var controller = new CheckoutSessionsController(null);
+        var failure = new StorefrontFailure(422, "checkout_not_ready",
+            new Dictionary<string, object> { ["blockers"] = new[] { "cart_empty" }, ["warnings"] = new[] { "warning" } });
+        var respond = typeof(StorefrontController).GetMethod("FailureResponse", BindingFlags.Instance | BindingFlags.NonPublic);
+        var result = (ObjectResult)respond.Invoke(controller, new object[] { failure });
+
+        Assert.That(result, Is.InstanceOf<UnprocessableEntityObjectResult>());
+        Assert.That(result.StatusCode, Is.EqualTo(422));
+        var problem = (ProblemDetails)result.Value;
+        Assert.That(problem.Status, Is.EqualTo(422));
+        Assert.That(problem.Title, Is.EqualTo("checkout_not_ready"));
+        Assert.That(problem.Extensions["blockers"], Is.EqualTo(new[] { "cart_empty" }));
+        Assert.That(problem.Extensions["warnings"], Is.EqualTo(new[] { "warning" }));
+    }
+
+    [Test]
+    public void SuccessfulNoContentOperationRetains204()
+    {
+        var controller = new CheckoutSessionsController(null);
+        var respond = typeof(StorefrontController).GetMethod("RespondNoContent", BindingFlags.Instance | BindingFlags.NonPublic);
+        var result = (IActionResult)respond.Invoke(controller, new object[] { new StorefrontResult<bool>(true) });
+
+        Assert.That(result, Is.InstanceOf<NoContentResult>());
+        Assert.That(((NoContentResult)result).StatusCode, Is.EqualTo(204));
+    }
+
+    [TestCase(0)]
+    [TestCase(-1)]
+    public async Task ReturnServiceRejectsInvalidQuantityBeforeDatabaseAccess(int quantity)
+    {
+        var service = new ReturnStorefrontService(null, null, null, null, null, null);
+        var request = new ReturnRequest { Items = [new ReturnQuantity { OrderItemId = 1, Quantity = quantity }] };
+        var result = await service.CreateAsync(1, request, CancellationToken.None);
+
+        Assert.That(result.Failure.Status, Is.EqualTo(400));
+        Assert.That(result.Failure.Code, Is.EqualTo("invalid_return_items"));
+    }
+
+    [Test]
+    public async Task ReturnServiceRejectsDuplicateItemsBeforeDatabaseAccess()
+    {
+        var service = new ReturnStorefrontService(null, null, null, null, null, null);
+        var request = new ReturnRequest
+        {
+            Items = [new ReturnQuantity { OrderItemId = 1, Quantity = 1 }, new ReturnQuantity { OrderItemId = 1, Quantity = 2 }]
+        };
+        var result = await service.CreateAsync(1, request, CancellationToken.None);
+
+        Assert.That(result.Failure.Status, Is.EqualTo(400));
+        Assert.That(result.Failure.Code, Is.EqualTo("invalid_return_items"));
+    }
+
     [Test]
     public void InvalidPriceRangeAndSortAreRejected()
     {

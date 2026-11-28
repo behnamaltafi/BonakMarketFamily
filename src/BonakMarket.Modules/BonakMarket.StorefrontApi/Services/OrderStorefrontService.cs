@@ -8,11 +8,9 @@ using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-
 public sealed class OrderStorefrontService(OrderQueries orders, IOrderProcessingService processing, ISettingFactory settings,
     StorefrontRequestContext request, IPaymentService payments, IPermissionService permissions)
 {
-
     public Task<PageDto<OrderDto>> ListAsync(OrderSearchRequest filter, CancellationToken ct) =>
         orders.ListAsync(filter, ct);
 
@@ -35,7 +33,6 @@ public sealed class OrderStorefrontService(OrderQueries orders, IOrderProcessing
     }
 
     /// <summary>Read-only native order/payment status. This endpoint never verifies or captures a gateway payment.</summary>
-
     public async Task<StorefrontResult<OrderPaymentStatusDto>> PaymentStatusAsync(int id, CancellationToken ct)
     {
         var order = await orders.FindOwnedAsync(id, ct);
@@ -54,11 +51,6 @@ public sealed class OrderStorefrontService(OrderQueries orders, IOrderProcessing
         if (order == null) return new StorefrontFailure(404, "order_not_found");
         return new(await payments.CanRePostProcessPaymentAsync(order));
     }
-
-
-
-
-
 
     public async Task<StorefrontResult<bool>> ReOrderAsync(int id, CancellationToken ct)
     {

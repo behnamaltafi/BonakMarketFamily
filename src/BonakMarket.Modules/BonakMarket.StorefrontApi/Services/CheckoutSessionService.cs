@@ -26,10 +26,6 @@ namespace BonakMarket.StorefrontApi.Services;
 
 /// <summary>Customer/store-scoped checkout preparation and opt-in native offline confirmation.</summary>
 
-
-
-
-
 public sealed class CheckoutSessionService(SmartDbContext db, StorefrontRequestContext request,
     CartFacade cartFacade, IShoppingCartService carts, IShippingService shipping, IConfiguration configuration,
     IOrderCalculationService calculations, IOrderProcessingService processing, IStoreContext stores,
@@ -43,7 +39,6 @@ public sealed class CheckoutSessionService(SmartDbContext db, StorefrontRequestC
     private Task<ShoppingCart> NativeCart() => carts.GetCartAsync(request.Customer, ShoppingCartType.ShoppingCart, request.StoreId);
 
     /// <summary>Creates or resumes the single current draft for this customer/store.</summary>
-
     public async Task<StorefrontResult<CheckoutSessionDto>> StartAsync(Func<string> checkoutUrl, CancellationToken ct)
     {
         await using var handle = await drafts.Lock().AcquireAsync(TimeSpan.FromSeconds(10), ct);
@@ -180,7 +175,6 @@ public sealed class CheckoutSessionService(SmartDbContext db, StorefrontRequestC
 
     // Explicitly copies a draft into native checkout data; separated from the fresh-request quote
     // because native calculation services cache address/payment dependent data within a request.
-
     public async Task<StorefrontResult<CheckoutReviewPreparedDto>> PrepareReviewAsync(Guid id, PrepareCheckoutReviewRequest input, CancellationToken ct)
     {
         if (!OfflineEnabled) return new StorefrontFailure(409, "native_checkout_disabled");
@@ -241,7 +235,6 @@ public sealed class CheckoutSessionService(SmartDbContext db, StorefrontRequestC
 
     // The order GUID is the draft GUID. Durable reservation is written before invoking Native placement.
     // No automated retry after any ambiguous result, even if the client disconnects.
-
     public async Task<StorefrontResult<CheckoutConfirmationDto>> ConfirmAsync(Guid id, ConfirmCheckoutRequest input,
         string key, CancellationToken ct)
     {

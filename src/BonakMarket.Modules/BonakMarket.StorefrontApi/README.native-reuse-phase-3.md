@@ -13,4 +13,4 @@ Baseline: 477173ef71d5ffcedfdfe5119aca2a3dd79a5231. Phase 1 remains intact. No p
 
 The result type represents application failure; controller maps it to the existing Problem() or explicit UnprocessableEntity(ProblemDetails) and success status. All six controller routes, verbs, action signatures, request binding, permission and response attributes are retained. The checkout logger category changes to the service type; no business effect is intended. DI is scoped. No change to DTOs or database.
 
-Verification: static source transformation and attribute/signature comparison; DI and result contract tests added. Build, actual HTTP/Swagger regression, integration tests, and coverage must run before merge.
+Verification: static source transformation and attribute/signature comparison; DI, actual MVC success/structured error mapping and invalid-return request regression cases added. Download MIME validation remains before committing its allowance. Build, actual HTTP/Swagger regression, integration tests, and coverage must run before merge.

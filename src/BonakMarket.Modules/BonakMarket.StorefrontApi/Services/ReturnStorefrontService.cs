@@ -10,8 +10,6 @@ using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-
-
 public sealed class ReturnStorefrontService(SmartDbContext db, StorefrontRequestContext request, IOrderProcessingService processing,
     OrderSettings settings, LocalizationSettings localization, IMessageFactory messages)
 {

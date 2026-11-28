@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Net.Http.Headers;
 using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Content.Media;
 using BonakMarket.Core.Data;
@@ -7,8 +8,6 @@ using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Services;
-
-
 
 public sealed class DownloadStorefrontService(SmartDbContext db, StorefrontRequestContext request,
     IDownloadService downloads)
@@ -36,7 +35,6 @@ public sealed class DownloadStorefrontService(SmartDbContext db, StorefrontReque
     }
 
     // POST because a download consumes a native download allowance.
-
     public async Task<StorefrontResult<DownloadPayload>> FileDownloadAsync(Guid id, bool agree, string version, CancellationToken ct)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
@@ -83,6 +81,9 @@ public sealed class DownloadStorefrontService(SmartDbContext db, StorefrontReque
         var stream = await downloads.OpenDownloadStreamAsync(file);
         if (stream == null) return null;
         if (stream.CanSeek && stream.Length == 0) { await stream.DisposeAsync(); return null; }
-        return new DownloadPayload(Stream: stream, MimeType: file.MediaFile.MimeType, FileName: file.MediaFile.Name);
+        // FileStreamResult used to validate the MIME type before the download allowance was committed.
+        // Keep validation on this side of the transaction even though MVC constructs the result later.
+        var contentType = MediaTypeHeaderValue.Parse(file.MediaFile.MimeType).ToString();
+        return new DownloadPayload(Stream: stream, MimeType: contentType, FileName: file.MediaFile.Name);
     }
 }

@@ -16,8 +16,6 @@ using BonakMarket.Utilities.Html;
 
 namespace BonakMarket.StorefrontApi.Services;
 
-
-
 public sealed class ReviewStorefrontService(SmartDbContext db, StorefrontRequestContext request, CatalogSettings settings,
     PrivacySettings privacy, IProductService products, ICustomerService customers, IWebHelper web,
     IActivityLogger activity, IMessageFactory messages, LocalizationSettings localization)
@@ -33,10 +31,6 @@ public sealed class ReviewStorefrontService(SmartDbContext db, StorefrontRequest
             .Select(x => new CustomerReviewDto(x.Id, x.Title, x.ReviewText, x.Rating, x.HelpfulYesTotal,
                 x.HelpfulNoTotal, x.CreatedOnUtc, x.CustomerId == request.Customer.Id)).PageAsync(page, ct));
     }
-
-
-
-
 
     public async Task<StorefrontResult<ReviewResultDto>> CreateAsync(int productId, ReviewRequest input, CancellationToken ct)
     {

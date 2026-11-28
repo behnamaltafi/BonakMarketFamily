@@ -10,10 +10,10 @@ namespace BonakMarket.Identity.Controllers;
 public sealed class LocationController(CustomerAddressService addresses) : ControllerBase
 {
     [HttpGet("provinces"), AllowAnonymous]
-    public async Task<ActionResult<IReadOnlyList<AddressLocation>>> Provinces(CancellationToken ct)
-        => Ok(await addresses.ProvincesAsync(ct));
+    public async Task<ActionResult<LocationPage<AddressLocation>>> Provinces([FromQuery] LocationListRequest request, CancellationToken ct)
+        => Ok(await addresses.ProvincesAsync(request, ct));
 
-    [HttpGet("provinces/{id:int}/cities"), AllowAnonymous]
-    public async Task<ActionResult<IReadOnlyList<CityLocation>>> Cities(int id, CancellationToken ct)
-        => Ok(await addresses.CitiesAsync(id, ct));
+    [HttpGet("provinces/{provinceId:int}/cities"), AllowAnonymous]
+    public async Task<ActionResult<LocationPage<CityLocation>>> Cities(int provinceId, [FromQuery] LocationListRequest request, CancellationToken ct)
+        => Ok(await addresses.CitiesAsync(provinceId, request, ct));
 }

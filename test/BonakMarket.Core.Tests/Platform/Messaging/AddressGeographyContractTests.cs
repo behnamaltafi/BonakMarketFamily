@@ -43,7 +43,7 @@ public class AddressGeographyContractTests
     }
 
     [TestCase(nameof(LocationController.Provinces), "provinces")]
-    [TestCase(nameof(LocationController.Cities), "provinces/{id:int}/cities")]
+    [TestCase(nameof(LocationController.Cities), "provinces/{provinceId:int}/cities")]
     public void Location_routes_are_public(string method, string route)
     {
         var action = typeof(LocationController).GetMethod(method);

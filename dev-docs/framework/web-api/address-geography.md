@@ -15,3 +15,12 @@ No map vendor or province polygon dependency. Public locations only return publi
 Validation gate: build and run tests against installed SQL Server for migration/seed, scoped city lists, CRUD and snapshot isolation; no runtime success is implied by source changes.
 
 The MVC account form uses the same public city options and preserves legacy text for unchanged old addresses. Native admin address forms display stored coordinates read-only. City deletion and parent deletion are blocked when referenced.
+
+## Public location list contract
+
+The existing routes now return a page object instead of an array:
+
+- `GET /api/identity/v1/locations/provinces?page=1&pageSize=20&search=...&id=...`
+- `GET /api/identity/v1/locations/provinces/{provinceId}/cities?page=1&pageSize=20&search=...&id=...`
+
+Page is one-based (1–10000), page size is 1–100 (default 20), search is optional (maximum 200 characters), and id is an optional exact positive location ID. On the cities route it means the city ID; provinceId remains the mandatory parent scope. Search matches the name with Persian/Arabic character and whitespace normalization. Only published Iranian locations are selectable; a province still needs at least one published city. Sorting is display order, name, then ID. Filtering and paging run in SQL using the native paged list. The response has items, page, pageSize, totalCount, totalPages, hasNextPage, and hasPreviousPage. Address settings still return the complete province array, and the MVC city selector reads all pages to preserve selection behavior.

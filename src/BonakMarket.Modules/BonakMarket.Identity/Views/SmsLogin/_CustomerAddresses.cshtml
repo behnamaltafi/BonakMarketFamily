@@ -80,9 +80,15 @@
             const revision=++sequence, province=provinceSelect.value;
             citySelect.replaceChildren();const empty=el("option","انتخاب کنید");empty.value="";citySelect.append(empty);
             if(!province)return;
-            const response=await fetch(root.dataset.locationBase+"/provinces/"+encodeURIComponent(province)+"/cities",{credentials:"same-origin"});
-            if(!response.ok)throw Error("Unable to load cities");
-            const cities=await response.json();if(revision!==sequence)return;
+            const cities=[];
+            let cityPage=1, hasNextPage;
+            do{
+                const response=await fetch(root.dataset.locationBase+"/provinces/"+encodeURIComponent(province)+"/cities?page="+cityPage+"&pageSize=100",{credentials:"same-origin"});
+                if(!response.ok)throw Error("Unable to load cities");
+                const result=await response.json();if(revision!==sequence)return;
+                cities.push(...result.items);
+                hasNextPage=result.hasNextPage;cityPage++;
+            }while(hasNextPage);
             for(const c of cities){const option=el("option",c.name);option.value=c.id;citySelect.append(option);}
             if(initial){
                 const found=cities.find(c=>c.id===a?.cityId||c.name===a?.city);

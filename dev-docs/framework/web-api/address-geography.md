@@ -13,3 +13,5 @@
 No map vendor or province polygon dependency. Public locations only return published Iranian data. Existing address text and IDs remain intact. Coordinate omission preserves existing data and explicit null pair clears it. The backend only checks coordinate shape/range, not location membership.
 
 Validation gate: build and run tests against installed SQL Server for migration/seed, scoped city lists, CRUD and snapshot isolation; no runtime success is implied by source changes.
+
+The MVC account form uses the same public city options and preserves legacy text for unchanged old addresses. Native admin address forms display stored coordinates read-only. City deletion and parent deletion are blocked when referenced.

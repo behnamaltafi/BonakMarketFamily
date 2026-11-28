@@ -513,7 +513,7 @@ public class CountryController : AdminController
             return NotFound();
         name = name?.Trim();
         await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
-        if (string.IsNullOrEmpty(name) || name.Length > 100 || displayOrder < 0 ||
+        if (!ModelState.IsValid || id < 0 || string.IsNullOrEmpty(name) || name.Length > 100 || displayOrder < 0 ||
             await _db.Cities.AnyAsync(c => c.StateProvinceId == provinceId && c.Id != id && c.Name == name, ct))
         {
             NotifyError(T("Admin.Configuration.Countries.Cities.Invalid"));

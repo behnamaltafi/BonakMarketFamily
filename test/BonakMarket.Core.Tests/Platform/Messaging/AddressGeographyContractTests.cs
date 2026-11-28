@@ -5,6 +5,7 @@ using NUnit.Framework;
 using BonakMarket.Identity.Controllers;
 using BonakMarket.Identity.Models;
 using BonakMarket.StorefrontApi.Models;
+using BonakMarket.Core.Common;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 
@@ -20,6 +21,16 @@ public class AddressGeographyContractTests
         Assert.That(omitted.LongitudeSpecified, Is.False);
         Assert.That(cleared.LatitudeSpecified, Is.True);
         Assert.That(cleared.LongitudeSpecified, Is.True);
+    }
+
+    [Test]
+    public void Different_coordinates_are_not_equal_for_native_address_matching()
+    {
+        var first = new Address { City = "Tehran", CityId = 1, Latitude = 35.7m, Longitude = 51.3m };
+        var second = (Address)first.Clone();
+        Assert.That(first.Equals(second), Is.True);
+        second.Latitude = 35.8m;
+        Assert.That(first.Equals(second), Is.False);
     }
 
     [TestCase(typeof(CustomerAddressDto))]

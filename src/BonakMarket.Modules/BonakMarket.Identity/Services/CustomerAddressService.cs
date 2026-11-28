@@ -28,7 +28,7 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
         ["company"] = new(settings.CompanyEnabled, settings.CompanyEnabled && settings.CompanyRequired),
         ["faxNumber"] = new(settings.FaxEnabled, settings.FaxEnabled && settings.FaxRequired),
         ["stateProvinceId"] = new(true, true),
-        ["city"] = new(true, true),
+        ["city"] = new(true, false),
         ["cityId"] = new(true, true),
         ["latitude"] = new(true, false),
         ["longitude"] = new(true, false),

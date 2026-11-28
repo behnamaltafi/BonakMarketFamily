@@ -29,5 +29,5 @@ Identity owns /docs/identity and /docs/identity/identity/swagger.json. /docs/cus
 
 - Anonymous GET /api/identity/v1/locations/provinces returns published Iranian provinces with published cities.
 - Anonymous GET /api/identity/v1/locations/provinces/{id}/cities returns published cities belonging to that province.
-- Address POST/PUT accepts cityId (legacy city name resolves within the selected province), latitude and longitude. Country remains server-selected Iran. Coordinates are optional: omit both on PUT to preserve, send both null to clear, or send both numbers to set. Only pair/range checks apply; no geographic boundary validation. Existing addresses remain readable.
+- Address POST/PUT accepts cityId (legacy city name resolves within the selected province), latitude and longitude. Country remains server-selected Iran. Coordinates are optional: omit both on PUT to preserve, send both null to clear, or send both numbers to set. Only pair/range checks apply; no geographic boundary validation. Existing addresses remain readable. For a new form send cityId rather than city; the city string remains an optional legacy input and an output snapshot.
 - List/detail and order address snapshots return cityId, latitude and longitude. No geocoding or map provider dependency.

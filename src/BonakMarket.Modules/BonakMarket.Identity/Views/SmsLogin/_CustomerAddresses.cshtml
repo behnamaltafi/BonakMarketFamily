@@ -68,6 +68,9 @@
                 const opt=el("option","انتخاب کنید");opt.value="";input.append(opt);
                 for(const item of name==="stateProvinceId"?configuration.provinces:configuration.salutations){const o=el("option",typeof item==="string"?item:item.name);o.value=typeof item==="string"?item:item.id;input.append(o);}
             }
+            if(name==="stateProvinceId" && a?.stateProvinceId && !configuration.provinces.some(p=>p.id===a.stateProvinceId)){
+                const old=el("option",a.stateProvinceName||String(a.stateProvinceId));old.value=a.stateProvinceId;input.append(old);
+            }
             input.value=a?.[name]??(name==="firstName"?document.querySelector("[name=FirstName]")?.value:name==="lastName"?document.querySelector("[name=LastName]")?.value:name==="phoneNumber"?root.dataset.phone:"")??"";
             wrap.append(input);fields.append(wrap);
         }
@@ -81,7 +84,13 @@
             if(!response.ok)throw Error("Unable to load cities");
             const cities=await response.json();if(revision!==sequence)return;
             for(const c of cities){const option=el("option",c.name);option.value=c.id;citySelect.append(option);}
-            if(initial){const found=cities.find(c=>c.id===a?.cityId||c.name===a?.city);citySelect.value=found?.id??"";}
+            if(initial){
+                const found=cities.find(c=>c.id===a?.cityId||c.name===a?.city);
+                if(found)citySelect.value=found.id;
+                else if(a?.city && !a.cityId){
+                    const legacy=el("option",a.city);legacy.value="legacy";citySelect.append(legacy);citySelect.value="legacy";
+                }
+            }
         }
         provinceSelect.onchange=()=>loadCities(false).catch(e=>message(e.message,false));
         await loadCities(true);
@@ -95,6 +104,7 @@
             const input={};
             for(const x of fields.querySelectorAll("[data-field]")){
                 if(!x.reportValidity())return;
+                if(x.dataset.field==="cityId" && x.value==="legacy"){input.cityId=null;input.city=current.city;continue;}
                 input[x.dataset.field]=x.type==="checkbox"?x.checked:["stateProvinceId","cityId"].includes(x.dataset.field)?Number(x.value)||null:x.value||null;
             }
             await call(current?"/"+current.id:"",current?"PUT":"POST",input);

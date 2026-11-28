@@ -88,7 +88,7 @@ public sealed class OrderQueries(SmartDbContext db, StorefrontRequestContext req
     private static OrderAddressDto MapAddress(Address address) => address == null ? null :
         new(address.Id, address.FirstName, address.LastName, address.Company, address.Country?.Name,
             address.StateProvince?.Name, address.City, address.Address1, address.Address2,
-            address.ZipPostalCode, address.PhoneNumber, address.Email);
+            address.ZipPostalCode, address.PhoneNumber, address.Email, address.CityId, address.Latitude, address.Longitude);
 
     private async Task<Dictionary<int, OrderProductPreviewDto>> CurrentProductsAsync(IEnumerable<int> productIds, CancellationToken ct)
     {

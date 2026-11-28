@@ -23,6 +23,9 @@ public class AddressTests
             StateProvinceId = 4,
             StateProvince = new StateProvince() { Id = 4, Name = "LA" },
             City = "City 1",
+            CityId = 7,
+            Latitude = 35.721900m,
+            Longitude = 51.334700m,
             Address1 = "Address1",
             Address2 = "Address2",
             ZipPostalCode = "ZipPostalCode 1",
@@ -39,6 +42,9 @@ public class AddressTests
         newAddress.Email.ShouldEqual("Email 1");
         newAddress.Company.ShouldEqual("Company 1");
         newAddress.City.ShouldEqual("City 1");
+        Assert.That(newAddress.CityId, Is.EqualTo(7));
+        Assert.That(newAddress.Latitude, Is.EqualTo(35.721900m));
+        Assert.That(newAddress.Longitude, Is.EqualTo(51.334700m));
         newAddress.Address1.ShouldEqual("Address1");
         newAddress.Address2.ShouldEqual("Address2");
         newAddress.ZipPostalCode.ShouldEqual("ZipPostalCode 1");

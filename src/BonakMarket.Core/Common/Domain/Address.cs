@@ -19,6 +19,10 @@ internal class AddressMap : IEntityTypeConfiguration<Address>
         builder.HasOne(a => a.StateProvince)
             .WithMany()
             .HasForeignKey(a => a.StateProvinceId);
+
+        builder.HasOne<City>().WithMany().HasForeignKey(a => a.CityId).OnDelete(DeleteBehavior.Restrict);
+        builder.Property(a => a.Latitude).HasPrecision(9, 6);
+        builder.Property(a => a.Longitude).HasPrecision(9, 6);
     }
 }
 
@@ -75,6 +79,15 @@ public partial class Address : EntityWithAttributes, ICloneable, IEquatable<Addr
     /// </summary>
     [StringLength(100)]
     public string City { get; set; }
+
+    /// <summary>Selected city, when available for this address.</summary>
+    public int? CityId { get; set; }
+
+    /// <summary>Optional customer-selected latitude.</summary>
+    public decimal? Latitude { get; set; }
+
+    /// <summary>Optional customer-selected longitude.</summary>
+    public decimal? Longitude { get; set; }
 
     /// <summary>
     /// Gets or sets the address 1
@@ -154,6 +167,9 @@ public partial class Address : EntityWithAttributes, ICloneable, IEquatable<Addr
             StateProvince = this.StateProvince,
             StateProvinceId = this.StateProvinceId,
             City = this.City,
+            CityId = this.CityId,
+            Latitude = this.Latitude,
+            Longitude = this.Longitude,
             Address1 = this.Address1,
             Address2 = this.Address2,
             ZipPostalCode = this.ZipPostalCode,
@@ -209,6 +225,7 @@ public partial class Address : EntityWithAttributes, ICloneable, IEquatable<Addr
                Address2.EqualsNoCase(other.Address2) &&
                ZipPostalCode.EqualsNoCase(other.ZipPostalCode) &&
                City.EqualsNoCase(other.City) &&
+               CityId == other.CityId && Latitude == other.Latitude && Longitude == other.Longitude &&
                StateProvinceId == other.StateProvinceId &&
                CountryId == other.CountryId;
     }
@@ -226,6 +243,9 @@ public partial class Address : EntityWithAttributes, ICloneable, IEquatable<Addr
             .Add(Address2)
             .Add(ZipPostalCode)
             .Add(City)
+            .Add(CityId)
+            .Add(Latitude)
+            .Add(Longitude)
             .Add(StateProvinceId)
             .Add(CountryId);
 

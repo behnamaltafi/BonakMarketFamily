@@ -149,7 +149,21 @@ internal class AddressMapper :
         Guard.NotNull(from);
         Guard.NotNull(to);
 
+        // Native forms do not edit the customer-selected coordinates.
+        var latitude = to.Latitude;
+        var longitude = to.Longitude;
+        var previousCity = to.City;
+        var previousProvince = to.StateProvinceId;
+        var previousCountry = to.CountryId;
         MiniMapper.Map(from, to);
+        to.Latitude = latitude;
+        to.Longitude = longitude;
+        if (previousCity != to.City || previousProvince != to.StateProvinceId || previousCountry != to.CountryId)
+        {
+            to.CityId = null;
+            to.Latitude = null;
+            to.Longitude = null;
+        }
 
         var customer = parameters?.Customer as Customer;
         var applyDefaultAddresses = parameters?.ApplyDefaultAddresses == true;

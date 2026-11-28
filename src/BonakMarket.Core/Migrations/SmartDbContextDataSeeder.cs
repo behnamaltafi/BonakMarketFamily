@@ -108,6 +108,13 @@ public class SmartDbContextDataSeeder : IDataSeeder<SmartDbContext>
 
     public void MigrateLocaleResources(LocaleResourcesBuilder builder)
     {
+        builder.AddOrUpdate("Admin.Configuration.Countries.Cities", "Cities", "Städte");
+        builder.AddOrUpdate("Admin.Configuration.Countries.Cities.Name", "City name", "Stadtname");
+        builder.AddOrUpdate("Admin.Configuration.Countries.Cities.Invalid", "Enter a unique city name and a valid display order.", "Geben Sie einen eindeutigen Stadtnamen und eine gültige Reihenfolge ein.");
+        builder.AddOrUpdate("Admin.Configuration.Countries.Cities.InUse", "The city is in use. Unpublish it instead.", "Die Stadt wird verwendet. Deaktivieren Sie sie stattdessen.");
+        builder.AddOrUpdate("Admin.Configuration.Countries.Cities.ProvinceInUse", "The province is associated with cities or addresses.", "Der Bundesstaat ist mit Städten oder Adressen verknüpft.");
+        builder.AddOrUpdate("Admin.Address.Coordinates", "Coordinates", "Koordinaten");
+
         MigrateThemeResources(builder);
         MigrateDashboardResources(builder);
         MigrateSettingsResources(builder);

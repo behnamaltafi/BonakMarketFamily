@@ -170,7 +170,8 @@ public class CountryController : AdminController
         }
 
         // Don't delete associated countries.
-        if (!await _db.Addresses.Where(x => x.CountryId == id).AnyAsync())
+        if (!await _db.Addresses.AnyAsync(x => x.CountryId == id) &&
+            !await _db.Cities.AnyAsync(x => x.StateProvince.CountryId == id))
         {
             _db.Countries.Remove(country);
             await _db.SaveChangesAsync();
@@ -200,7 +201,8 @@ public class CountryController : AdminController
 
             foreach (var country in countries)
             {
-                if (await _db.Addresses.Where(x => x.CountryId == country.Id).AnyAsync())
+                if (await _db.Addresses.AnyAsync(x => x.CountryId == country.Id) ||
+                    await _db.Cities.AnyAsync(x => x.StateProvince.CountryId == country.Id))
                 {
                     triedToDeleteAssociated = true;
                     NotifyError(T("Admin.Configuration.Countries.CannotDeleteDueToAssociatedAddresses"));
@@ -466,13 +468,85 @@ public class CountryController : AdminController
         {
             var stateProvinces = await _db.StateProvinces.GetManyAsync(ids, true);
 
-            _db.StateProvinces.RemoveRange(stateProvinces);
+            foreach (var province in stateProvinces)
+            {
+                if (await _db.Cities.AnyAsync(c => c.StateProvinceId == province.Id) ||
+                    await _db.Addresses.AnyAsync(a => a.StateProvinceId == province.Id))
+                {
+                    NotifyError(T("Admin.Configuration.Countries.Cities.ProvinceInUse"));
+                    continue;
+                }
+                _db.StateProvinces.Remove(province);
+            }
 
             numDeleted = await _db.SaveChangesAsync();
-            success = true;
+            success = numDeleted > 0;
         }
 
         return Json(new { Success = success, Count = numDeleted });
+    }
+
+    [HttpGet, Permission(Permissions.Configuration.Country.Read)]
+    public async Task<IActionResult> Cities(int countryId, int? provinceId, CancellationToken ct)
+    {
+        var country = await _db.Countries.AsNoTracking().SingleOrDefaultAsync(x => x.Id == countryId, ct);
+        if (country == null) return NotFound();
+        var provinces = await _db.StateProvinces.AsNoTracking().Where(x => x.CountryId == countryId)
+            .OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name).ToListAsync(ct);
+        var province = provinceId.HasValue ? provinces.FirstOrDefault(x => x.Id == provinceId) : provinces.FirstOrDefault();
+        if (provinceId.HasValue && province == null) return NotFound();
+        ViewBag.CountryId = countryId;
+        ViewBag.CountryName = country.Name;
+        ViewBag.Provinces = provinces;
+        ViewBag.ProvinceId = province?.Id;
+        ViewBag.CanUpdate = await Services.Permissions.AuthorizeAsync(Permissions.Configuration.Country.Update);
+        var cities = province == null ? new List<City>() : await _db.Cities.AsNoTracking()
+            .Where(x => x.StateProvinceId == province.Id).OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name).ToListAsync(ct);
+        return View(cities);
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Permission(Permissions.Configuration.Country.Update)]
+    public async Task<IActionResult> CitySave(int countryId, int provinceId, int id, string name, bool published,
+        int displayOrder, CancellationToken ct)
+    {
+        if (!await _db.StateProvinces.AnyAsync(p => p.Id == provinceId && p.CountryId == countryId, ct))
+            return NotFound();
+        name = name?.Trim();
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        if (!ModelState.IsValid || id < 0 || string.IsNullOrEmpty(name) || name.Length > 100 || displayOrder < 0 ||
+            await _db.Cities.AnyAsync(c => c.StateProvinceId == provinceId && c.Id != id && c.Name == name, ct))
+        {
+            NotifyError(T("Admin.Configuration.Countries.Cities.Invalid"));
+            return RedirectToAction(nameof(Cities), new { countryId, provinceId });
+        }
+        var city = id == 0 ? new City { StateProvinceId = provinceId } :
+            await _db.Cities.SingleOrDefaultAsync(c => c.Id == id && c.StateProvinceId == provinceId, ct);
+        if (city == null) return NotFound();
+        city.Name = name;
+        city.Published = published;
+        city.DisplayOrder = displayOrder;
+        if (id == 0) _db.Cities.Add(city);
+        await _db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return RedirectToAction(nameof(Cities), new { countryId, provinceId });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken, Permission(Permissions.Configuration.Country.Update)]
+    public async Task<IActionResult> CityDelete(int countryId, int provinceId, int id, CancellationToken ct)
+    {
+        await using var transaction = await _db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
+        var city = await _db.Cities.SingleOrDefaultAsync(c => c.Id == id && c.StateProvinceId == provinceId &&
+            c.StateProvince.CountryId == countryId, ct);
+        if (city == null) return NotFound();
+        if (await _db.Addresses.IgnoreQueryFilters().AnyAsync(a => a.CityId == id, ct))
+            NotifyError(T("Admin.Configuration.Countries.Cities.InUse"));
+        else
+        {
+            _db.Cities.Remove(city);
+            await _db.SaveChangesAsync(ct);
+        }
+        await transaction.CommitAsync(ct);
+        return RedirectToAction(nameof(Cities), new { countryId, provinceId });
     }
 
     /// <summary>

@@ -27,20 +27,42 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
         ["title"] = new(settings.TitleEnabled, false),
         ["company"] = new(settings.CompanyEnabled, settings.CompanyEnabled && settings.CompanyRequired),
         ["faxNumber"] = new(settings.FaxEnabled, settings.FaxEnabled && settings.FaxRequired),
-        ["stateProvinceId"] = new(settings.StateProvinceEnabled, settings.StateProvinceEnabled && settings.StateProvinceRequired),
-        ["city"] = new(settings.CityEnabled, settings.CityEnabled && settings.CityRequired),
+        ["stateProvinceId"] = new(true, true),
+        ["city"] = new(true, false),
+        ["cityId"] = new(true, true),
+        ["latitude"] = new(true, false),
+        ["longitude"] = new(true, false),
         ["address1"] = new(settings.StreetAddressEnabled, settings.StreetAddressEnabled && settings.StreetAddressRequired),
         ["address2"] = new(settings.StreetAddress2Enabled, settings.StreetAddress2Enabled && settings.StreetAddress2Required),
         ["zipPostalCode"] = new(settings.ZipPostalCodeEnabled, settings.ZipPostalCodeEnabled && settings.ZipPostalCodeRequired)
     };
 
+    public async Task<IReadOnlyList<AddressLocation>> ProvincesAsync(CancellationToken ct)
+    {
+        var country = await IranAsync(ct);
+        if (country == null) return Array.Empty<AddressLocation>();
+        return await db.StateProvinces.AsNoTracking().Where(p => p.CountryId == country.Id && p.Published &&
+            db.Cities.Any(c => c.StateProvinceId == p.Id && c.Published))
+            .OrderBy(p => p.DisplayOrder).ThenBy(p => p.Name)
+            .Select(p => new AddressLocation(p.Id, p.Name)).ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<CityLocation>> CitiesAsync(int provinceId, CancellationToken ct)
+    {
+        var country = await IranAsync(ct);
+        if (country == null) return Array.Empty<CityLocation>();
+        return await db.Cities.AsNoTracking().Where(c => c.StateProvinceId == provinceId && c.Published &&
+            c.StateProvince.Published && c.StateProvince.CountryId == country.Id)
+            .OrderBy(c => c.DisplayOrder).ThenBy(c => c.Name)
+            .Select(c => new CityLocation(c.Id, c.Name, c.StateProvinceId)).ToListAsync(ct);
+    }
+
     public async Task<CustomerAddressSettings> GetSettingsAsync(CancellationToken ct)
     {
         var country = await IranAsync(ct);
         if (country == null) return null;
-        var provinces = await db.StateProvinces.AsNoTracking().Where(p => p.CountryId == country.Id && p.Published)
-            .OrderBy(p => p.DisplayOrder).ThenBy(p => p.Name).ToListAsync(ct);
-        return new(new(country.Id, country.Name), Fields(), provinces.Select(p => new AddressLocation(p.Id, p.Name)).ToList(),
+        var provinces = await ProvincesAsync(ct);
+        return new(new(country.Id, country.Name), Fields(), provinces,
             (settings.Salutations ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
     }
 
@@ -98,20 +120,47 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
         var title = Read("title", input.Title);
         var salutation = Read("salutation", input.Salutation);
         var fax = Read("faxNumber", input.FaxNumber);
-        var city = Read("city", input.City);
+        var city = input.City?.Trim();
         var address1 = Read("address1", input.Address1);
         var address2 = Read("address2", input.Address2);
         var zip = Read("zipPostalCode", input.ZipPostalCode);
-        var province = settings.StateProvinceEnabled && input.StateProvinceId > 0 ? input.StateProvinceId : null;
-        if (fields["stateProvinceId"].Required && province == null) errors["stateProvinceId"] = ["required"];
+        var province = input.StateProvinceId > 0 ? input.StateProvinceId : null;
+        if (province == null) errors["stateProvinceId"] = ["required"];
         if (province.HasValue && !await db.StateProvinces.AnyAsync(p => p.Id == province && p.CountryId == country.Id && p.Published, ct))
             errors["stateProvinceId"] = ["invalid_province"];
+
+        // Legacy clients can submit the existing city name; resolve it to the same city record.
+        var cityId = input.CityId ?? (id.HasValue && row.StateProvinceId == province &&
+            (string.IsNullOrEmpty(city) || city == row.City) ? row.CityId : null);
+        var available = db.Cities.Where(c => c.StateProvinceId == province && c.Published);
+        var selectedCity = cityId.HasValue
+            ? await available.SingleOrDefaultAsync(c => c.Id == cityId.Value, ct)
+            : await available.FirstOrDefaultAsync(c => c.Name == city ||
+                (city == "Tehran" && c.Name == "تهران") || (city == "تهران" && c.Name == "Tehran"), ct);
+        // Preserve historical unclassified addresses when their city/province were not changed.
+        var unchangedLegacy = id.HasValue && !input.CityId.HasValue && row.CityId == null &&
+            row.StateProvinceId == province && !string.IsNullOrEmpty(city) && city == row.City;
+        if (selectedCity == null && !unchangedLegacy) errors["cityId"] = ["invalid_city"];
+
+        var latitude = row.Latitude;
+        var longitude = row.Longitude;
+        if (input.LatitudeSpecified || input.LongitudeSpecified)
+        {
+            if (!input.LatitudeSpecified || !input.LongitudeSpecified ||
+                input.Latitude.HasValue != input.Longitude.HasValue ||
+                input.Latitude is < -90 or > 90 || input.Longitude is < -180 or > 180)
+                errors["location"] = ["invalid_coordinates"];
+            latitude = input.Latitude;
+            longitude = input.Longitude;
+        }
         if (errors.Count != 0) return (null, errors, 422);
         var makeDefault = input.IsDefault || !await Owned(customer).AnyAsync(ct);
         if (makeDefault && (!country.AllowsBilling || !country.AllowsShipping))
             return (null, Error("isDefault", "country_not_allowed"), 422);
         row.FirstName = first; row.LastName = last; row.PhoneNumber = phone;
-        row.CountryId = country.Id; row.StateProvinceId = province; row.City = city;
+        row.CountryId = country.Id; row.StateProvinceId = province;
+        row.CityId = selectedCity?.Id; row.City = selectedCity?.Name ?? city;
+        row.Latitude = latitude; row.Longitude = longitude;
         row.Address1 = address1; row.Address2 = address2; row.ZipPostalCode = zip;
         row.Salutation = salutation; row.Title = title; row.Company = company; row.FaxNumber = fax;
         row.Email = customer.Email; // Internal placeholder stays internal; never returned by the address API.
@@ -174,5 +223,6 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
     private static CustomerAddressDto Map(Customer c, Address a) => new(a.Id, a.FirstName, a.LastName, a.CountryId,
         a.StateProvinceId, a.City, a.Address1, a.Address2, a.ZipPostalCode, a.PhoneNumber,
         a.Country?.Name, a.StateProvince?.Name, c.GenericAttributes.DefaultBillingAddressId == a.Id,
-        c.GenericAttributes.DefaultShippingAddressId == a.Id, a.Salutation, a.Title, a.Company, a.FaxNumber);
+        c.GenericAttributes.DefaultShippingAddressId == a.Id, a.Salutation, a.Title, a.Company, a.FaxNumber,
+        a.CityId, a.Latitude, a.Longitude);
 }

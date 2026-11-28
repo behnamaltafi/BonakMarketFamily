@@ -7,6 +7,7 @@ using BonakMarket.Core.Identity;
 using BonakMarket.Core.Localization;
 using BonakMarket.Core.Stores;
 using BonakMarket.Identity.Models;
+using BonakMarket.Identity.Queries;
 
 namespace BonakMarket.Identity.Services;
 
@@ -37,31 +38,37 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
         ["zipPostalCode"] = new(settings.ZipPostalCodeEnabled, settings.ZipPostalCodeEnabled && settings.ZipPostalCodeRequired)
     };
 
-    public async Task<IReadOnlyList<AddressLocation>> ProvincesAsync(CancellationToken ct)
+    public async Task<LocationPage<AddressLocation>> ProvincesAsync(LocationListRequest request, CancellationToken ct)
     {
         var country = await IranAsync(ct);
-        if (country == null) return Array.Empty<AddressLocation>();
-        return await db.StateProvinces.AsNoTracking().Where(p => p.CountryId == country.Id && p.Published &&
-            db.Cities.Any(c => c.StateProvinceId == p.Id && c.Published))
-            .OrderBy(p => p.DisplayOrder).ThenBy(p => p.Name)
-            .Select(p => new AddressLocation(p.Id, p.Name)).ToListAsync(ct);
+        if (country == null) return new([], request.Page, request.PageSize, 0, 0);
+        return await PageAsync(ProvinceQuery(country.Id, request), request, ct);
     }
 
-    public async Task<IReadOnlyList<CityLocation>> CitiesAsync(int provinceId, CancellationToken ct)
+    public async Task<LocationPage<CityLocation>> CitiesAsync(int provinceId, LocationListRequest request, CancellationToken ct)
     {
         var country = await IranAsync(ct);
-        if (country == null) return Array.Empty<CityLocation>();
-        return await db.Cities.AsNoTracking().Where(c => c.StateProvinceId == provinceId && c.Published &&
-            c.StateProvince.Published && c.StateProvince.CountryId == country.Id)
-            .OrderBy(c => c.DisplayOrder).ThenBy(c => c.Name)
-            .Select(c => new CityLocation(c.Id, c.Name, c.StateProvinceId)).ToListAsync(ct);
+        if (country == null) return new([], request.Page, request.PageSize, 0, 0);
+        var query = LocationQueries.Cities(db.Cities.AsNoTracking(), country.Id, provinceId, request)
+            .Select(c => new CityLocation(c.Id, c.Name, c.StateProvinceId));
+        return await PageAsync(query, request, ct);
+    }
+
+    private IQueryable<AddressLocation> ProvinceQuery(int countryId, LocationListRequest request) =>
+        LocationQueries.Provinces(db.StateProvinces.AsNoTracking(), db.Cities.AsNoTracking(), countryId, request)
+            .Select(p => new AddressLocation(p.Id, p.Name));
+
+    private static async Task<LocationPage<T>> PageAsync<T>(IQueryable<T> query, LocationListRequest request, CancellationToken ct)
+    {
+        var page = await query.ToPagedList(request.Page - 1, request.PageSize).LoadAsync(cancelToken: ct);
+        return new(page.ToList(), page.PageNumber, page.PageSize, page.TotalCount, page.TotalPages);
     }
 
     public async Task<CustomerAddressSettings> GetSettingsAsync(CancellationToken ct)
     {
         var country = await IranAsync(ct);
         if (country == null) return null;
-        var provinces = await ProvincesAsync(ct);
+        var provinces = await ProvinceQuery(country.Id, new LocationListRequest()).ToListAsync(ct);
         return new(new(country.Id, country.Name), Fields(), provinces,
             (settings.Salutations ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
     }

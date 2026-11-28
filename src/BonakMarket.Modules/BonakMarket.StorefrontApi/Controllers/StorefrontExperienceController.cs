@@ -15,6 +15,7 @@ using BonakMarket.Core.Localization;
 using BonakMarket.Core.Stores;
 using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
+using BonakMarket.StorefrontApi.Services;
 using BonakMarket.StorefrontApi.Security;
 
 namespace BonakMarket.StorefrontApi.Controllers;
@@ -54,7 +55,11 @@ public sealed class StorefrontExperienceController(SmartDbContext db, Storefront
     [HttpGet("pages"), PublicCatalog]
     public async Task<ActionResult<PageDto<TopicSummaryDto>>> Pages([FromQuery] TopicSearchRequest page, CancellationToken ct)
     {
-        var query = CommerceListQueries.FilterTopics(Topics(), db.LocalizedProperties.AsNoTracking(), work.WorkingLanguage.Id, page)
+        // Native GetLocalized falls back to the default when only one language is published.
+        var useLocalizedTitle = CatalogText.Normalize(page.Search).Length > 0 &&
+            await db.Languages.ApplyStandardFilter().CountAsync(ct) > 1;
+        var query = CommerceListQueries.FilterTopics(Topics(), db.LocalizedProperties.AsNoTracking(),
+            work.WorkingLanguage.Id, useLocalizedTitle, page)
             .OrderBy(x => x.Priority).ThenBy(x => x.Id);
         return Ok(await query.PageAsync(page, rows => Task.FromResult(rows.Select(x => new TopicSummaryDto(x.Id, x.SystemName,
             x.GetLocalized(y => y.Title).Value, x.GetLocalized(y => y.Intro).Value)).ToList()), ct));

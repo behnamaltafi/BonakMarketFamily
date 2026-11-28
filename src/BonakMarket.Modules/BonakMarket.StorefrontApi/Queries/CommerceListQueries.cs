@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Query;
 using BonakMarket.Core.Catalog.Products;
 using BonakMarket.Core.Checkout.Orders;
 using BonakMarket.Core.Checkout.Payment;
@@ -15,13 +17,7 @@ internal static class CommerceListQueries
     internal static IQueryable<Order> FilterOrders(IQueryable<Order> query, OrderSearchRequest filter)
     {
         query = query.ApplyOrderNumberFilter(filter.Search?.Trim());
-        var from = filter.FromDateUtc?.UtcDateTime;
-        var to = filter.ToDateUtc?.UtcDateTime;
-        if (from.HasValue)
-            query = query.Where(x => x.CreatedOnUtc >= from.Value);
-        if (to.HasValue)
-            query = query.Where(x => x.CreatedOnUtc < to.Value);
-        return query;
+        return ApplyDateRange(query, filter, x => x.CreatedOnUtc);
     }
 
     internal static IQueryable<ReturnCase> FilterReturns(IQueryable<ReturnCase> query, ReturnSearchRequest filter)
@@ -31,21 +27,12 @@ internal static class CommerceListQueries
             query = int.TryParse(term, out var id) && id > 0 ? query.Where(x => x.Id == id) : query.Where(x => false);
         if (filter.StatusId.HasValue)
             query = query.Where(x => x.ReturnCaseStatusId == filter.StatusId.Value);
-        var from = filter.FromDateUtc?.UtcDateTime;
-        var to = filter.ToDateUtc?.UtcDateTime;
-        if (from.HasValue)
-            query = query.Where(x => x.CreatedOnUtc >= from.Value);
-        if (to.HasValue)
-            query = query.Where(x => x.CreatedOnUtc < to.Value);
-        return query;
+        return ApplyDateRange(query, filter, x => x.CreatedOnUtc);
     }
 
     internal static IQueryable<ProductReview> FilterReviews(IQueryable<ProductReview> query, ReviewSearchRequest filter)
     {
-        var term = CatalogText.Normalize(filter.Search);
-        if (term.Length > 0)
-            query = query.Where(x => (x.Title ?? "").Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term) ||
-                (x.ReviewText ?? "").Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term));
+        query = CatalogText.WhereNormalizedContains(query, filter.Search, x => x.Title, x => x.ReviewText);
         if (filter.Rating.HasValue)
             query = query.Where(x => x.Rating == filter.Rating.Value);
         return query;
@@ -53,11 +40,7 @@ internal static class CommerceListQueries
 
     internal static IQueryable<ProductReview> FilterMyReviews(IQueryable<ProductReview> query, MyReviewSearchRequest filter)
     {
-        var term = CatalogText.Normalize(filter.Search);
-        if (term.Length > 0)
-            query = query.Where(x => (x.Title ?? "").Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term) ||
-                (x.ReviewText ?? "").Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term) ||
-                (x.Product.Name ?? "").Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term));
+        query = CatalogText.WhereNormalizedContains(query, filter.Search, x => x.Title, x => x.ReviewText, x => x.Product.Name);
         if (filter.Rating.HasValue)
             query = query.Where(x => x.Rating == filter.Rating.Value);
         if (filter.ProductId.HasValue)
@@ -69,9 +52,7 @@ internal static class CommerceListQueries
 
     internal static IQueryable<OrderItem> FilterDownloads(IQueryable<OrderItem> query, DownloadSearchRequest filter)
     {
-        var term = CatalogText.Normalize(filter.Search);
-        if (term.Length > 0)
-            query = query.Where(x => (x.Product.Name ?? "").Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term));
+        query = CatalogText.WhereNormalizedContains(query, filter.Search, x => x.Product.Name);
         if (filter.OrderId.HasValue)
             query = query.Where(x => x.OrderId == filter.OrderId.Value);
         if (filter.ProductId.HasValue)
@@ -82,16 +63,8 @@ internal static class CommerceListQueries
     internal static IQueryable<BackInStockSubscription> FilterStockSubscriptions(IQueryable<BackInStockSubscription> query, StockSubscriptionSearchRequest filter)
     {
         query = query.ApplyStandardFilter(productId: filter.ProductId);
-        var term = CatalogText.Normalize(filter.Search);
-        if (term.Length > 0)
-            query = query.Where(x => (x.Product.Name ?? "").Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term));
-        var from = filter.FromDateUtc?.UtcDateTime;
-        var to = filter.ToDateUtc?.UtcDateTime;
-        if (from.HasValue)
-            query = query.Where(x => x.CreatedOnUtc >= from.Value);
-        if (to.HasValue)
-            query = query.Where(x => x.CreatedOnUtc < to.Value);
-        return query;
+        query = CatalogText.WhereNormalizedContains(query, filter.Search, x => x.Product.Name);
+        return ApplyDateRange(query, filter, x => x.CreatedOnUtc);
     }
 
     internal static IQueryable<RecurringPayment> FilterRecurringPayments(IQueryable<RecurringPayment> query,
@@ -105,49 +78,59 @@ internal static class CommerceListQueries
         }
         if (filter.IsActive.HasValue)
             query = query.Where(x => x.IsActive == filter.IsActive.Value);
-        var from = filter.FromDateUtc?.UtcDateTime;
-        var to = filter.ToDateUtc?.UtcDateTime;
-        if (from.HasValue)
-            query = query.Where(x => x.CreatedOnUtc >= from.Value);
-        if (to.HasValue)
-            query = query.Where(x => x.CreatedOnUtc < to.Value);
-        return query;
+        return ApplyDateRange(query, filter, x => x.CreatedOnUtc);
     }
 
     internal static IQueryable<RewardPointsHistory> FilterRewardPoints(IQueryable<RewardPointsHistory> query, RewardPointSearchRequest filter)
     {
-        var term = CatalogText.Normalize(filter.Search);
-        if (term.Length > 0)
-            query = query.Where(x => (x.Message ?? "").Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term));
+        query = CatalogText.WhereNormalizedContains(query, filter.Search, x => x.Message);
         if (filter.IsEarned.HasValue)
             query = filter.IsEarned.Value ? query.Where(x => x.Points > 0) : query.Where(x => x.Points < 0);
-        var from = filter.FromDateUtc?.UtcDateTime;
-        var to = filter.ToDateUtc?.UtcDateTime;
-        if (from.HasValue)
-            query = query.Where(x => x.CreatedOnUtc >= from.Value);
-        if (to.HasValue)
-            query = query.Where(x => x.CreatedOnUtc < to.Value);
-        return query;
+        return ApplyDateRange(query, filter, x => x.CreatedOnUtc);
     }
 
     internal static IQueryable<Topic> FilterTopics(IQueryable<Topic> query, IQueryable<LocalizedProperty> translations,
-        int languageId, TopicSearchRequest filter)
+        int languageId, bool useLocalizedTitle, TopicSearchRequest filter)
     {
         var systemName = filter.SystemName?.Trim();
         if (!string.IsNullOrWhiteSpace(systemName))
             query = query.Where(x => x.SystemName == systemName);
-        var term = CatalogText.Normalize(filter.Search);
-        if (term.Length > 0)
+        if (!useLocalizedTitle)
+            return CatalogText.WhereNormalizedContains(query, filter.Search, x => x.Title);
+
+        if (CatalogText.Normalize(filter.Search).Length > 0)
         {
-            var titles = translations.Where(x => x.LanguageId == languageId && x.LocaleKeyGroup == nameof(Topic) &&
-                x.LocaleKey == nameof(Topic.Title) && x.LocaleValue != null && x.LocaleValue != "");
+            var titles = translations.ApplyStandardFilter(languageId, 0, nameof(Topic), nameof(Topic.Title))
+                .Where(x => x.LocaleValue != null && x.LocaleValue != "");
             var rows = query.Select(x => new
             {
                 Topic = x,
                 Title = titles.Where(t => t.EntityId == x.Id).OrderBy(t => t.Id).Select(t => t.LocaleValue).FirstOrDefault() ?? x.Title
             });
-            query = rows.Where(x => (x.Title ?? "").Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term)).Select(x => x.Topic);
+            query = CatalogText.WhereNormalizedContains(rows, filter.Search, x => x.Title).Select(x => x.Topic);
         }
+        return query;
+    }
+
+    private static IQueryable<T> ApplyDateRange<T>(IQueryable<T> query, DatedSearchPageRequest filter,
+        Expression<Func<T, DateTime>> date)
+    {
+        if (filter.FromDateUtc.HasValue)
+        {
+            var from = filter.FromDateUtc.Value.UtcDateTime;
+            Expression<Func<DateTime, bool>> predicate = value => value >= from;
+            query = query.Where(Expression.Lambda<Func<T, bool>>(
+                ReplacingExpressionVisitor.Replace(predicate.Parameters[0], date.Body, predicate.Body), date.Parameters));
+        }
+
+        if (filter.ToDateUtc.HasValue)
+        {
+            var to = filter.ToDateUtc.Value.UtcDateTime;
+            Expression<Func<DateTime, bool>> predicate = value => value < to;
+            query = query.Where(Expression.Lambda<Func<T, bool>>(
+                ReplacingExpressionVisitor.Replace(predicate.Parameters[0], date.Body, predicate.Body), date.Parameters));
+        }
+
         return query;
     }
 }

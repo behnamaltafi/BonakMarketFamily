@@ -1,3 +1,6 @@
+using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore.Query;
+using BonakMarket.Linq;
 using BonakMarket.Core.Catalog.Products;
 using BonakMarket.Core.Catalog.Search;
 using BonakMarket.Core.Localization;
@@ -10,6 +13,27 @@ internal static class CatalogText
     // Same normalization in request and SQL expressions. Do not modify stored data.
     internal static string Normalize(string value) => (value ?? string.Empty).Trim()
         .Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "");
+
+    // Build a native LINQ predicate; no compiled delegate or client-side filtering.
+    internal static IQueryable<T> WhereNormalizedContains<T>(IQueryable<T> query, string search,
+        params Expression<Func<T, string>>[] fields)
+    {
+        var term = Normalize(search);
+        if (term.Length == 0 || fields.Length == 0)
+            return query;
+
+        Expression<Func<string, bool>> match = value => (value ?? "").Replace("ي", "ی").Replace("ك", "ک")
+            .Replace("\u200c", "").Replace(" ", "").Contains(term);
+        Expression<Func<T, bool>> predicate = null;
+        foreach (var field in fields)
+        {
+            var body = ReplacingExpressionVisitor.Replace(match.Parameters[0], field.Body, match.Body);
+            var condition = Expression.Lambda<Func<T, bool>>(body, field.Parameters);
+            predicate = predicate == null ? condition : predicate.Or(condition);
+        }
+
+        return query.Where(predicate);
+    }
 
     // Preserve native parsing for advanced terms and non-Persian text.
     internal static bool UseNormalizedSearch(string term) => !string.IsNullOrEmpty(term) &&

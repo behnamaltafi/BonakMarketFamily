@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using BonakMarket.Core.Data;
 
 namespace BonakMarket.Core.Common.Services;

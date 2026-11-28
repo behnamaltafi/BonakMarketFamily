@@ -64,6 +64,9 @@ public partial class AddressModel : EntityModelBase
 
     [LocalizedDisplay("*City")]
     public string City { get; set; }
+
+    public decimal? Latitude { get; set; }
+    public decimal? Longitude { get; set; }
     public bool CityEnabled { get; set; }
     public bool CityRequired { get; set; }
 

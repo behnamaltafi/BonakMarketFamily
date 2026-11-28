@@ -24,6 +24,7 @@ internal sealed class IdentityOperationFilter : IOperationFilter
             route.StartsWith("me/security/") ? "Account Security" :
             route.StartsWith("me/addresses") ? "Addresses" :
             route == "guilds" ? "Guilds" :
+            route.StartsWith("locations/") ? "Locations" :
             route.StartsWith("me/") ? "Profile" : "Authentication" } };
         operation.OperationId = "Identity_" + method + "_" + route.Replace('/', '_');
         operation.Security = new List<OpenApiSecurityRequirement>();

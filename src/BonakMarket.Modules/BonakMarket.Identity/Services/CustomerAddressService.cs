@@ -15,7 +15,7 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
     private IQueryable<Address> Owned(Customer customer) =>
         db.Customers.Where(c => c.Id == customer.Id).SelectMany(c => c.Addresses);
 
-    internal async Task<Country> IranAsync(CancellationToken ct) =>
+    private async Task<Country> IranAsync(CancellationToken ct) =>
         await db.Countries.Where(c => c.TwoLetterIsoCode == "IR" && c.Published)
             .ApplyStandardFilter(false, store.CurrentStore.Id).SingleOrDefaultAsync(ct);
 
@@ -29,6 +29,9 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
         ["faxNumber"] = new(settings.FaxEnabled, settings.FaxEnabled && settings.FaxRequired),
         ["stateProvinceId"] = new(true, true),
         ["city"] = new(true, true),
+        ["cityId"] = new(true, true),
+        ["latitude"] = new(true, false),
+        ["longitude"] = new(true, false),
         ["address1"] = new(settings.StreetAddressEnabled, settings.StreetAddressEnabled && settings.StreetAddressRequired),
         ["address2"] = new(settings.StreetAddress2Enabled, settings.StreetAddress2Enabled && settings.StreetAddress2Required),
         ["zipPostalCode"] = new(settings.ZipPostalCodeEnabled, settings.ZipPostalCodeEnabled && settings.ZipPostalCodeRequired)
@@ -134,7 +137,10 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
             ? await available.SingleOrDefaultAsync(c => c.Id == cityId.Value, ct)
             : await available.FirstOrDefaultAsync(c => c.Name == city ||
                 (city == "Tehran" && c.Name == "تهران") || (city == "تهران" && c.Name == "Tehran"), ct);
-        if (selectedCity == null) errors["cityId"] = ["invalid_city"];
+        // Preserve historical unclassified addresses when their city/province were not changed.
+        var unchangedLegacy = id.HasValue && !input.CityId.HasValue && row.CityId == null &&
+            row.StateProvinceId == province && !string.IsNullOrEmpty(city) && city == row.City;
+        if (selectedCity == null && !unchangedLegacy) errors["cityId"] = ["invalid_city"];
 
         var latitude = row.Latitude;
         var longitude = row.Longitude;
@@ -153,7 +159,7 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
             return (null, Error("isDefault", "country_not_allowed"), 422);
         row.FirstName = first; row.LastName = last; row.PhoneNumber = phone;
         row.CountryId = country.Id; row.StateProvinceId = province;
-        row.CityId = selectedCity.Id; row.City = selectedCity.Name;
+        row.CityId = selectedCity?.Id; row.City = selectedCity?.Name ?? city;
         row.Latitude = latitude; row.Longitude = longitude;
         row.Address1 = address1; row.Address2 = address2; row.ZipPostalCode = zip;
         row.Salutation = salutation; row.Title = title; row.Company = company; row.FaxNumber = fax;

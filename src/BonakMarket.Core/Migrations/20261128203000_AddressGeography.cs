@@ -1,4 +1,5 @@
 using FluentMigrator;
+using BonakMarket.Core.Common.Services;
 using BonakMarket.Core.Data;
 using BonakMarket.Core.Data.Migrations;
 using BonakMarket.Data.Migrations;

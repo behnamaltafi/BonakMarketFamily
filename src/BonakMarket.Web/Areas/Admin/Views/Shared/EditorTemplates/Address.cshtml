@@ -26,6 +26,15 @@
 <input type="hidden" asp-for="CountryName" />
 
 <div class="adminContent">
+    @if (Model.Latitude.HasValue && Model.Longitude.HasValue)
+    {
+        <div class="adminRow">
+            <div class="adminTitle">@T("Admin.Address.Coordinates")</div>
+            <div class="adminData">
+                <span dir="ltr">@Model.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), @Model.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)</span>
+            </div>
+        </div>
+    }
     <div sm-if="Model.CompanyEnabled" class="adminRow">
         <div class="adminTitle">
             <smart-label asp-for="Company" sm-hint="@T("Admin.Address.Fields.Company.Hint")" />

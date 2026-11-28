@@ -2,7 +2,7 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery AddressAntiforgery
 @{ var csrf = AddressAntiforgery.GetAndStoreTokens(Context); }
 <div id="customer-address-editor" data-base="@Url.Content("~/sms-login/account/addresses")"
-     data-csrf-header="@csrf.HeaderName" data-csrf-token="@csrf.RequestToken" data-phone="@Model.Phone">
+     data-location-base="@Url.Content("~/api/identity/v1/locations")" data-csrf-header="@csrf.HeaderName" data-csrf-token="@csrf.RequestToken" data-phone="@Model.Phone">
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h4>آدرس‌های من (اختیاری)</h4>
         <button type="button" class="btn btn-outline-primary" data-add>افزودن آدرس</button>
@@ -25,7 +25,7 @@
         fields=root.querySelector("[data-fields]"), status=root.querySelector("[data-status]"),
         more=root.querySelector("[data-more]");
     const labels={firstName:"نام گیرنده",lastName:"نام خانوادگی گیرنده",phoneNumber:"شماره تماس",
-        stateProvinceId:"استان",city:"شهر",address1:"آدرس",address2:"ادامه آدرس",
+        stateProvinceId:"استان",cityId:"شهر",address1:"آدرس",address2:"ادامه آدرس",
         zipPostalCode:"کد پستی",company:"شرکت",salutation:"عنوان خطاب",title:"عنوان",faxNumber:"فکس"};
     let current=null, configuration=null, page=1;
     function el(tag,text,cls){const x=document.createElement(tag);if(text)x.textContent=text;if(cls)x.className=cls;return x;}
@@ -62,7 +62,7 @@
         for(const [name,label] of Object.entries(labels)){
             const rule=configuration.fields[name];if(!rule?.enabled)continue;
             const wrap=el("div",null,"mb-2");wrap.append(el("label",label+(rule.required?" *":""),"form-label"));
-            const input=el(name==="stateProvinceId"||name==="salutation"?"select":"input",null,"form-control");
+            const input=el(name==="stateProvinceId"||name==="cityId"||name==="salutation"?"select":"input",null,"form-control");
             input.dataset.field=name;input.required=rule.required;
             if(name==="stateProvinceId"||name==="salutation"){
                 const opt=el("option","انتخاب کنید");opt.value="";input.append(opt);
@@ -71,6 +71,20 @@
             input.value=a?.[name]??(name==="firstName"?document.querySelector("[name=FirstName]")?.value:name==="lastName"?document.querySelector("[name=LastName]")?.value:name==="phoneNumber"?root.dataset.phone:"")??"";
             wrap.append(input);fields.append(wrap);
         }
+        const provinceSelect=fields.querySelector('[data-field="stateProvinceId"]'), citySelect=fields.querySelector('[data-field="cityId"]');
+        let sequence=0;
+        async function loadCities(initial){
+            const revision=++sequence, province=provinceSelect.value;
+            citySelect.replaceChildren();const empty=el("option","انتخاب کنید");empty.value="";citySelect.append(empty);
+            if(!province)return;
+            const response=await fetch(root.dataset.locationBase+"/provinces/"+encodeURIComponent(province)+"/cities",{credentials:"same-origin"});
+            if(!response.ok)throw Error("Unable to load cities");
+            const cities=await response.json();if(revision!==sequence)return;
+            for(const c of cities){const option=el("option",c.name);option.value=c.id;citySelect.append(option);}
+            if(initial){const found=cities.find(c=>c.id===a?.cityId||c.name===a?.city);citySelect.value=found?.id??"";}
+        }
+        provinceSelect.onchange=()=>loadCities(false).catch(e=>message(e.message,false));
+        await loadCities(true);
         const defaultLabel=el("label"," پیش‌فرض","form-label");const check=el("input");check.type="checkbox";check.dataset.field="isDefault";check.checked=!!(a?.isDefaultBilling&&a?.isDefaultShipping);defaultLabel.prepend(check);fields.append(defaultLabel);edit.hidden=false;
     }
     root.querySelector("[data-add]").onclick=()=>open(null).catch(e=>message(e.message,false));
@@ -81,7 +95,7 @@
             const input={};
             for(const x of fields.querySelectorAll("[data-field]")){
                 if(!x.reportValidity())return;
-                input[x.dataset.field]=x.type==="checkbox"?x.checked:x.dataset.field==="stateProvinceId"?Number(x.value)||null:x.value||null;
+                input[x.dataset.field]=x.type==="checkbox"?x.checked:["stateProvinceId","cityId"].includes(x.dataset.field)?Number(x.value)||null:x.value||null;
             }
             await call(current?"/"+current.id:"",current?"PUT":"POST",input);
             edit.hidden=true;page=1;await load();message("آدرس ذخیره شد.",true);

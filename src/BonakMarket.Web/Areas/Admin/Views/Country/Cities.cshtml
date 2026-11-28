@@ -1,0 +1,65 @@
+@using BonakMarket.Core.Common
+@model List<City>
+@{
+    ViewBag.Title = T("Admin.Configuration.Countries.Cities").Value;
+    var provinces = (List<StateProvince>)ViewBag.Provinces;
+    int countryId = ViewBag.CountryId;
+    int? provinceId = ViewBag.ProvinceId;
+    bool canUpdate = ViewBag.CanUpdate;
+}
+<div class="section-header">
+    <div class="title">
+        <a sm-backto asp-action="Edit" asp-route-id="@countryId"></a>
+        <span>@ViewBag.Title - @ViewBag.CountryName</span>
+    </div>
+</div>
+<form asp-action="Cities" method="get" class="d-flex gap-2 mb-3">
+    <input type="hidden" name="countryId" value="@countryId" />
+    <select name="provinceId" class="form-control">
+        @foreach (var province in provinces)
+        {
+            <option value="@province.Id" selected="@(province.Id == provinceId)">@province.Name</option>
+        }
+    </select>
+    <button class="btn btn-secondary" type="submit">@T("Common.Search")</button>
+</form>
+@if (provinceId.HasValue && canUpdate)
+{
+    <form asp-action="CitySave" method="post" class="card p-3 mb-3">
+        <input type="hidden" name="countryId" value="@countryId" />
+        <input type="hidden" name="provinceId" value="@provinceId" />
+        <input type="hidden" name="id" value="0" />
+        <label>@T("Admin.Configuration.Countries.Cities.Name")</label>
+        <input name="name" class="form-control" required maxlength="100" />
+        <label>@T("Admin.Configuration.Countries.States.Fields.DisplayOrder")</label>
+        <input name="displayOrder" type="number" min="0" value="0" class="form-control" />
+        <label><input type="checkbox" name="published" value="true" checked /> @T("Admin.Configuration.Countries.States.Fields.Published")</label>
+        <button type="submit" class="btn btn-primary">@T("Admin.Common.AddNew")</button>
+    </form>
+}
+@foreach (var city in Model)
+{
+    <div class="card p-3 mb-2">
+        <form asp-action="CitySave" method="post" class="row g-2">
+            <input type="hidden" name="countryId" value="@countryId" />
+            <input type="hidden" name="provinceId" value="@provinceId" />
+            <input type="hidden" name="id" value="@city.Id" />
+            <div class="col"><label>@T("Admin.Configuration.Countries.Cities.Name")</label><input name="name" value="@city.Name" class="form-control" maxlength="100" required disabled="@(!canUpdate)" /></div>
+            <div class="col"><label>@T("Admin.Configuration.Countries.States.Fields.DisplayOrder")</label><input name="displayOrder" value="@city.DisplayOrder" type="number" min="0" class="form-control" disabled="@(!canUpdate)" /></div>
+            <div class="col"><label><input type="checkbox" name="published" value="true" checked="@city.Published" disabled="@(!canUpdate)" /> @T("Admin.Configuration.Countries.States.Fields.Published")</label></div>
+            @if (canUpdate)
+            {
+                <div class="col"><button type="submit" class="btn btn-primary">@T("Admin.Common.Save")</button></div>
+            }
+        </form>
+        @if (canUpdate)
+        {
+            <form asp-action="CityDelete" method="post" class="mt-2">
+                <input type="hidden" name="countryId" value="@countryId" />
+                <input type="hidden" name="provinceId" value="@provinceId" />
+                <input type="hidden" name="id" value="@city.Id" />
+                <button type="submit" class="btn btn-danger btn-sm">@T("Common.Delete")</button>
+            </form>
+        }
+    </div>
+}

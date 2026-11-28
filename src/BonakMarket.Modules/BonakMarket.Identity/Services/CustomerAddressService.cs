@@ -7,6 +7,7 @@ using BonakMarket.Core.Identity;
 using BonakMarket.Core.Localization;
 using BonakMarket.Core.Stores;
 using BonakMarket.Identity.Models;
+using BonakMarket.Identity.Queries;
 
 namespace BonakMarket.Identity.Services;
 
@@ -70,23 +71,20 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
     {
         var query = Owned(customer).AsNoTracking();
         var count = await query.CountAsync(ct);
-        var rows = await query.Include(a => a.Country).Include(a => a.StateProvince)
-            .OrderBy(a => a.Id).Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
-        return new(rows.Select(a => Map(customer, a)).ToList(), page, pageSize, count);
+        var rows = await Project(customer, query.OrderBy(a => a.Id).Skip((page - 1) * pageSize).Take(pageSize))
+            .ToListAsync(ct);
+        return new(rows, page, pageSize, count);
     }
 
     public async Task<List<CustomerAddressDto>> LegacyListAsync(Customer customer, CancellationToken ct)
     {
-        var rows = await Owned(customer).AsNoTracking().Include(a => a.Country).Include(a => a.StateProvince)
-            .OrderBy(a => a.Id).ToListAsync(ct);
-        return rows.Select(a => Map(customer, a)).ToList();
+        return await Project(customer, Owned(customer).AsNoTracking().OrderBy(a => a.Id)).ToListAsync(ct);
     }
 
     public async Task<CustomerAddressDto> GetAsync(Customer customer, int id, CancellationToken ct)
     {
-        var row = await Owned(customer).AsNoTracking().Include(a => a.Country).Include(a => a.StateProvince)
-            .FirstOrDefaultAsync(a => a.Id == id, ct);
-        return row == null ? null : Map(customer, row);
+        return await Project(customer, Owned(customer).AsNoTracking().Where(a => a.Id == id))
+            .FirstOrDefaultAsync(ct);
     }
 
     private async Task<bool> SharedAsync(Customer customer, int id, CancellationToken ct) =>
@@ -220,9 +218,7 @@ public sealed class CustomerAddressService(SmartDbContext db, AddressSettings se
     }
 
     private static Dictionary<string, string[]> Error(string field, string code) => new() { [field] = [code] };
-    private static CustomerAddressDto Map(Customer c, Address a) => new(a.Id, a.FirstName, a.LastName, a.CountryId,
-        a.StateProvinceId, a.City, a.Address1, a.Address2, a.ZipPostalCode, a.PhoneNumber,
-        a.Country?.Name, a.StateProvince?.Name, c.GenericAttributes.DefaultBillingAddressId == a.Id,
-        c.GenericAttributes.DefaultShippingAddressId == a.Id, a.Salutation, a.Title, a.Company, a.FaxNumber,
-        a.CityId, a.Latitude, a.Longitude);
+    private IQueryable<CustomerAddressDto> Project(Customer customer, IQueryable<Address> addresses) =>
+        CustomerAddressQueries.Project(addresses, db.Cities.AsNoTracking(),
+            customer.GenericAttributes.DefaultBillingAddressId, customer.GenericAttributes.DefaultShippingAddressId);
 }

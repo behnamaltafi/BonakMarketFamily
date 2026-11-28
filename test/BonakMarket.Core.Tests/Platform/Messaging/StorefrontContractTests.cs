@@ -148,6 +148,46 @@ public class StorefrontContractTests
         Assert.That(result.Page, Is.EqualTo(page));
     }
 
+    [TestCase(0, 1, 3)]
+    [TestCase(7, 1, 3)]
+    [TestCase(7, 4, 3)]
+    [TestCase(7, 2, 3)]
+    public async Task NativeMappedPagingMatchesFormerDownloadPagination(int count, int number, int size)
+    {
+        var query = Enumerable.Range(1, count).AsQueryable().OrderByDescending(x => x);
+        var expected = query.Skip((number - 1) * size).Take(size).Select(x => x.ToString()).ToList();
+        var result = await query.PageAsync(new PageRequest { Page = number, PageSize = size },
+            items => Task.FromResult(items.Select(x => x.ToString()).ToList()), CancellationToken.None);
+
+        Assert.That(result.Items, Is.EqualTo(expected));
+        Assert.That(result.Page, Is.EqualTo(number));
+        Assert.That(result.PageSize, Is.EqualTo(size));
+        Assert.That(result.TotalCount, Is.EqualTo(count));
+        Assert.That(result.TotalPages, Is.EqualTo((int)Math.Ceiling(count / (double)size)));
+    }
+
+    [TestCase(7)]
+    [TestCase(99)]
+    public void NativeRewardHistoryPreservesCustomerIsolationAndStableBalance(int customerId)
+    {
+        var now = new DateTime(2026, 11, 27, 0, 0, 0, DateTimeKind.Utc);
+        var rows = new[]
+        {
+            new RewardPointsHistory { Id = 1, CustomerId = 7, CreatedOnUtc = now.AddDays(-1), PointsBalance = 5 },
+            new RewardPointsHistory { Id = 2, CustomerId = 7, CreatedOnUtc = now, PointsBalance = 10 },
+            new RewardPointsHistory { Id = 3, CustomerId = 7, CreatedOnUtc = now, PointsBalance = 15 },
+            new RewardPointsHistory { Id = 4, CustomerId = 8, CreatedOnUtc = now.AddDays(1), PointsBalance = 100 }
+        }.AsQueryable();
+
+        var expected = rows.Where(x => x.CustomerId == customerId)
+            .OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id);
+        var actual = rows.ApplyCustomerFilter([customerId]);
+
+        Assert.That(actual.Select(x => x.Id), Is.EqualTo(expected.Select(x => x.Id)));
+        Assert.That(actual.Select(x => (int?)x.PointsBalance).FirstOrDefault() ?? 0,
+            Is.EqualTo(expected.Select(x => (int?)x.PointsBalance).FirstOrDefault() ?? 0));
+    }
+
     [Test]
     public void GuestRoleGetsCatalogAndScopedCartButNoPrivateCapabilities()
     {

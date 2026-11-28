@@ -37,8 +37,7 @@ public sealed class CustomerServicesController(SmartDbContext db, StorefrontRequ
         if (!settings.HideBackInStockSubscriptionsTab && await Allowed(StorefrontPermissions.StockSubscriptions))
             stock = await db.BackInStockSubscriptions.CountAsync(x => x.CustomerId == request.Customer.Id && x.StoreId == request.StoreId, ct);
         if (rewards.Enabled && await Allowed(StorefrontPermissions.RewardPoints))
-            points = await db.RewardPointsHistory.AsNoTracking().Where(x => x.CustomerId == request.Customer.Id)
-                .OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)
+            points = await db.RewardPointsHistory.AsNoTracking().ApplyCustomerFilter([request.Customer.Id])
                 .Select(x => (int?)x.PointsBalance).FirstOrDefaultAsync(ct) ?? 0;
         return Ok(new CustomerSummaryDto(cart, wishlist, orders, returns, stock, points,
             await CustomerGuildPolicy.RequiresGuildAsync(db, request.Customer, ct)));

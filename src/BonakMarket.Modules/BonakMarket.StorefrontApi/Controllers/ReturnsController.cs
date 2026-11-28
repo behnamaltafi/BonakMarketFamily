@@ -25,7 +25,7 @@ public sealed class ReturnsController(SmartDbContext db, StorefrontRequestContex
 
     [HttpGet("returns")]
     public async Task<ActionResult<PageDto<ReturnCaseDto>>> List([FromQuery] PageRequest page, CancellationToken ct) =>
-        Ok(await Project(Owned().AsNoTracking().OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)).PageAsync(page, ct));
+        Ok(await Project(Owned().AsNoTracking().ApplyStandardFilter()).PageAsync(page, ct));
 
     [HttpGet("returns/{id:int}")]
     public async Task<ActionResult<ReturnCaseDto>> Get(int id, CancellationToken ct)

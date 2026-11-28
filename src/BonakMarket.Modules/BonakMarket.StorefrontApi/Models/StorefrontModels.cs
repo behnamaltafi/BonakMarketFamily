@@ -154,9 +154,8 @@ public class PageRequest
 }
 public enum CatalogSort { Initial, NameAsc, NameDesc, PriceAsc, PriceDesc, Newest, BestSellers }
 #nullable enable
-public class ProductFilterRequest : PageRequest, IValidatableObject
+public class ProductFilterRequest : SearchPageRequest, IValidatableObject
 {
-    [StringLength(StorefrontLimits.MaxSearchLength)] public string? Search { get; set; }
     [Range(1, int.MaxValue)] public int? CategoryId { get; set; }
     [Range(1, int.MaxValue)] public int? BrandId { get; set; }
     public decimal? MinPrice { get; set; }
@@ -204,18 +203,16 @@ public sealed class ProductFacetsRequest : IValidatableObject
         HasDiscount = HasDiscount, ShowOnHomePage = ShowOnHomePage, IncludePrice = false
     };
 }
-public sealed class CategorySearchRequest : PageRequest
+public sealed class CategorySearchRequest : SearchPageRequest
 {
-    [StringLength(StorefrontLimits.MaxSearchLength)] public string? Search { get; set; }
     [Range(0, int.MaxValue)] public int? ParentId { get; set; }
     public bool? ShowOnHomePage { get; set; }
 }
-public sealed class BrandSearchRequest : PageRequest
+public sealed class BrandSearchRequest : SearchPageRequest
 {
-    [StringLength(StorefrontLimits.MaxSearchLength)] public string? Search { get; set; }
 }
 #nullable restore
-public sealed class OrderSearchRequest : PageRequest
+public sealed class OrderSearchRequest : DatedSearchPageRequest
 {
     public int? OrderStatusId { get; set; }
     public int? PaymentStatusId { get; set; }

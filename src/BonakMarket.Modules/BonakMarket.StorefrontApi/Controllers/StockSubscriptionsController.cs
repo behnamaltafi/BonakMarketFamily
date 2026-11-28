@@ -18,10 +18,10 @@ public sealed class StockSubscriptionsController(SmartDbContext db, StorefrontRe
         x.CustomerId == request.Customer.Id && x.StoreId == request.StoreId);
 
     [HttpGet]
-    public async Task<ActionResult<PageDto<StockSubscriptionDto>>> Get([FromQuery] PageRequest page, CancellationToken ct)
+    public async Task<ActionResult<PageDto<StockSubscriptionDto>>> Get([FromQuery] StockSubscriptionSearchRequest page, CancellationToken ct)
     {
         if (settings.HideBackInStockSubscriptionsTab) return Error(403, "stock_subscriptions_disabled");
-        return Ok(await Owned().AsNoTracking().OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)
+        return Ok(await CommerceListQueries.FilterStockSubscriptions(Owned().AsNoTracking(), page).OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)
             .Select(x => new StockSubscriptionDto(x.Id, x.ProductId, x.CreatedOnUtc)).PageAsync(page, ct));
     }
 

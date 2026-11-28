@@ -59,12 +59,13 @@ public sealed class CustomerServicesController(SmartDbContext db, StorefrontRequ
     [HttpGet("reviews")]
     [StorefrontPermission(StorefrontPermissions.Reviews)]
     [StorefrontPermission(StorefrontPermissions.Catalog)]
-    public async Task<ActionResult<PageDto<MyReviewDto>>> MyReviews([FromQuery] PageRequest page, CancellationToken ct)
+    public async Task<ActionResult<PageDto<MyReviewDto>>> MyReviews([FromQuery] MyReviewSearchRequest page, CancellationToken ct)
     {
         // Product reviews are global native records, not store-specific; only show current-store visible products.
         var visible = StorefrontScope.Products(db, request.Customer, request.StoreId, forDetail: true);
         var query = db.ProductReviews.AsNoTracking().Where(x => x.CustomerId == request.Customer.Id &&
             visible.Any(p => p.Id == x.ProductId));
+        query = CommerceListQueries.FilterMyReviews(query, page);
         return Ok(await query.OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)
             .Select(x => new MyReviewDto(x.Id, x.ProductId, x.Product.Name, x.Title, x.ReviewText,
                 x.Rating, x.IsApproved, x.CreatedOnUtc)).PageAsync(page, ct));

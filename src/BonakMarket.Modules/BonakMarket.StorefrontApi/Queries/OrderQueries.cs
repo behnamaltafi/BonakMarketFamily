@@ -27,6 +27,7 @@ public sealed class OrderQueries(SmartDbContext db, StorefrontRequestContext req
             filter.OrderStatusId.HasValue ? new[] { filter.OrderStatusId.Value } : null,
             filter.PaymentStatusId.HasValue ? new[] { filter.PaymentStatusId.Value } : null,
             filter.ShippingStatusId.HasValue ? new[] { filter.ShippingStatusId.Value } : null);
+        query = CommerceListQueries.FilterOrders(query, filter);
         var page = await Project(query.OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)).PageAsync(filter, ct);
         var ids = page.Items.Select(x => x.Id).ToArray();
         // Select at most four distinct previews per order; no per-order SQL query.

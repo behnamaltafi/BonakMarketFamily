@@ -119,6 +119,7 @@ public partial class InstallationDataSeeder : DataSeeder<SmartDbContext>
         await PopulateFromSeedAsync("PopulateMeasureWeights", InstallationSeedDescriptors.MeasureWeights());
         await PopulateAsync("PopulateTaxCategories", PopulateTaxCategories);
         await PopulateFromSeedAsync("PopulateCountriesAndStates", InstallationSeedDescriptors.Countries());
+        await PopulateAsync("PopulateIranGeography", () => BonakMarket.Core.Common.Services.IranGeographySeed.SeedAsync(Context, CancelToken));
         await PopulateFromSeedAsync("PopulateShippingMethods", InstallationSeedDescriptors.ShippingMethods());
         await PopulateFromSeedAsync("PopulateDeliveryTimes", InstallationSeedDescriptors.DeliveryTimes());
         await PopulateFromSeedAsync("PopulateQuantityUnits", InstallationSeedDescriptors.QuantityUnits());

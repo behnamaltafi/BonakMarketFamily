@@ -13,7 +13,8 @@ public sealed record OrderFinancialsDto(decimal SubtotalInclTax, decimal Subtota
 
 public sealed record OrderAddressDto(int Id, string? FirstName, string? LastName, string? Company,
     string? Country, string? StateProvince, string? City, string? Address1, string? Address2,
-    string? ZipPostalCode, string? PhoneNumber, string? Email);
+    string? ZipPostalCode, string? PhoneNumber, string? Email,
+    int? CityId = null, decimal? Latitude = null, decimal? Longitude = null);
 
 /// <summary>API capabilities, not administrator permissions. Browser actions require a native browser login.</summary>
 public sealed record OrderActionsDto(bool CanReorder, bool CanCancel, bool CanReturn,

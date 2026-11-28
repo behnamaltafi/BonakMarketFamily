@@ -7,6 +7,7 @@ public partial class SmartDbContext
 {
     public DbSet<Address> Addresses { get; set; }
     public DbSet<Country> Countries { get; set; }
+    public DbSet<City> Cities { get; set; }
     public DbSet<Currency> Currencies { get; set; }
     public DbSet<DeliveryTime> DeliveryTimes { get; set; }
     public DbSet<GenericAttribute> GenericAttributes { get; set; }

@@ -20,7 +20,7 @@ public sealed class CheckoutAddressChecks(SmartDbContext db, StorefrontRequestCo
         await addresses.IsAddressValidAsync(address);
 
     internal static string? AddressFingerprint(Address? address) => address == null ? null :
-        CartSnapshotRevision.Create(new { address.Id, address.CountryId, address.StateProvinceId, address.City,
+        CartSnapshotRevision.Create(new { address.Id, address.CountryId, address.StateProvinceId, address.City, address.CityId, address.Latitude, address.Longitude,
             address.Address1, address.Address2, address.ZipPostalCode, address.PhoneNumber, address.FirstName,
             address.LastName, address.Email, address.Company, address.FaxNumber, address.Salutation, address.Title });
 

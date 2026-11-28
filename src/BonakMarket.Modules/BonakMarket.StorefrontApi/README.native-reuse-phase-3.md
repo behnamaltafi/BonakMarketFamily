@@ -1,0 +1,16 @@
+# Storefront phase 3 — thin controllers
+
+Baseline: 477173ef71d5ffcedfdfe5119aca2a3dd79a5231. Phase 1 remains intact. No phase 2 workflow redesign, Core/OData/schema/CI changes, or new repository abstraction. Source reviewed on the actual feature branch. See README.native-reuse-phase-1.md for the source-backed native reuse audit; this change relocates existing application behavior.
+
+| Requirement | Native source / reused symbol | Decision | Verification |
+| --- | --- | --- | --- |
+| Customer summary and reviews | IShoppingCartService.CountProductsInCartAsync, CustomerGuildPolicy, native reward history extension and StorefrontScope | Move aggregation and query unchanged to CustomerStorefrontService. CatalogFacade remains the existing frequently-purchased adapter. | Existing customer/permission contracts; endpoint regression pending. |
+| Returns | IOrderProcessingService.CanReturnItems, IMessageFactory, ReturnCaseQueryExtensions; native Web ReturnCaseController | Move to ReturnStorefrontService; preserve serializable transaction, quantity checks and post-commit notification. | Owned/unowned, invalid choices/quantities, 201 response regression pending. |
+| Reviews | IProductService.ApplyProductReviewTotalsAsync, ICustomerService.ApplyRewardPointsForProductReview, IMessageFactory | Move to ReviewStorefrontService; keep native CAPTCHA and form/model checks on controller; preserve vote transaction and moderation. | Form/CAPTCHA, 201, vote and reward regression pending. |
+| Downloads | IDownloadService.IsDownloadAllowed, IsLicenseDownloadAllowed, OpenDownloadStreamAsync; NativePaging | Move to DownloadStorefrontService; return stream/redirect metadata; preserve HTTP result type, allowance and ownership. | File, license, HTTPS, allowance and paging regression pending. |
+| Orders | OrderQueries, IOrderProcessingService, IPaymentService, ISettingFactory, IPermissionService | Move native processing and permission checks to OrderStorefrontService; URL generation remains HTTP concern. | Order ownership, action flags, browser URLs and reorder contracts pending. |
+| Checkout sessions | Native IShoppingCartService, IShippingService, IOrderCalculationService, IOrderProcessingService, IEventPublisher; existing CheckoutDraftStore, CheckoutSessionState, CheckoutOptions and OfflineCheckoutEligibility | Move existing workflow as-is to CheckoutSessionService. No change to reservation, locks, transaction, idempotency, cancellation or reconciliation. Preserve deferred browser URL generation and explicit 422 extension payloads. | Existing CheckoutSessionContractTests plus full provider/SQL Server and multi-request confirmation tests pending. |
+
+The result type represents application failure; controller maps it to the existing Problem() or explicit UnprocessableEntity(ProblemDetails) and success status. All six controller routes, verbs, action signatures, request binding, permission and response attributes are retained. The checkout logger category changes to the service type; no business effect is intended. DI is scoped. No change to DTOs or database.
+
+Verification: static source transformation and attribute/signature comparison; DI and result contract tests added. Build, actual HTTP/Swagger regression, integration tests, and coverage must run before merge.

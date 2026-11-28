@@ -99,7 +99,9 @@ public class StorefrontContractTests
             typeof(ProductCatalogQueries), typeof(ProductCatalogData), typeof(ProductCatalogMapper), typeof(CatalogFacade),
             typeof(CartStateReader), typeof(CartAdjustments), typeof(CartFacade),
             typeof(CheckoutDraftStore), typeof(CheckoutAddressChecks), typeof(CheckoutSessionState),
-            typeof(CheckoutOptions), typeof(OfflineCheckoutEligibility)
+            typeof(CheckoutOptions), typeof(OfflineCheckoutEligibility),
+            typeof(CustomerStorefrontService), typeof(ReturnStorefrontService), typeof(ReviewStorefrontService),
+            typeof(DownloadStorefrontService), typeof(OrderStorefrontService), typeof(CheckoutSessionService)
         };
 
         foreach (var type in collaborators)
@@ -108,6 +110,30 @@ public class StorefrontContractTests
             Assert.That(registrations.Count, Is.EqualTo(1), type.Name);
             Assert.That(registrations[0].Lifetime, Is.EqualTo(ServiceLifetime.Scoped), type.Name);
         }
+    }
+
+    [TestCase(typeof(CustomerServicesController), typeof(CustomerStorefrontService))]
+    [TestCase(typeof(ReturnsController), typeof(ReturnStorefrontService))]
+    [TestCase(typeof(ReviewsController), typeof(ReviewStorefrontService))]
+    [TestCase(typeof(DownloadsController), typeof(DownloadStorefrontService))]
+    [TestCase(typeof(OrdersController), typeof(OrderStorefrontService))]
+    [TestCase(typeof(CheckoutSessionsController), typeof(CheckoutSessionService))]
+    public void RefactoredControllersOnlyInjectTheirApplicationService(Type controller, Type service)
+    {
+        Assert.That(controller.GetConstructors().Single().GetParameters().Select(x => x.ParameterType),
+            Is.EqualTo(new[] { service }));
+    }
+
+    [Test]
+    public void ApplicationFailurePreservesStatusCodeAndStructuredData()
+    {
+        var extensions = new Dictionary<string, object> { ["warnings"] = new[] { "native warning" } };
+        StorefrontResult<string> result = new StorefrontFailure(422, "checkout_native_validation_failed", extensions);
+
+        Assert.That(result.Value, Is.Null);
+        Assert.That(result.Failure.Status, Is.EqualTo(422));
+        Assert.That(result.Failure.Code, Is.EqualTo("checkout_native_validation_failed"));
+        Assert.That(result.Failure.Extensions["warnings"], Is.EqualTo(new[] { "native warning" }));
     }
 
     [Test]

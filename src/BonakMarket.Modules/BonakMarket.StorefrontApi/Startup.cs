@@ -21,6 +21,12 @@ internal sealed class Startup : StarterBase
     public override void ConfigureServices(IServiceCollection services, IApplicationContext appContext)
     {
         services.AddScoped<StorefrontRequestContext>();
+        services.AddScoped<CustomerStorefrontService>();
+        services.AddScoped<ReturnStorefrontService>();
+        services.AddScoped<ReviewStorefrontService>();
+        services.AddScoped<DownloadStorefrontService>();
+        services.AddScoped<OrderStorefrontService>();
+        services.AddScoped<CheckoutSessionService>();
         services.AddScoped<ProductCatalogQueries>();
         services.AddScoped<ProductCatalogData>();
         services.AddScoped<ProductCatalogMapper>();

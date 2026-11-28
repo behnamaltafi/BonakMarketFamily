@@ -1,10 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using BonakMarket.Core.Configuration;
-using BonakMarket.Core.Checkout.Orders;
-using BonakMarket.Core.Checkout.Payment;
 using BonakMarket.Core.Security;
 using BonakMarket.StorefrontApi.Models;
-using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
 using BonakMarket.StorefrontApi.Services;
 
@@ -12,8 +8,7 @@ namespace BonakMarket.StorefrontApi.Controllers;
 
 [Route("api/storefront/v1/orders")]
 [StorefrontPermission(StorefrontPermissions.Orders)]
-public sealed class OrdersController(OrderQueries orders, IOrderProcessingService processing, ISettingFactory settings,
-    StorefrontRequestContext request, IPaymentService payments, IPermissionService permissions) : StorefrontController
+public sealed class OrdersController(OrderStorefrontService orders) : StorefrontController
 {
     [HttpGet]
     public async Task<ActionResult<PageDto<OrderDto>>> Get([FromQuery] OrderSearchRequest filter, CancellationToken ct) =>
@@ -22,21 +17,13 @@ public sealed class OrdersController(OrderQueries orders, IOrderProcessingServic
     [HttpGet("{id:int}")]
     public async Task<ActionResult<OrderDetailDto>> Get(int id, CancellationToken ct)
     {
-        var order = await orders.DetailAsync(id, ct);
-        if (order == null) return Error(404, "order_not_found");
-        var entity = await orders.FindOwnedAsync(id, ct);
-        if (entity == null) return Error(404, "order_not_found");
-        var canReorder = (await settings.LoadSettingsAsync<OrderSettings>(request.StoreId)).IsReOrderAllowed &&
-            await permissions.AuthorizeAsync(StorefrontPermissions.Cart, request.Customer) &&
-            await permissions.AuthorizeAsync(Permissions.Cart.AccessShoppingCart, request.Customer);
-        var canReturn = processing.CanReturnItems(entity) &&
-            await permissions.AuthorizeAsync(StorefrontPermissions.Returns, request.Customer);
-        var canRetry = await payments.CanRePostProcessPaymentAsync(entity);
+        var result = await orders.GetAsync(id, ct);
+        if (result.Failure != null) return FailureResponse(result.Failure);
+        var order = result.Value;
         return Ok(order with
         {
-            AllowedActions = new(canReorder, false, canReturn, canRetry, false, true),
             BrowserInvoiceUrl = Url.Action("Print", "Order", new { id, pdf = true, area = "" }),
-            BrowserPaymentUrl = canRetry ? Url.Action("Details", "Order", new { id, area = "" }) : null
+            BrowserPaymentUrl = order.AllowedActions.CanRetryPayment ? Url.Action("Details", "Order", new { id, area = "" }) : null
         });
     }
 
@@ -44,23 +31,22 @@ public sealed class OrdersController(OrderQueries orders, IOrderProcessingServic
     [HttpGet("{id:int}/payment-status")]
     public async Task<ActionResult<OrderPaymentStatusDto>> PaymentStatus(int id, CancellationToken ct)
     {
-        var order = await orders.FindOwnedAsync(id, ct);
-        if (order == null) return Error(404, "order_not_found");
-        var canRetry = await payments.CanRePostProcessPaymentAsync(order);
-        return Ok(new OrderPaymentStatusDto(order.Id, OrderStatusMapping.Order(order.OrderStatusId),
-            OrderStatusMapping.Payment(order.PaymentStatusId), order.PaymentStatus == BonakMarket.Core.Checkout.Payment.PaymentStatus.Paid,
-            order.PaidDateUtc, order.UpdatedOnUtc, order.OrderTotal, order.RefundedAmount,
-            order.CustomerCurrencyCode, order.CurrencyRate, canRetry, true,
-            canRetry ? Url.Action("Details", "Order", new { id, area = "" }) : null));
+        var result = await orders.PaymentStatusAsync(id, ct);
+        if (result.Failure != null) return FailureResponse(result.Failure);
+        var order = result.Value;
+        return Ok(order with
+        {
+            BrowserPaymentUrl = order.CanRetryPayment ? Url.Action("Details", "Order", new { id, area = "" }) : null
+        });
     }
 
     [HttpGet("{id:int}/browser-actions")]
     public async Task<ActionResult<OrderBrowserActionsDto>> BrowserActions(int id, CancellationToken ct)
     {
-        var order = await orders.FindOwnedAsync(id, ct);
-        if (order == null) return Error(404, "order_not_found");
+        var result = await orders.BrowserActionsAsync(id, ct);
+        if (result.Failure != null) return FailureResponse(result.Failure);
         return Ok(new OrderBrowserActionsDto(Url.Action("Print", "Order", new { id, pdf = true, area = "" }),
-            Url.Action("Details", "Order", new { id, area = "" }), await payments.CanRePostProcessPaymentAsync(order), true));
+            Url.Action("Details", "Order", new { id, area = "" }), result.Value, true));
     }
 
     [HttpPost("{id:int}/reorder")]
@@ -69,13 +55,6 @@ public sealed class OrdersController(OrderQueries orders, IOrderProcessingServic
     [ProducesResponseType(204)]
     [ProducesResponseType(typeof(ProblemDetails), 404)]
     [ProducesResponseType(typeof(ProblemDetails), 403)]
-    public async Task<IActionResult> ReOrder(int id, CancellationToken ct)
-    {
-        var order = await orders.FindOwnedAsync(id, ct);
-        if (order == null) return Error(404, "order_not_found");
-        if (!(await settings.LoadSettingsAsync<OrderSettings>(request.StoreId)).IsReOrderAllowed)
-            return Error(403, "reorder_not_allowed");
-        await processing.ReOrderAsync(order);
-        return NoContent();
-    }
+    public async Task<IActionResult> ReOrder(int id, CancellationToken ct) =>
+        RespondNoContent(await orders.ReOrderAsync(id, ct));
 }

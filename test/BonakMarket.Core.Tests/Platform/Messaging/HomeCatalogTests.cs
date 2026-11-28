@@ -10,6 +10,7 @@ using BonakMarket.StorefrontApi.Models;
 using BonakMarket.StorefrontApi.Queries;
 using BonakMarket.StorefrontApi.Security;
 using BonakMarket.StorefrontApi.Services;
+using BonakMarket.StorefrontApi;
 
 namespace BonakMarket.Core.Tests.Platform.Messaging;
 

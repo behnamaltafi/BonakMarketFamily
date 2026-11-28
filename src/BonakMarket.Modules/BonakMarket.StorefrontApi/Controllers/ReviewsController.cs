@@ -28,10 +28,11 @@ public sealed class ReviewsController(SmartDbContext db, StorefrontRequestContex
         .Where(x => x.Id == productId && !x.IsSystemProduct && x.AllowCustomerReviews);
 
     [HttpGet]
-    public async Task<ActionResult<PageDto<CustomerReviewDto>>> List(int productId, [FromQuery] PageRequest page, CancellationToken ct)
+    public async Task<ActionResult<PageDto<CustomerReviewDto>>> List(int productId, [FromQuery] ReviewSearchRequest page, CancellationToken ct)
     {
         if (!await Visible(productId).AnyAsync(ct)) return Error(404, "product_not_found");
-        return Ok(await db.ProductReviews.AsNoTracking().Where(x => x.ProductId == productId && x.IsApproved)
+        var query = CommerceListQueries.FilterReviews(db.ProductReviews.AsNoTracking().Where(x => x.ProductId == productId && x.IsApproved), page);
+        return Ok(await query
             .OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)
             .Select(x => new CustomerReviewDto(x.Id, x.Title, x.ReviewText, x.Rating, x.HelpfulYesTotal,
                 x.HelpfulNoTotal, x.CreatedOnUtc, x.CustomerId == request.Customer.Id)).PageAsync(page, ct));

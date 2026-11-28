@@ -13,13 +13,14 @@ namespace BonakMarket.StorefrontApi.Controllers;
 public sealed class RewardPointsController(SmartDbContext db, StorefrontRequestContext request, RewardPointsSettings settings) : StorefrontController
 {
     [HttpGet]
-    public async Task<ActionResult<RewardPointsDto>> Get([FromQuery] PageRequest page, CancellationToken ct)
+    public async Task<ActionResult<RewardPointsDto>> Get([FromQuery] RewardPointSearchRequest page, CancellationToken ct)
     {
         if (!settings.Enabled) return Error(403, "reward_points_disabled");
         var query = db.RewardPointsHistory.AsNoTracking().Where(x => x.CustomerId == request.Customer.Id)
             .OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id);
         var balance = await query.Select(x => (int?)x.PointsBalance).FirstOrDefaultAsync(ct) ?? 0;
-        var history = await query.Select(x => new RewardPointDto(x.Id, x.Points, x.PointsBalance,
+        var history = await CommerceListQueries.FilterRewardPoints(query, page).OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)
+            .Select(x => new RewardPointDto(x.Id, x.Points, x.PointsBalance,
             x.UsedAmount, x.Message, x.CreatedOnUtc)).PageAsync(page, ct);
         return Ok(new RewardPointsDto(balance, history));
     }

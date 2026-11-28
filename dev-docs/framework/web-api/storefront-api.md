@@ -92,3 +92,32 @@ See [Customer onboarding and address management](customer-onboarding.md) for the
 ## Authenticated storefront expansion
 
 See [Authenticated storefront coverage](authenticated-storefront.md) for the full audit of native login gates, route inventory, exclusions and browser-dependent checkout/payment boundaries. The new controllers share the existing HTTPS/JWT/customer-store authorization filter.
+
+## Optional collection search and filters
+
+All list routes below use the existing `PageRequest` / `PageDto<T>` contract (page defaults to 1, pageSize to 20, maximum pageSize 100). `search` is optional (max 200 characters); filters combine with AND, except the documented searchable fields which combine with OR. Creation ranges use ISO 8601 timestamps with offsets converted to UTC, `fromDateUtc` inclusive and `toDateUtc` exclusive; invalid or empty ranges return validation errors. Omit optional inputs to preserve the original collection behavior and ordering.
+
+| GET route (relative to /api/storefront/v1) | search | Extra filters |
+|---|---|---|
+| /orders | Exact native order number, ID or GUID | orderStatusId, paymentStatusId, shippingStatusId, fromDateUtc, toDateUtc |
+| /returns | Exact return ID | statusId, fromDateUtc, toDateUtc |
+| /products/{productId}/reviews | Title or review text | rating (1–5) |
+| /me/reviews | Product name, title or review text | rating (1–5), productId, isApproved |
+| /downloads | Product name | orderId, productId |
+| /stock-subscriptions | Product name | productId, fromDateUtc, toDateUtc |
+| /recurring-payments | Native initial order number, ID or GUID | isActive, fromDateUtc, toDateUtc |
+| /reward-points | History message | isEarned (true: positive; false: negative), fromDateUtc, toDateUtc |
+| /pages | Current-language title | systemName (exact) |
+
+Reward balance is always the unfiltered current balance; only history is filtered. Public review approval and product visibility, topic visibility and existing customer/store scopes remain mandatory. Download eligibility remains computed by the native download service after paging. Persian text uses the existing catalog normalization; identifiers use exact native lookup semantics. Cart, wishlist, facets and checkout snapshots are deliberately unchanged.
+
+### Native reuse audit — collection filters
+
+| Requirement | Native source | Decision / gap | Verification |
+|---|---|---|---|
+| Search/paging contract | StorefrontApi/Models/StorefrontModels.cs; Queries/NativePaging.cs; Services/CatalogText.cs | Shared SearchPageRequest extends PageRequest; reuse PageAsync / ToPagedList, same normalization and DTOs; no new paging engine | StorefrontListFilterTests, StorefrontContractTests |
+| Orders and recurring payments | Core/Checkout/Orders/Extensions/OrderQueryExtensions.cs: ApplyOrderNumberFilter, ApplyStatusFilter | Reuse native exact lookup; restrict to owned orders; extend UTC interval in module | StorefrontListFilterTests; provider and ownership integration |
+| Returns, reviews, downloads, stock, reward | Core domain entities; BackInStockSubscriptionQueryExtensions.ApplyStandardFilter; native download service | Narrow already authorized queries by explicit fields only; preserve review approval and native download eligibility; keep reward balance independent | StorefrontListFilterTests; provider and ownership integration |
+| CMS pages | StorefrontScope.Topics, native Topic and LocalizedProperty, CatalogQueries localized-name projection | Search current-language title with fallback; reuse existing localized response mapping and strict scope | provider translation, public visibility and localization integration |
+
+Build, relational SQL translation and actual provider integration must be verified before merge. No schema, Core, OData, authorization or CI configuration changes.

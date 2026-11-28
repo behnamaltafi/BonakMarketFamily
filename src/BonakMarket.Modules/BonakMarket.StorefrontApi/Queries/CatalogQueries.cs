@@ -50,9 +50,7 @@ public sealed class CatalogQueries(SmartDbContext db, StorefrontRequestContext r
         if (filter.ParentId.HasValue)
             query = filter.ParentId == 0 ? query.Where(x => x.ParentId == null) : query.Where(x => x.ParentId == filter.ParentId);
         if (filter.ShowOnHomePage.HasValue) query = query.Where(x => x.ShowOnHomePage == filter.ShowOnHomePage.Value);
-        var term = CatalogText.Normalize(filter.Search);
-        if (term.Length > 0)
-            query = query.Where(x => x.Name.Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term));
+        query = CatalogText.WhereNormalizedContains(query, filter.Search, x => x.Name);
         var page = await query.OrderBy(x => x.DisplayOrder).ThenBy(x => x.Id).PageAsync(filter, ct);
         await SetCategoryImagesAsync(page.Items, ct);
         return page;
@@ -68,9 +66,7 @@ public sealed class CatalogQueries(SmartDbContext db, StorefrontRequestContext r
     public async Task<PageDto<BrandDto>> BrandsAsync(BrandSearchRequest filter, CancellationToken ct)
     {
         var query = BrandRows();
-        var term = CatalogText.Normalize(filter.Search);
-        if (term.Length > 0)
-            query = query.Where(x => x.Name.Replace("ي", "ی").Replace("ك", "ک").Replace("\u200c", "").Replace(" ", "").Contains(term));
+        query = CatalogText.WhereNormalizedContains(query, filter.Search, x => x.Name);
         var page = await query.OrderBy(x => x.DisplayOrder).ThenBy(x => x.Name).ThenBy(x => x.Id).PageAsync(filter, ct);
         await SetBrandImagesAsync(page.Items, ct);
         return page;

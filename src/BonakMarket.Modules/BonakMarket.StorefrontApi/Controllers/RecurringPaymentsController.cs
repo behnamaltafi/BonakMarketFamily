@@ -18,8 +18,9 @@ public sealed class RecurringPaymentsController(SmartDbContext db, StorefrontReq
         StorefrontScope.Orders(db, request.Customer, request.StoreId).Any(o => o.Id == x.InitialOrderId));
 
     [HttpGet]
-    public async Task<ActionResult<PageDto<RecurringPaymentDto>>> List([FromQuery] PageRequest page, CancellationToken ct) =>
-        Ok(await Owned().AsNoTracking().OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)
+    public async Task<ActionResult<PageDto<RecurringPaymentDto>>> List([FromQuery] RecurringPaymentSearchRequest page, CancellationToken ct) =>
+        Ok(await CommerceListQueries.FilterRecurringPayments(Owned().AsNoTracking(),
+            StorefrontScope.Orders(db, request.Customer, request.StoreId), page).OrderByDescending(x => x.CreatedOnUtc).ThenByDescending(x => x.Id)
             .Select(x => new RecurringPaymentDto(x.Id, x.InitialOrderId, x.CycleLength, x.CyclePeriodId,
                 x.TotalCycles, x.StartDateUtc, x.IsActive)).PageAsync(page, ct));
 
